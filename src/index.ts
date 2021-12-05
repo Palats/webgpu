@@ -59,10 +59,21 @@ export class AppMain extends LitElement {
         const sizeX = 4;
         const sizeY = 4;
 
+        // Buffer for constant properties (uniforms?)
+        const uniformsBuffer = device.createBuffer({
+            mappedAtCreation: true,
+            size: 2 * Uint32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.STORAGE
+        });
+        const uniforms = new Uint32Array(uniformsBuffer.getMappedRange());
+        uniforms[0] = sizeX;
+        uniforms[1] = sizeY;
+        uniformsBuffer.unmap();
+
         // Buffer for input data.
         const srcBuffer = device.createBuffer({
             mappedAtCreation: true,
-            size: (2 + sizeX * sizeY) * Float32Array.BYTES_PER_ELEMENT,
+            size: sizeX * sizeY * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.STORAGE
         });
         const arrayBuffer = srcBuffer.getMappedRange();
@@ -71,7 +82,7 @@ export class AppMain extends LitElement {
         a[1] = sizeY;
         for (let y = 0; y < sizeX; y++) {
             for (let x = 0; x < sizeX; x++) {
-                a[2 + x + y * sizeX] = x + y;
+                a[x + y * sizeX] = x + y;
             }
         }
         srcBuffer.unmap();
@@ -90,6 +101,10 @@ export class AppMain extends LitElement {
             }, {
                 binding: 1,
                 visibility: GPUShaderStage.COMPUTE,
+                buffer: { type: "read-only-storage" }
+            }, {
+                binding: 2,
+                visibility: GPUShaderStage.COMPUTE,
                 buffer: { type: "storage" }
             }]
         });
@@ -98,35 +113,38 @@ export class AppMain extends LitElement {
             layout: bindGroupLayout,
             entries: [{
                 binding: 0,
-                resource: { buffer: srcBuffer, }
+                resource: { buffer: uniformsBuffer, }
             }, {
                 binding: 1,
+                resource: { buffer: srcBuffer, }
+            }, {
+                binding: 2,
                 resource: { buffer: dstBuffer, }
             }]
         });
 
         const shaderModule = device.createShaderModule({
             code: `
-              [[block]] struct Matrix {
-                size : vec2<f32>;
-                values: array<f32>;
+              [[block]] struct Uniforms {
+                  sizex: u32;
+                  sizey: u32;
               };
-              [[block]] struct Image {
+              [[block]] struct Matrix {
                 values: array<f32>;
               };
 
-              [[group(0), binding(0)]] var<storage, read> inputMatrix : Matrix;
-              [[group(0), binding(1)]] var<storage, write> result : Image;
+              [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+              [[group(0), binding(1)]] var<storage, read> inputMatrix : Matrix;
+              [[group(0), binding(2)]] var<storage, write> result : Matrix;
 
               [[stage(compute), workgroup_size(8, 8)]]
               fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
                 // Guard against out-of-bounds work group sizes
-                if (global_id.x >= u32(inputMatrix.size.x) || global_id.y >= u32(inputMatrix.size.y)) {
+                if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
                   return;
                 }
 
-                let idx = global_id.y + global_id.x * u32(inputMatrix.size.y);
-
+                let idx = global_id.y + global_id.x * uniforms.sizey;
                 result.values[idx] = inputMatrix.values[idx] * inputMatrix.values[idx];
               }
             `
@@ -170,6 +188,10 @@ export class AppMain extends LitElement {
         await gpuReadBuffer.mapAsync(GPUMapMode.READ);
         const copyArrayBuffer = gpuReadBuffer.getMappedRange();
         console.log(new Float32Array(copyArrayBuffer));
+        /*await dstBuffer.mapAsync(GPUMapMode.READ);
+        const copyArrayBuffer = dstBuffer.getMappedRange();
+        console.log(new Float32Array(copyArrayBuffer));*/
+
     }
 }
 
