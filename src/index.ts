@@ -51,13 +51,15 @@ export class AppMain extends LitElement {
     }
 
     async doIt() {
-        console.log("trying");
+        const sizeX = this.canvas.width;
+        const sizeY = this.canvas.height;
+
+        console.log("running", sizeX, sizeY);
+
         const adapter = await navigator.gpu.requestAdapter();
         if (!adapter) { throw "no webgpu"; }
         const device = await adapter.requestDevice();
 
-        const sizeX = 4;
-        const sizeY = 4;
 
         // Buffer for constant properties (uniforms?)
         const uniformsBuffer = device.createBuffer({
@@ -73,23 +75,24 @@ export class AppMain extends LitElement {
         // Buffer for input data.
         const srcBuffer = device.createBuffer({
             mappedAtCreation: true,
-            size: sizeX * sizeY * Float32Array.BYTES_PER_ELEMENT,
+            size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.STORAGE
         });
         const arrayBuffer = srcBuffer.getMappedRange();
-        const a = new Float32Array(arrayBuffer);
-        a[0] = sizeX;
-        a[1] = sizeY;
+        const a = new Uint8Array(arrayBuffer);
         for (let y = 0; y < sizeX; y++) {
             for (let x = 0; x < sizeX; x++) {
-                a[x + y * sizeX] = x + y;
+                a[4 * (x + y * sizeX) + 0] = Math.floor(x * 256 / sizeX);
+                a[4 * (x + y * sizeX) + 1] = Math.floor(y * 256 / sizeX);
+                a[4 * (x + y * sizeX) + 2] = 0;
+                a[4 * (x + y * sizeX) + 3] = 255;
             }
         }
         srcBuffer.unmap();
 
         // Buffer for shader to write to.
         const dstBuffer = device.createBuffer({
-            size: sizeX * sizeY * Float32Array.BYTES_PER_ELEMENT,
+            size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         });
 
@@ -130,7 +133,7 @@ export class AppMain extends LitElement {
                   sizey: u32;
               };
               [[block]] struct Matrix {
-                values: array<f32>;
+                values: array<u32>;
               };
 
               [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
@@ -145,7 +148,13 @@ export class AppMain extends LitElement {
                 }
 
                 let idx = global_id.y + global_id.x * uniforms.sizey;
-                result.values[idx] = inputMatrix.values[idx] * inputMatrix.values[idx];
+
+                var v = unpack4x8unorm(inputMatrix.values[idx]);
+                // v.r = 1.0;
+                // v.g = 0.5;
+                // v.b = 0.1;
+                v.a = 1.0;
+                result.values[idx] = pack4x8unorm(v);
               }
             `
         });
@@ -170,7 +179,7 @@ export class AppMain extends LitElement {
 
         // Get a GPU buffer for reading in an unmapped state.
         const gpuReadBuffer = device.createBuffer({
-            size: sizeX * sizeY * Float32Array.BYTES_PER_ELEMENT,
+            size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
         });
 
@@ -178,7 +187,7 @@ export class AppMain extends LitElement {
         commandEncoder.copyBufferToBuffer(
             dstBuffer, 0,
             gpuReadBuffer, 0,
-            sizeX * sizeY * Float32Array.BYTES_PER_ELEMENT,
+            4 * sizeX * sizeY,
         );
 
         // Submit GPU commands.
@@ -186,12 +195,12 @@ export class AppMain extends LitElement {
         device.queue.submit([gpuCommands]);
 
         await gpuReadBuffer.mapAsync(GPUMapMode.READ);
-        const copyArrayBuffer = gpuReadBuffer.getMappedRange();
-        console.log(new Float32Array(copyArrayBuffer));
-        /*await dstBuffer.mapAsync(GPUMapMode.READ);
-        const copyArrayBuffer = dstBuffer.getMappedRange();
-        console.log(new Float32Array(copyArrayBuffer));*/
+        const data = new Uint8ClampedArray(gpuReadBuffer.getMappedRange());
 
+        const ctx = this.canvas.getContext("2d");
+        if (!ctx) { throw "no canvas 2d context"; }
+        ctx.imageSmoothingEnabled = false;
+        ctx.putImageData(new ImageData(data, sizeX, sizeY), 0, 0);
     }
 }
 
