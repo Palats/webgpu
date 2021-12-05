@@ -3,6 +3,45 @@
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
+class Uniforms {
+    sizeX = 320;
+    sizeY = 200;
+    elapsed = 0;
+
+    readonly storageBuffer: GPUBuffer;
+
+    private bytes = 3 * 4;
+    private mappedBuffer: GPUBuffer;
+
+    constructor(device: GPUDevice) {
+        this.mappedBuffer = device.createBuffer({
+            mappedAtCreation: true,
+            size: this.bytes * Uint32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+        });
+        this.storageBuffer = device.createBuffer({
+            size: this.bytes,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+    }
+
+    copy(commandEncoder: GPUCommandEncoder) {
+        const d = new DataView(this.mappedBuffer.getMappedRange());
+        d.setUint32(0, this.sizeX, true);
+        d.setUint32(4, this.sizeY, true);
+        d.setUint32(8, this.elapsed, true);
+        this.mappedBuffer.unmap();
+
+        commandEncoder.copyBufferToBuffer(
+            this.mappedBuffer, 0,
+            this.storageBuffer, 0,
+            this.bytes,
+        );
+
+        // this.mappedBuffer.mapAsync(GPUMapMode.WRITE);
+    }
+}
+
 @customElement('app-main')
 export class AppMain extends LitElement {
     static styles = css`
@@ -31,14 +70,14 @@ export class AppMain extends LitElement {
         }
     `;
 
-    canvas: HTMLCanvasElement;
-
     render() {
         return html`
             <div id="display">${this.canvas}</div>
         `;
     }
 
+    canvas: HTMLCanvasElement;
+    uniforms?: Uniforms;
 
     constructor() {
         super();
@@ -60,23 +99,15 @@ export class AppMain extends LitElement {
         if (!adapter) { throw "no webgpu"; }
         const device = await adapter.requestDevice();
 
-
-        // Buffer for constant properties (uniforms?)
-        const uniformsBuffer = device.createBuffer({
-            mappedAtCreation: true,
-            size: 2 * Uint32Array.BYTES_PER_ELEMENT,
-            usage: GPUBufferUsage.STORAGE
-        });
-        const uniforms = new Uint32Array(uniformsBuffer.getMappedRange());
-        uniforms[0] = sizeX;
-        uniforms[1] = sizeY;
-        uniformsBuffer.unmap();
+        this.uniforms = new Uniforms(device);
+        this.uniforms.sizeX = sizeX;
+        this.uniforms.sizeY = sizeY;
 
         // Buffer for input data.
         const srcBuffer = device.createBuffer({
             mappedAtCreation: true,
             size: 4 * sizeX * sizeY,
-            usage: GPUBufferUsage.STORAGE
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         });
         const arrayBuffer = srcBuffer.getMappedRange();
         const a = new Uint8Array(arrayBuffer);
@@ -116,7 +147,7 @@ export class AppMain extends LitElement {
             layout: bindGroupLayout,
             entries: [{
                 binding: 0,
-                resource: { buffer: uniformsBuffer, }
+                resource: { buffer: this.uniforms.storageBuffer, }
             }, {
                 binding: 1,
                 resource: { buffer: srcBuffer, }
@@ -169,28 +200,24 @@ export class AppMain extends LitElement {
             }
         });
 
-        const commandEncoder = device.createCommandEncoder();
-
-        const passEncoder = commandEncoder.beginComputePass();
-        passEncoder.setPipeline(computePipeline);
-        passEncoder.setBindGroup(0, bindGroup);
-        passEncoder.dispatch(Math.ceil(sizeX / 8), Math.ceil(sizeY / 8));
-        passEncoder.endPass();
-
         // Get a GPU buffer for reading in an unmapped state.
         const gpuReadBuffer = device.createBuffer({
             size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
         });
 
-        // Encode commands for copying buffer to buffer.
+        const commandEncoder = device.createCommandEncoder();
+        this.uniforms.copy(commandEncoder);
+        const passEncoder = commandEncoder.beginComputePass();
+        passEncoder.setPipeline(computePipeline);
+        passEncoder.setBindGroup(0, bindGroup);
+        passEncoder.dispatch(Math.ceil(sizeX / 8), Math.ceil(sizeY / 8));
+        passEncoder.endPass();
         commandEncoder.copyBufferToBuffer(
             dstBuffer, 0,
             gpuReadBuffer, 0,
             4 * sizeX * sizeY,
         );
-
-        // Submit GPU commands.
         const gpuCommands = commandEncoder.finish();
         device.queue.submit([gpuCommands]);
 
