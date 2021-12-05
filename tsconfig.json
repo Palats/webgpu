@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        // DO NOT EDIT
+        "outDir": "./dist",
+        "target": "esnext",
+        "module": "CommonJS",
+        "sourceMap": true,
+        // Set your preferences here for TypeScript
+        "strict": true,
+        "experimentalDecorators": true,
+        // For `query` decorator to work
+        "useDefineForClassFields": false,
+        // Without, fields like `.interactive` on Sprite are not visible.
+        "allowSyntheticDefaultImports": true
+    },
+    "include": [
+        "src/*"
+    ],
+}
