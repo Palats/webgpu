@@ -12,7 +12,7 @@ class Uniforms {
     readonly buffer: GPUBuffer;
 
     // Total size of all the fields to write in uniforms.
-    private bytes = 3 * 4;
+    private bytes = 4 + 4 + 4;
     // Buffer for copy from Javascript.
     private mappedBuffer: GPUBuffer;
     // When mapping of the buffer to copy uniforms has been requested, this is
@@ -36,7 +36,7 @@ class Uniforms {
         const d = new DataView(this.mappedBuffer.getMappedRange());
         d.setUint32(0, this.sizeX, true);
         d.setUint32(4, this.sizeY, true);
-        d.setUint32(8, this.elapsedMs, true);
+        d.setFloat32(8, this.elapsedMs, true);
         this.mappedBuffer.unmap();
 
         commandEncoder.copyBufferToBuffer(
@@ -156,7 +156,7 @@ export class AppMain extends LitElement {
               [[block]] struct Uniforms {
                   sizex: u32;
                   sizey: u32;
-                  elapsedMs: u32;
+                  elapsedMs: f32;
               };
               [[block]] struct Matrix {
                 values: array<u32>;
@@ -179,7 +179,7 @@ export class AppMain extends LitElement {
                 // v.r = 1.0;
                 // v.g = 0.5;
                 // v.b = 0.1;
-                v.r = clamp(f32(uniforms.elapsedMs) / 1000.0 / 5.0, 0.0, 1.0);
+                v.r = clamp(uniforms.elapsedMs / 1000.0 / 5.0, 0.0, 1.0);
                 v.a = 1.0;
                 result.values[idx] = pack4x8unorm(v);
               }
