@@ -8,10 +8,16 @@ class Uniforms {
     sizeY = 200;
     elapsed = 0;
 
-    readonly storageBuffer: GPUBuffer;
+    // Buffer for access from shaders.
+    readonly buffer: GPUBuffer;
 
+    // Total size of all the fields to write in uniforms.
     private bytes = 3 * 4;
+    // Buffer for copy from Javascript.
     private mappedBuffer: GPUBuffer;
+    // When mapping of the buffer to copy uniforms has been requested, this is
+    // what to wait on.
+    private mapPromise?: Promise<undefined>;
 
     constructor(device: GPUDevice) {
         this.mappedBuffer = device.createBuffer({
@@ -19,13 +25,14 @@ class Uniforms {
             size: this.bytes * Uint32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
         });
-        this.storageBuffer = device.createBuffer({
+        this.buffer = device.createBuffer({
             size: this.bytes,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
     }
 
-    copy(commandEncoder: GPUCommandEncoder) {
+    async copyAsync(commandEncoder: GPUCommandEncoder) {
+        if (this.mapPromise) { await this.mapPromise };
         const d = new DataView(this.mappedBuffer.getMappedRange());
         d.setUint32(0, this.sizeX, true);
         d.setUint32(4, this.sizeY, true);
@@ -34,11 +41,19 @@ class Uniforms {
 
         commandEncoder.copyBufferToBuffer(
             this.mappedBuffer, 0,
-            this.storageBuffer, 0,
+            this.buffer, 0,
             this.bytes,
         );
+    }
 
-        // this.mappedBuffer.mapAsync(GPUMapMode.WRITE);
+    startMap() {
+        this.mapPromise = this.mappedBuffer.mapAsync(GPUMapMode.WRITE);
+    }
+
+    async waitMap() {
+        if (this.mapPromise) {
+            await this.mapPromise;
+        }
     }
 }
 
@@ -77,7 +92,6 @@ export class AppMain extends LitElement {
     }
 
     canvas: HTMLCanvasElement;
-    uniforms?: Uniforms;
 
     constructor() {
         super();
@@ -86,10 +100,19 @@ export class AppMain extends LitElement {
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
-        this.doIt();
+        this.start();
     }
 
-    async doIt() {
+    uniforms?: Uniforms;
+    device?: GPUDevice;
+    srcBuffer?: GPUBuffer;
+    dstBuffer?: GPUBuffer;
+    outputBuffer?: GPUBuffer;
+    bindGroup?: GPUBindGroup;
+    shaderModule?: GPUShaderModule;
+    computePipeline?: GPUComputePipeline;
+
+    async start() {
         const sizeX = this.canvas.width;
         const sizeY = this.canvas.height;
 
@@ -97,19 +120,19 @@ export class AppMain extends LitElement {
 
         const adapter = await navigator.gpu.requestAdapter();
         if (!adapter) { throw "no webgpu"; }
-        const device = await adapter.requestDevice();
+        this.device = await adapter.requestDevice();
 
-        this.uniforms = new Uniforms(device);
+        this.uniforms = new Uniforms(this.device);
         this.uniforms.sizeX = sizeX;
         this.uniforms.sizeY = sizeY;
 
-        // Buffer for input data.
-        const srcBuffer = device.createBuffer({
+        // Initial data.
+        this.srcBuffer = this.device.createBuffer({
             mappedAtCreation: true,
             size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         });
-        const arrayBuffer = srcBuffer.getMappedRange();
+        const arrayBuffer = this.srcBuffer.getMappedRange();
         const a = new Uint8Array(arrayBuffer);
         for (let y = 0; y < sizeX; y++) {
             for (let x = 0; x < sizeX; x++) {
@@ -119,45 +142,15 @@ export class AppMain extends LitElement {
                 a[4 * (x + y * sizeX) + 3] = 255;
             }
         }
-        srcBuffer.unmap();
+        this.srcBuffer.unmap();
 
         // Buffer for shader to write to.
-        const dstBuffer = device.createBuffer({
+        this.dstBuffer = this.device.createBuffer({
             size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         });
 
-        const bindGroupLayout = device.createBindGroupLayout({
-            entries: [{
-                binding: 0,
-                visibility: GPUShaderStage.COMPUTE,
-                buffer: { type: "read-only-storage" }
-            }, {
-                binding: 1,
-                visibility: GPUShaderStage.COMPUTE,
-                buffer: { type: "read-only-storage" }
-            }, {
-                binding: 2,
-                visibility: GPUShaderStage.COMPUTE,
-                buffer: { type: "storage" }
-            }]
-        });
-
-        const bindGroup = device.createBindGroup({
-            layout: bindGroupLayout,
-            entries: [{
-                binding: 0,
-                resource: { buffer: this.uniforms.storageBuffer, }
-            }, {
-                binding: 1,
-                resource: { buffer: srcBuffer, }
-            }, {
-                binding: 2,
-                resource: { buffer: dstBuffer, }
-            }]
-        });
-
-        const shaderModule = device.createShaderModule({
+        this.shaderModule = this.device.createShaderModule({
             code: `
               [[block]] struct Uniforms {
                   sizex: u32;
@@ -190,44 +183,74 @@ export class AppMain extends LitElement {
             `
         });
 
-        const computePipeline = device.createComputePipeline({
-            layout: device.createPipelineLayout({
-                bindGroupLayouts: [bindGroupLayout]
-            }),
+        this.computePipeline = this.device.createComputePipeline({
             compute: {
-                module: shaderModule,
+                module: this.shaderModule,
                 entryPoint: "main"
             }
         });
 
+        this.bindGroup = this.device.createBindGroup({
+            // layout: this.bindGroupLayout,
+            layout: this.computePipeline.getBindGroupLayout(0 /* index */),
+            entries: [{
+                binding: 0,
+                resource: { buffer: this.uniforms.buffer, }
+            }, {
+                binding: 1,
+                resource: { buffer: this.srcBuffer, }
+            }, {
+                binding: 2,
+                resource: { buffer: this.dstBuffer, }
+            }]
+        });
+
+
         // Get a GPU buffer for reading in an unmapped state.
-        const gpuReadBuffer = device.createBuffer({
+        this.outputBuffer = this.device.createBuffer({
             size: 4 * sizeX * sizeY,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
         });
 
-        const commandEncoder = device.createCommandEncoder();
-        this.uniforms.copy(commandEncoder);
+        this.frame();
+    }
+
+    async frame() {
+        if (!this.device) { throw "oops"; }
+        if (!this.uniforms) { throw "oops"; }
+        if (!this.computePipeline) { throw "oops"; }
+        if (!this.bindGroup) { throw "oops"; }
+        if (!this.dstBuffer) { throw "oops"; }
+        if (!this.outputBuffer) { throw "oops"; }
+
+        const commandEncoder = this.device.createCommandEncoder();
+        await this.uniforms.copyAsync(commandEncoder);
         const passEncoder = commandEncoder.beginComputePass();
-        passEncoder.setPipeline(computePipeline);
-        passEncoder.setBindGroup(0, bindGroup);
-        passEncoder.dispatch(Math.ceil(sizeX / 8), Math.ceil(sizeY / 8));
+        passEncoder.setPipeline(this.computePipeline);
+        passEncoder.setBindGroup(0, this.bindGroup);
+        passEncoder.dispatch(Math.ceil(this.uniforms.sizeX / 8), Math.ceil(this.uniforms.sizeY / 8));
         passEncoder.endPass();
+
         commandEncoder.copyBufferToBuffer(
-            dstBuffer, 0,
-            gpuReadBuffer, 0,
-            4 * sizeX * sizeY,
+            this.dstBuffer, 0,
+            this.outputBuffer, 0,
+            4 * this.uniforms.sizeX * this.uniforms.sizeY,
         );
         const gpuCommands = commandEncoder.finish();
-        device.queue.submit([gpuCommands]);
+        this.device.queue.submit([gpuCommands]);
 
-        await gpuReadBuffer.mapAsync(GPUMapMode.READ);
-        const data = new Uint8ClampedArray(gpuReadBuffer.getMappedRange());
+        await this.outputBuffer.mapAsync(GPUMapMode.READ);
+        const data = new Uint8ClampedArray(this.outputBuffer.getMappedRange());
 
         const ctx = this.canvas.getContext("2d");
         if (!ctx) { throw "no canvas 2d context"; }
         ctx.imageSmoothingEnabled = false;
-        ctx.putImageData(new ImageData(data, sizeX, sizeY), 0, 0);
+        ctx.putImageData(new ImageData(data, this.uniforms.sizeX, this.uniforms.sizeY), 0, 0);
+
+        this.outputBuffer.unmap();
+        this.uniforms.startMap();
+
+        window.requestAnimationFrame(() => this.frame());
     }
 }
 
