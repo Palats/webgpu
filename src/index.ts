@@ -6,7 +6,7 @@ import { customElement, property } from 'lit/decorators.js';
 class Uniforms {
     sizeX = 320;
     sizeY = 200;
-    elapsed = 0;
+    elapsedMs = 0;
 
     // Buffer for access from shaders.
     readonly buffer: GPUBuffer;
@@ -36,7 +36,7 @@ class Uniforms {
         const d = new DataView(this.mappedBuffer.getMappedRange());
         d.setUint32(0, this.sizeX, true);
         d.setUint32(4, this.sizeY, true);
-        d.setUint32(8, this.elapsed, true);
+        d.setUint32(8, this.elapsedMs, true);
         this.mappedBuffer.unmap();
 
         commandEncoder.copyBufferToBuffer(
@@ -111,6 +111,7 @@ export class AppMain extends LitElement {
     bindGroup?: GPUBindGroup;
     shaderModule?: GPUShaderModule;
     computePipeline?: GPUComputePipeline;
+    previousTimestampMs: DOMHighResTimeStamp = 0;
 
     async start() {
         const sizeX = this.canvas.width;
@@ -155,6 +156,7 @@ export class AppMain extends LitElement {
               [[block]] struct Uniforms {
                   sizex: u32;
                   sizey: u32;
+                  elapsedMs: u32;
               };
               [[block]] struct Matrix {
                 values: array<u32>;
@@ -177,6 +179,7 @@ export class AppMain extends LitElement {
                 // v.r = 1.0;
                 // v.g = 0.5;
                 // v.b = 0.1;
+                v.r = clamp(f32(uniforms.elapsedMs) / 1000.0 / 5.0, 0.0, 1.0);
                 v.a = 1.0;
                 result.values[idx] = pack4x8unorm(v);
               }
@@ -212,16 +215,27 @@ export class AppMain extends LitElement {
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
         });
 
-        this.frame();
+        this.queueFrame();
     }
 
-    async frame() {
+    queueFrame() {
+        window.requestAnimationFrame((ts) => this.frame(ts));
+    }
+
+    async frame(timestampMs: DOMHighResTimeStamp) {
         if (!this.device) { throw "oops"; }
         if (!this.uniforms) { throw "oops"; }
         if (!this.computePipeline) { throw "oops"; }
         if (!this.bindGroup) { throw "oops"; }
         if (!this.dstBuffer) { throw "oops"; }
         if (!this.outputBuffer) { throw "oops"; }
+
+        let delta = 0;
+        if (this.previousTimestampMs) {
+            delta = timestampMs - this.previousTimestampMs;
+        }
+        this.previousTimestampMs = timestampMs;
+        this.uniforms.elapsedMs += delta;
 
         const commandEncoder = this.device.createCommandEncoder();
         await this.uniforms.copyAsync(commandEncoder);
@@ -250,7 +264,7 @@ export class AppMain extends LitElement {
         this.outputBuffer.unmap();
         this.uniforms.startMap();
 
-        window.requestAnimationFrame(() => this.frame());
+        this.queueFrame();
     }
 }
 
