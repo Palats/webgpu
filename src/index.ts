@@ -137,6 +137,7 @@ export class AppMain extends LitElement {
     }
 
     previousTimestampMs: DOMHighResTimeStamp = 0;
+    previousStepMs: DOMHighResTimeStamp = 0;
 
     uniforms?: Uniforms;
     device?: GPUDevice;
@@ -247,30 +248,43 @@ export class AppMain extends LitElement {
         if (!this.buffer2) { throw "oops"; }
         if (!this.outputBuffer) { throw "oops"; }
 
-        let delta = 0;
+        let frameDelta = 0;
         if (this.previousTimestampMs) {
-            delta = timestampMs - this.previousTimestampMs;
+            frameDelta = timestampMs - this.previousTimestampMs;
         }
+        this.uniforms.elapsedMs += frameDelta;
+
+        let simulDelta = timestampMs - this.previousStepMs;
+        const runStep = simulDelta > (1000 / 15);
+
         this.previousTimestampMs = timestampMs;
-        this.uniforms.elapsedMs += delta;
+        if (runStep) {
+            this.previousStepMs = timestampMs;
+        }
 
         const commandEncoder = this.device.createCommandEncoder();
         await this.uniforms.copyAsync(commandEncoder);
-        const passEncoder = commandEncoder.beginComputePass();
-        passEncoder.setPipeline(this.computePipeline);
 
-        const bindGroup = this.isForward ? this.bindGroup1 : this.bindGroup2;
-        const dstBuffer = this.isForward ? this.buffer2 : this.buffer1;
+        let dstBuffer = this.isForward ? this.buffer1 : this.buffer2;
+        if (runStep) {
+            const bindGroup = this.isForward ? this.bindGroup1 : this.bindGroup2;
+            dstBuffer = this.isForward ? this.buffer2 : this.buffer1;
 
-        passEncoder.setBindGroup(0, bindGroup);
-        passEncoder.dispatch(Math.ceil(this.uniforms.sizeX / 8), Math.ceil(this.uniforms.sizeY / 8));
-        passEncoder.endPass();
+            const passEncoder = commandEncoder.beginComputePass();
+            passEncoder.setPipeline(this.computePipeline);
+            passEncoder.setBindGroup(0, bindGroup);
+            passEncoder.dispatch(Math.ceil(this.uniforms.sizeX / 8), Math.ceil(this.uniforms.sizeY / 8));
+            passEncoder.endPass();
+
+            this.isForward = !this.isForward;
+        }
 
         commandEncoder.copyBufferToBuffer(
             dstBuffer, 0,
             this.outputBuffer, 0,
             4 * this.uniforms.sizeX * this.uniforms.sizeY,
         );
+
         const gpuCommands = commandEncoder.finish();
         this.device.queue.submit([gpuCommands]);
 
@@ -284,7 +298,6 @@ export class AppMain extends LitElement {
 
         this.outputBuffer.unmap();
         this.uniforms.startMap();
-        this.isForward = !this.isForward;
 
         this.queueFrame();
     }
