@@ -11,6 +11,7 @@ interface Demo {
     init: (a: ArrayBuffer) => void;
 }
 
+// Just fiddling with red component a bit.
 const testDemo = {
     fps: 15,
     sizeX: 320,
@@ -61,6 +62,63 @@ const testDemo = {
         }
     `,
 }
+
+// Falling pixels
+const test2Demo = {
+    fps: 4,
+    sizeX: 320,
+    sizeY: 200,
+    init: (data: ArrayBuffer) => {
+        const sizeX = 320;
+        const sizeY = 200;
+        const a = new Uint8Array(data);
+        for (let y = 0; y < sizeY; y++) {
+            for (let x = 0; x < sizeX; x++) {
+                a[4 * (x + y * sizeX) + 0] = Math.random() * 255;
+                a[4 * (x + y * sizeX) + 1] = Math.random() * 255;
+                a[4 * (x + y * sizeX) + 2] = Math.random() * 255;
+                a[4 * (x + y * sizeX) + 3] = 255;
+            }
+        }
+    },
+    code: `
+        [[block]] struct Uniforms {
+            sizex: u32;
+            sizey: u32;
+            elapsedMs: f32;
+        };
+        [[block]] struct Frame {
+            values: array<u32>;
+        };
+
+        [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+
+        [[stage(compute), workgroup_size(8, 8)]]
+        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+            // Guard against out-of-bounds work group sizes
+            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+                return;
+            }
+
+            let idx = global_id.x + global_id.y * uniforms.sizex;
+
+            var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+            if (global_id.y > 0u) {
+                let previdx = global_id.x + (global_id.y - 1u) * uniforms.sizex;
+                v = unpack4x8unorm(srcFrame.values[previdx]);
+                let v2 = unpack4x8unorm(srcFrame.values[idx]);
+                v.g = v2.g;
+                v.b = v2.b;
+            }
+
+            dstFrame.values[idx] = pack4x8unorm(v);
+        }
+    `,
+}
+
+const currentDemo = test2Demo;
 
 class Uniforms {
     sizeX = 320;
@@ -155,7 +213,7 @@ export class AppMain extends LitElement {
 
     constructor() {
         super();
-        this.demo = testDemo;
+        this.demo = currentDemo;
         this.canvas = document.createElement("canvas") as HTMLCanvasElement;
     }
 
