@@ -3,38 +3,64 @@
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-const shaderCode = `
-    [[block]] struct Uniforms {
-        sizex: u32;
-        sizey: u32;
-        elapsedMs: f32;
-    };
-    [[block]] struct Frame {
-        values: array<u32>;
-    };
+interface Demo {
+    fps: number;
+    sizeX: number;
+    sizeY: number;
+    code: string;
+    init: (a: ArrayBuffer) => void;
+}
 
-    [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
-    [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-    [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
-
-    [[stage(compute), workgroup_size(8, 8)]]
-    fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-        // Guard against out-of-bounds work group sizes
-        if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
-            return;
+const testDemo = {
+    fps: 15,
+    sizeX: 320,
+    sizeY: 200,
+    init: (data: ArrayBuffer) => {
+        const sizeX = 320;
+        const sizeY = 200;
+        const a = new Uint8Array(data);
+        for (let y = 0; y < sizeY; y++) {
+            for (let x = 0; x < sizeX; x++) {
+                a[4 * (x + y * sizeX) + 0] = Math.floor(x * 256 / sizeX);
+                a[4 * (x + y * sizeX) + 1] = Math.floor(y * 256 / sizeX);
+                a[4 * (x + y * sizeX) + 2] = 0;
+                a[4 * (x + y * sizeX) + 3] = 255;
+            }
         }
+    },
+    code: `
+        [[block]] struct Uniforms {
+            sizex: u32;
+            sizey: u32;
+            elapsedMs: f32;
+        };
+        [[block]] struct Frame {
+            values: array<u32>;
+        };
 
-        let idx = global_id.y + global_id.x * uniforms.sizey;
+        [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
 
-        var v = unpack4x8unorm(srcFrame.values[idx]);
-        // v.r = 1.0;
-        // v.g = 0.5;
-        // v.b = 0.1;
-        v.r = clamp(uniforms.elapsedMs / 1000.0 / 5.0, 0.0, 1.0);
-        v.a = 1.0;
-        dstFrame.values[idx] = pack4x8unorm(v);
-    }
-`
+        [[stage(compute), workgroup_size(8, 8)]]
+        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+            // Guard against out-of-bounds work group sizes
+            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+                return;
+            }
+
+            let idx = global_id.y + global_id.x * uniforms.sizey;
+
+            var v = unpack4x8unorm(srcFrame.values[idx]);
+            // v.r = 1.0;
+            // v.g = 0.5;
+            // v.b = 0.1;
+            v.r = clamp(uniforms.elapsedMs / 1000.0 / 5.0, 0.0, 1.0);
+            v.a = 1.0;
+            dstFrame.values[idx] = pack4x8unorm(v);
+        }
+    `,
+}
 
 class Uniforms {
     sizeX = 320;
@@ -125,9 +151,11 @@ export class AppMain extends LitElement {
     }
 
     canvas: HTMLCanvasElement;
+    demo: Demo;
 
     constructor() {
         super();
+        this.demo = testDemo;
         this.canvas = document.createElement("canvas") as HTMLCanvasElement;
     }
 
@@ -157,12 +185,10 @@ export class AppMain extends LitElement {
         this.device = await adapter.requestDevice();
 
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.sizeX = 320;
-        this.uniforms.sizeY = 200;
+        this.uniforms.sizeX = this.demo.sizeX;
+        this.uniforms.sizeY = this.demo.sizeY;
 
-        console.log("running", this.uniforms.sizeX, this.uniforms.sizeY);
-
-        this.shaderModule = this.device.createShaderModule({ code: shaderCode });
+        this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
         this.computePipeline = this.device.createComputePipeline({
             compute: {
@@ -183,16 +209,7 @@ export class AppMain extends LitElement {
             size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
-        const arrayBuffer = this.buffer1.getMappedRange();
-        const a = new Uint8Array(arrayBuffer);
-        for (let y = 0; y < this.uniforms.sizeX; y++) {
-            for (let x = 0; x < this.uniforms.sizeX; x++) {
-                a[4 * (x + y * this.uniforms.sizeX) + 0] = Math.floor(x * 256 / this.uniforms.sizeX);
-                a[4 * (x + y * this.uniforms.sizeX) + 1] = Math.floor(y * 256 / this.uniforms.sizeX);
-                a[4 * (x + y * this.uniforms.sizeX) + 2] = 0;
-                a[4 * (x + y * this.uniforms.sizeX) + 3] = 255;
-            }
-        }
+        this.demo.init(this.buffer1.getMappedRange());
         this.buffer1.unmap();
 
         // Buffer for shader to write to.
@@ -202,7 +219,6 @@ export class AppMain extends LitElement {
         });
 
         this.bindGroup1 = this.device.createBindGroup({
-            // layout: this.bindGroupLayout,
             layout: this.computePipeline.getBindGroupLayout(0 /* index */),
             entries: [{
                 binding: 0,
@@ -217,7 +233,6 @@ export class AppMain extends LitElement {
         });
 
         this.bindGroup2 = this.device.createBindGroup({
-            // layout: this.bindGroupLayout,
             layout: this.computePipeline.getBindGroupLayout(0 /* index */),
             entries: [{
                 binding: 0,
@@ -255,7 +270,7 @@ export class AppMain extends LitElement {
         this.uniforms.elapsedMs += frameDelta;
 
         let simulDelta = timestampMs - this.previousStepMs;
-        const runStep = simulDelta > (1000 / 15);
+        const runStep = simulDelta > (1000 / this.demo.fps);
 
         this.previousTimestampMs = timestampMs;
         if (runStep) {
