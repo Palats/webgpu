@@ -3,6 +3,39 @@
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
+const shaderCode = `
+    [[block]] struct Uniforms {
+        sizex: u32;
+        sizey: u32;
+        elapsedMs: f32;
+    };
+    [[block]] struct Frame {
+        values: array<u32>;
+    };
+
+    [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+    [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+    [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+
+    [[stage(compute), workgroup_size(8, 8)]]
+    fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+        // Guard against out-of-bounds work group sizes
+        if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+            return;
+        }
+
+        let idx = global_id.y + global_id.x * uniforms.sizey;
+
+        var v = unpack4x8unorm(srcFrame.values[idx]);
+        // v.r = 1.0;
+        // v.g = 0.5;
+        // v.b = 0.1;
+        v.r = clamp(uniforms.elapsedMs / 1000.0 / 5.0, 0.0, 1.0);
+        v.a = 1.0;
+        dstFrame.values[idx] = pack4x8unorm(v);
+    }
+`
+
 class Uniforms {
     sizeX = 320;
     sizeY = 200;
@@ -103,88 +136,32 @@ export class AppMain extends LitElement {
         this.start();
     }
 
-    uniforms?: Uniforms;
-    device?: GPUDevice;
-    srcBuffer?: GPUBuffer;
-    dstBuffer?: GPUBuffer;
-    outputBuffer?: GPUBuffer;
-    bindGroup?: GPUBindGroup;
-    shaderModule?: GPUShaderModule;
-    computePipeline?: GPUComputePipeline;
     previousTimestampMs: DOMHighResTimeStamp = 0;
 
+    uniforms?: Uniforms;
+    device?: GPUDevice;
+    outputBuffer?: GPUBuffer;
+    shaderModule?: GPUShaderModule;
+    computePipeline?: GPUComputePipeline;
+
+    buffer1?: GPUBuffer;
+    buffer2?: GPUBuffer;
+    bindGroup1?: GPUBindGroup;   // For 1 -> 2
+    bindGroup2?: GPUBindGroup;   // For 2 -> 1
+    isForward = true;  // if false, goes 2->1
+
     async start() {
-        const sizeX = this.canvas.width;
-        const sizeY = this.canvas.height;
-
-        console.log("running", sizeX, sizeY);
-
         const adapter = await navigator.gpu.requestAdapter();
         if (!adapter) { throw "no webgpu"; }
         this.device = await adapter.requestDevice();
 
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.sizeX = sizeX;
-        this.uniforms.sizeY = sizeY;
+        this.uniforms.sizeX = 320;
+        this.uniforms.sizeY = 200;
 
-        // Initial data.
-        this.srcBuffer = this.device.createBuffer({
-            mappedAtCreation: true,
-            size: 4 * sizeX * sizeY,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        });
-        const arrayBuffer = this.srcBuffer.getMappedRange();
-        const a = new Uint8Array(arrayBuffer);
-        for (let y = 0; y < sizeX; y++) {
-            for (let x = 0; x < sizeX; x++) {
-                a[4 * (x + y * sizeX) + 0] = Math.floor(x * 256 / sizeX);
-                a[4 * (x + y * sizeX) + 1] = Math.floor(y * 256 / sizeX);
-                a[4 * (x + y * sizeX) + 2] = 0;
-                a[4 * (x + y * sizeX) + 3] = 255;
-            }
-        }
-        this.srcBuffer.unmap();
+        console.log("running", this.uniforms.sizeX, this.uniforms.sizeY);
 
-        // Buffer for shader to write to.
-        this.dstBuffer = this.device.createBuffer({
-            size: 4 * sizeX * sizeY,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        });
-
-        this.shaderModule = this.device.createShaderModule({
-            code: `
-              [[block]] struct Uniforms {
-                  sizex: u32;
-                  sizey: u32;
-                  elapsedMs: f32;
-              };
-              [[block]] struct Matrix {
-                values: array<u32>;
-              };
-
-              [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
-              [[group(0), binding(1)]] var<storage, read> inputMatrix : Matrix;
-              [[group(0), binding(2)]] var<storage, write> result : Matrix;
-
-              [[stage(compute), workgroup_size(8, 8)]]
-              fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-                // Guard against out-of-bounds work group sizes
-                if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
-                  return;
-                }
-
-                let idx = global_id.y + global_id.x * uniforms.sizey;
-
-                var v = unpack4x8unorm(inputMatrix.values[idx]);
-                // v.r = 1.0;
-                // v.g = 0.5;
-                // v.b = 0.1;
-                v.r = clamp(uniforms.elapsedMs / 1000.0 / 5.0, 0.0, 1.0);
-                v.a = 1.0;
-                result.values[idx] = pack4x8unorm(v);
-              }
-            `
-        });
+        this.shaderModule = this.device.createShaderModule({ code: shaderCode });
 
         this.computePipeline = this.device.createComputePipeline({
             compute: {
@@ -193,7 +170,37 @@ export class AppMain extends LitElement {
             }
         });
 
-        this.bindGroup = this.device.createBindGroup({
+        // Get a GPU buffer for reading in an unmapped state.
+        this.outputBuffer = this.device.createBuffer({
+            size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+
+        // Initial data.
+        this.buffer1 = this.device.createBuffer({
+            mappedAtCreation: true,
+            size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+        });
+        const arrayBuffer = this.buffer1.getMappedRange();
+        const a = new Uint8Array(arrayBuffer);
+        for (let y = 0; y < this.uniforms.sizeX; y++) {
+            for (let x = 0; x < this.uniforms.sizeX; x++) {
+                a[4 * (x + y * this.uniforms.sizeX) + 0] = Math.floor(x * 256 / this.uniforms.sizeX);
+                a[4 * (x + y * this.uniforms.sizeX) + 1] = Math.floor(y * 256 / this.uniforms.sizeX);
+                a[4 * (x + y * this.uniforms.sizeX) + 2] = 0;
+                a[4 * (x + y * this.uniforms.sizeX) + 3] = 255;
+            }
+        }
+        this.buffer1.unmap();
+
+        // Buffer for shader to write to.
+        this.buffer2 = this.device.createBuffer({
+            size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+        });
+
+        this.bindGroup1 = this.device.createBindGroup({
             // layout: this.bindGroupLayout,
             layout: this.computePipeline.getBindGroupLayout(0 /* index */),
             entries: [{
@@ -201,18 +208,26 @@ export class AppMain extends LitElement {
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.srcBuffer, }
+                resource: { buffer: this.buffer1, }
             }, {
                 binding: 2,
-                resource: { buffer: this.dstBuffer, }
+                resource: { buffer: this.buffer2, }
             }]
         });
 
-
-        // Get a GPU buffer for reading in an unmapped state.
-        this.outputBuffer = this.device.createBuffer({
-            size: 4 * sizeX * sizeY,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        this.bindGroup2 = this.device.createBindGroup({
+            // layout: this.bindGroupLayout,
+            layout: this.computePipeline.getBindGroupLayout(0 /* index */),
+            entries: [{
+                binding: 0,
+                resource: { buffer: this.uniforms.buffer, }
+            }, {
+                binding: 1,
+                resource: { buffer: this.buffer2, }
+            }, {
+                binding: 2,
+                resource: { buffer: this.buffer1, }
+            }]
         });
 
         this.queueFrame();
@@ -226,8 +241,10 @@ export class AppMain extends LitElement {
         if (!this.device) { throw "oops"; }
         if (!this.uniforms) { throw "oops"; }
         if (!this.computePipeline) { throw "oops"; }
-        if (!this.bindGroup) { throw "oops"; }
-        if (!this.dstBuffer) { throw "oops"; }
+        if (!this.bindGroup1) { throw "oops"; }
+        if (!this.bindGroup2) { throw "oops"; }
+        if (!this.buffer1) { throw "oops"; }
+        if (!this.buffer2) { throw "oops"; }
         if (!this.outputBuffer) { throw "oops"; }
 
         let delta = 0;
@@ -241,12 +258,16 @@ export class AppMain extends LitElement {
         await this.uniforms.copyAsync(commandEncoder);
         const passEncoder = commandEncoder.beginComputePass();
         passEncoder.setPipeline(this.computePipeline);
-        passEncoder.setBindGroup(0, this.bindGroup);
+
+        const bindGroup = this.isForward ? this.bindGroup1 : this.bindGroup2;
+        const dstBuffer = this.isForward ? this.buffer2 : this.buffer1;
+
+        passEncoder.setBindGroup(0, bindGroup);
         passEncoder.dispatch(Math.ceil(this.uniforms.sizeX / 8), Math.ceil(this.uniforms.sizeY / 8));
         passEncoder.endPass();
 
         commandEncoder.copyBufferToBuffer(
-            this.dstBuffer, 0,
+            dstBuffer, 0,
             this.outputBuffer, 0,
             4 * this.uniforms.sizeX * this.uniforms.sizeY,
         );
@@ -263,6 +284,7 @@ export class AppMain extends LitElement {
 
         this.outputBuffer.unmap();
         this.uniforms.startMap();
+        this.isForward = !this.isForward;
 
         this.queueFrame();
     }
