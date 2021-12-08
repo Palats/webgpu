@@ -120,12 +120,12 @@ const test2Demo = {
 
 // A basic game of life.
 const conwayDemo = {
-    fps: 4,
-    sizeX: 320,
-    sizeY: 200,
+    fps: 60,
+    sizeX: 800,
+    sizeY: 600,
     init: (data: ArrayBuffer) => {
-        const sizeX = 320;
-        const sizeY = 200;
+        const sizeX = 800;
+        const sizeY = 600;
         const a = new Uint8Array(data);
         for (let y = 0; y < sizeY; y++) {
             for (let x = 0; x < sizeX; x++) {
@@ -274,6 +274,11 @@ export class AppMain extends LitElement {
             box-sizing: border-box;
         }
 
+        .nowebgpu {
+            background-color: white;
+            padding-left: 1em;
+        }
+
         #display {
             grid-column-start: 1;
             grid-column-end: 2;
@@ -289,6 +294,20 @@ export class AppMain extends LitElement {
     `;
 
     render() {
+        if (this.noWebGPU) {
+            return html`
+            <div class="nowebgpu">
+                <p>
+                Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                </p>
+                WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration.
+                On Linux and probably Windows, this is just a matter of running Chrome with extra flags:
+                <pre>$ google-chrome --enable-unsafe-webgpu --enable-features=Vulkan</pre>
+
+                <p>Issue: ${this.noWebGPU}</p>
+            </div>
+            `
+        }
         return html`
             <div id="display">${this.canvas}</div>
         `;
@@ -296,6 +315,9 @@ export class AppMain extends LitElement {
 
     canvas: HTMLCanvasElement;
     demo: Demo;
+
+    @property()
+    noWebGPU?: string;
 
     constructor() {
         super();
@@ -305,6 +327,9 @@ export class AppMain extends LitElement {
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
+        /*this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;*/
+
         this.start();
     }
 
@@ -324,13 +349,23 @@ export class AppMain extends LitElement {
     isForward = true;  // if false, goes 2->1
 
     async start() {
+        if (!navigator.gpu) {
+            this.noWebGPU = "no webgpu extension";
+            return;
+        }
         const adapter = await navigator.gpu.requestAdapter();
-        if (!adapter) { throw "no webgpu"; }
+        if (!adapter) {
+            this.noWebGPU = "no webgpu adapter";
+            return;
+        }
         this.device = await adapter.requestDevice();
 
         this.uniforms = new Uniforms(this.device);
         this.uniforms.sizeX = this.demo.sizeX;
         this.uniforms.sizeY = this.demo.sizeY;
+
+        this.canvas.width = this.uniforms.sizeX;
+        this.canvas.height = this.uniforms.sizeY;
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
