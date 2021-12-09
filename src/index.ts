@@ -5,10 +5,10 @@ import { customElement, property } from 'lit/decorators.js';
 
 interface Demo {
     fps: number;
-    sizeX: number;
-    sizeY: number;
+    sizeX?: number;
+    sizeY?: number;
     code: string;
-    init: (a: ArrayBuffer) => void;
+    init: (u: Uniforms, a: ArrayBuffer) => void;
 }
 
 // Just fiddling with red component a bit.
@@ -16,16 +16,14 @@ const testDemo = {
     fps: 15,
     sizeX: 320,
     sizeY: 200,
-    init: (data: ArrayBuffer) => {
-        const sizeX = 320;
-        const sizeY = 200;
+    init: (uniforms: Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < sizeY; y++) {
-            for (let x = 0; x < sizeX; x++) {
-                a[4 * (x + y * sizeX) + 0] = Math.floor(x * 256 / sizeX);
-                a[4 * (x + y * sizeX) + 1] = Math.floor(y * 256 / sizeX);
-                a[4 * (x + y * sizeX) + 2] = 0;
-                a[4 * (x + y * sizeX) + 3] = 255;
+        for (let y = 0; y < uniforms.sizeY; y++) {
+            for (let x = 0; x < uniforms.sizeX; x++) {
+                a[4 * (x + y * uniforms.sizeX) + 0] = Math.floor(x * 256 / uniforms.sizeX);
+                a[4 * (x + y * uniforms.sizeX) + 1] = Math.floor(y * 256 / uniforms.sizeX);
+                a[4 * (x + y * uniforms.sizeX) + 2] = 0;
+                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
             }
         }
     },
@@ -68,16 +66,14 @@ const test2Demo = {
     fps: 4,
     sizeX: 320,
     sizeY: 200,
-    init: (data: ArrayBuffer) => {
-        const sizeX = 320;
-        const sizeY = 200;
+    init: (uniforms: Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < sizeY; y++) {
-            for (let x = 0; x < sizeX; x++) {
-                a[4 * (x + y * sizeX) + 0] = Math.random() * 255;
-                a[4 * (x + y * sizeX) + 1] = Math.random() * 255;
-                a[4 * (x + y * sizeX) + 2] = Math.random() * 255;
-                a[4 * (x + y * sizeX) + 3] = 255;
+        for (let y = 0; y < uniforms.sizeY; y++) {
+            for (let x = 0; x < uniforms.sizeX; x++) {
+                a[4 * (x + y * uniforms.sizeX) + 0] = Math.random() * 255;
+                a[4 * (x + y * uniforms.sizeX) + 1] = Math.random() * 255;
+                a[4 * (x + y * uniforms.sizeX) + 2] = Math.random() * 255;
+                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
             }
         }
     },
@@ -121,20 +117,16 @@ const test2Demo = {
 // A basic game of life.
 const conwayDemo = {
     fps: 60,
-    sizeX: 800,
-    sizeY: 600,
-    init: (data: ArrayBuffer) => {
-        const sizeX = 800;
-        const sizeY = 600;
+    init: (uniforms: Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < sizeY; y++) {
-            for (let x = 0; x < sizeX; x++) {
+        for (let y = 0; y < uniforms.sizeY; y++) {
+            for (let x = 0; x < uniforms.sizeX; x++) {
                 const hasLife = Math.random() > 0.8;
                 const v = hasLife ? 255 : 0;
-                a[4 * (x + y * sizeX) + 0] = v;
-                a[4 * (x + y * sizeX) + 1] = v;
-                a[4 * (x + y * sizeX) + 2] = v;
-                a[4 * (x + y * sizeX) + 3] = 255;
+                a[4 * (x + y * uniforms.sizeX) + 0] = v;
+                a[4 * (x + y * uniforms.sizeX) + 1] = v;
+                a[4 * (x + y * uniforms.sizeX) + 2] = v;
+                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
             }
         }
     },
@@ -381,8 +373,8 @@ export class AppMain extends LitElement {
         this.device = await adapter.requestDevice();
 
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.sizeX = this.demo.sizeX;
-        this.uniforms.sizeY = this.demo.sizeY;
+        this.uniforms.sizeX = this.demo.sizeX ?? window.innerWidth;
+        this.uniforms.sizeY = this.demo.sizeY ?? window.innerHeight;
 
         this.canvas.width = this.uniforms.sizeX;
         this.canvas.height = this.uniforms.sizeY;
@@ -408,7 +400,7 @@ export class AppMain extends LitElement {
             size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
-        this.demo.init(this.buffer1.getMappedRange());
+        this.demo.init(this.uniforms, this.buffer1.getMappedRange());
         this.buffer1.unmap();
 
         // Buffer for shader to write to.
