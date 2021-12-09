@@ -303,9 +303,16 @@ export class AppMain extends LitElement {
                 Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
                 </p>
                 WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration.
-                On Linux and probably Windows, this is just a matter of running Chrome with extra flags:
-                <pre>$ google-chrome --enable-unsafe-webgpu --enable-features=Vulkan</pre>
 
+                <ul>
+                    <li>For Chrome on Linux, run Chrome with the following extra flags - character case is important:
+                        <pre>$ google-chrome --enable-unsafe-webgpu --enable-features=Vulkan</pre>
+                    </li>
+                    <li>
+                        For Firefox, as of Dec. 2021, you need to run the nightly. Go in "about:config" and activate feature "dom.webgpu.enabled".
+                        You might need to restart Firefox.
+                    </li>
+                </ul>
                 <p>Issue: ${this.noWebGPU}</p>
             </div>
             `
@@ -353,7 +360,17 @@ export class AppMain extends LitElement {
             this.noWebGPU = "no webgpu extension";
             return;
         }
-        const adapter = await navigator.gpu.requestAdapter();
+
+        let adapter: GPUAdapter | null = null;
+        try {
+            // Firefox can have navigator.gpu but still throw when
+            // calling requestAdapter.
+            adapter = await navigator.gpu.requestAdapter();
+        } catch (e) {
+            console.error("navigator.gpu.requestAdapter failed:", e);
+            this.noWebGPU = "requesting adapter failed";
+            return;
+        }
         if (!adapter) {
             this.noWebGPU = "no webgpu adapter";
             return;
