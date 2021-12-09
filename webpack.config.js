@@ -37,7 +37,9 @@ module.exports = {
     plugins: [
         new MiniCssExtractPlugin(),
         // No need to write a index.html
-        new HtmlWebpackPlugin(),
+        new HtmlWebpackPlugin({
+            title: "WebGPU",
+        }),
         // Do not accumulate files in ./dist
         new CleanWebpackPlugin(),
     ],

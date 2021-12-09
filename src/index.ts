@@ -308,6 +308,9 @@ export class AppMain extends LitElement {
                     <li>For Chrome on Linux, run Chrome with the following extra flags - character case is important:
                         <pre>$ google-chrome --enable-unsafe-webgpu --enable-features=Vulkan</pre>
                     </li>
+                    <li>For Chrome on Windows, run Chrome with the following extra flag:
+                        <pre>chrome.exe --enable-unsafe-webgpu</pre>
+                    </li>
                     <li>
                         For Firefox, as of Dec. 2021, you need to run the nightly. Go in "about:config" and activate feature "dom.webgpu.enabled".
                         You might need to restart Firefox.
