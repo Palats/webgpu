@@ -284,6 +284,8 @@ export class AppMain extends LitElement {
             grid-column-end: 2;
             grid-row-start: 1;
             grid-row-end: 2;
+            /* Avoid vertical scroll on canvas. */
+            min-height: 0;
         }
 
         #display canvas {
@@ -308,9 +310,7 @@ export class AppMain extends LitElement {
             </div>
             `
         }
-        return html`
-            <div id="display">${this.canvas}</div>
-        `;
+        return html`<div id="display">${this.canvas}</div>`;
     }
 
     canvas: HTMLCanvasElement;
