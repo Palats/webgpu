@@ -140,7 +140,7 @@ const conwayDemo = {
             values: array<u32>;
         };
 
-        [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
         [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
         [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
 
@@ -222,7 +222,7 @@ class Uniforms {
         });
         this.buffer = device.createBuffer({
             size: this.bytes,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
     }
 
