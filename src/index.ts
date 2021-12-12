@@ -117,6 +117,8 @@ const test2Demo = {
 // A basic game of life.
 const conwayDemo = {
     fps: 60,
+    sizeX: 816,
+    sizeY: 640,
     init: (uniforms: Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
         for (let y = 0; y < uniforms.sizeY; y++) {
@@ -355,6 +357,9 @@ export class AppMain extends LitElement {
     buffer2?: GPUBuffer;
     bindGroup1?: GPUBindGroup;   // For 1 -> 2
     bindGroup2?: GPUBindGroup;   // For 2 -> 1
+    bindGroupRender1?: GPUBindGroup;
+    bindGroupRender2?: GPUBindGroup;
+
     isForward = true;  // if false, goes 2->1
 
     async initWebGPU() {
@@ -392,6 +397,7 @@ export class AppMain extends LitElement {
         this.uniforms = new Uniforms(this.device);
         this.uniforms.sizeX = this.demo.sizeX ?? this.canvas.width;
         this.uniforms.sizeY = this.demo.sizeY ?? this.canvas.height;
+        console.log("uniforms size", this.uniforms.sizeX, this.uniforms.sizeY);
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
@@ -468,7 +474,39 @@ export class AppMain extends LitElement {
             },
         });
 
+        const bindGroupLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [
+                this.device.createBindGroupLayout({
+                    entries: [
+                        {
+                            binding: 0,
+                            visibility: GPUShaderStage.FRAGMENT,
+                            buffer: {
+                                type: "uniform",
+                            }
+                        },
+                        {
+                            binding: 1,
+                            visibility: GPUShaderStage.FRAGMENT,
+                            buffer: {
+                                type: "read-only-storage",
+                            }
+                        },
+                        {
+                            binding: 2,
+                            visibility: GPUShaderStage.FRAGMENT,
+                            buffer: {
+                                type: "read-only-storage",
+                            }
+                        },
+                    ]
+                },
+                ),
+            ]
+        });
+
         this.renderPipeline = this.device.createRenderPipeline({
+            layout: bindGroupLayout,
             vertex: {
                 module: this.device.createShaderModule({
                     code: `
@@ -479,21 +517,21 @@ export class AppMain extends LitElement {
                         [[stage(vertex)]]
                         fn main([[builtin(vertex_index)]] idx : u32) -> VSOut {
                             var data = array<vec2<f32>, 6>(
-                                vec2<f32>(-0.5, -0.5),
-                                vec2<f32>(0.5, -0.5),
-                                vec2<f32>(0.5, 0.5),
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(1.0, -1.0),
+                                vec2<f32>(1.0, 1.0),
 
-                                vec2<f32>(-0.5, -0.5),
-                                vec2<f32>(-0.5, 0.5),
-                                vec2<f32>(0.5, 0.5),
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(-1.0, 1.0),
+                                vec2<f32>(1.0, 1.0),
                             );
 
                             let pos = data[idx];
 
                             var out : VSOut;
                             out.pos = vec4<f32>(pos, 0.0, 1.0);
-                            out.coord.x = pos.x + 0.5;
-                            out.coord.y = 0.5 - pos.y;
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (1.0 - pos.y) / 2.0;
 
                             return out;
                         }
@@ -505,9 +543,26 @@ export class AppMain extends LitElement {
             fragment: {
                 module: this.device.createShaderModule({
                     code: `
+                        [[block]] struct Uniforms {
+                            sizex: u32;
+                            sizey: u32;
+                            elapsedMs: f32;
+                        };
+                        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
+
+                        [[block]] struct Frame {
+                            values: array<u32>;
+                        };
+                        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+                        [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
+
                         [[stage(fragment)]]
                         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-                            return vec4<f32>(coord.x, coord.y, 0.0, 1.0);
+                            let x = coord.x * f32(uniforms.sizex);
+                            let y = coord.y * f32(uniforms.sizey);
+                            let idx = u32(y) * uniforms.sizex + u32(x);
+                            let v = unpack4x8unorm(dstFrame.values[idx]);
+                            return vec4<f32>(v.g, v.r, v.b, 1.0);
                         }
                     `,
                 }),
@@ -521,6 +576,33 @@ export class AppMain extends LitElement {
             primitive: {
                 topology: 'triangle-list',
             },
+        });
+
+        this.bindGroupRender1 = this.device.createBindGroup({
+            layout: this.renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                binding: 0,
+                resource: { buffer: this.uniforms.buffer, }
+            }, {
+                binding: 1,
+                resource: { buffer: this.buffer1, }
+            }, {
+                binding: 2,
+                resource: { buffer: this.buffer2, }
+            }]
+        });
+        this.bindGroupRender2 = this.device.createBindGroup({
+            layout: this.renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                binding: 0,
+                resource: { buffer: this.uniforms.buffer, }
+            }, {
+                binding: 1,
+                resource: { buffer: this.buffer2, }
+            }, {
+                binding: 2,
+                resource: { buffer: this.buffer1, }
+            }]
         });
     }
 
@@ -595,8 +677,11 @@ export class AppMain extends LitElement {
                 },
             ],
         };
+
+        const renderBindGroup = this.isForward ? this.bindGroupRender1! : this.bindGroupRender2!;
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(this.renderPipeline);
+        passEncoder.setBindGroup(0, renderBindGroup);
         passEncoder.draw(6, 1, 0, 0);
         passEncoder.endPass();
 
