@@ -117,8 +117,6 @@ const test2Demo = {
 // A basic game of life.
 const conwayDemo = {
     fps: 60,
-    sizeX: 816,
-    sizeY: 640,
     init: (uniforms: Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
         for (let y = 0; y < uniforms.sizeY; y++) {
@@ -395,7 +393,7 @@ export class AppMain extends LitElement {
         }
 
         // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
-        // 460.91.03) do not accept a pixel more than 816x640 somehow - "device
+        // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
         // lost" otherwise.
         const renderWidth = 816;
         const renderHeight = 640;
