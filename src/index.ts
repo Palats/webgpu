@@ -198,6 +198,7 @@ const conwayDemo = {
 
 const currentDemo = conwayDemo;
 
+
 class Uniforms {
     sizeX = 320;
     sizeY = 200;
@@ -226,8 +227,18 @@ class Uniforms {
         });
     }
 
-    async copyAsync(commandEncoder: GPUCommandEncoder) {
-        if (this.mapPromise) { await this.mapPromise };
+    startMap() {
+        this.mapPromise = this.mappedBuffer.mapAsync(GPUMapMode.WRITE);
+    }
+
+    async awaitMap() {
+        if (this.mapPromise) {
+            await this.mapPromise;
+        }
+        this.mapPromise = undefined;
+    }
+
+    copy(commandEncoder: GPUCommandEncoder) {
         const d = new DataView(this.mappedBuffer.getMappedRange());
         d.setUint32(0, this.sizeX, true);
         d.setUint32(4, this.sizeY, true);
@@ -240,22 +251,13 @@ class Uniforms {
             this.bytes,
         );
     }
-
-    startMap() {
-        this.mapPromise = this.mappedBuffer.mapAsync(GPUMapMode.WRITE);
-    }
-
-    async waitMap() {
-        if (this.mapPromise) {
-            await this.mapPromise;
-        }
-    }
 }
 
 @customElement('app-main')
 export class AppMain extends LitElement {
     static styles = css`
-        :host {
+        /* Cover both shadow dom / non shadow dom cases */
+        :host, app-main {
             background-color: #0f0f0f;
             display: grid;
             margin: 0;
@@ -312,10 +314,9 @@ export class AppMain extends LitElement {
             </div>
             `
         }
-        return html`<div id="display">${this.canvas}</div>`;
+        return html`<div id="display"><canvas id="canvas"></canvas></div>`;
     }
 
-    canvas: HTMLCanvasElement;
     demo: Demo;
 
     @property()
@@ -324,25 +325,31 @@ export class AppMain extends LitElement {
     constructor() {
         super();
         this.demo = currentDemo;
-        this.canvas = document.createElement("canvas") as HTMLCanvasElement;
     }
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
-        /*this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;*/
+        this.canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
 
-        this.start();
+        this.initWebGPU().then(() => {
+            if (!this.noWebGPU) {
+                this.queueFrame();
+            }
+        })
     }
 
     previousTimestampMs: DOMHighResTimeStamp = 0;
     previousStepMs: DOMHighResTimeStamp = 0;
 
+    canvas?: HTMLCanvasElement;
     uniforms?: Uniforms;
+    adapter?: GPUAdapter;
     device?: GPUDevice;
     outputBuffer?: GPUBuffer;
     shaderModule?: GPUShaderModule;
     computePipeline?: GPUComputePipeline;
+    renderPipeline?: GPURenderPipeline;
+    context?: GPUCanvasContext;
 
     buffer1?: GPUBuffer;
     buffer2?: GPUBuffer;
@@ -350,7 +357,8 @@ export class AppMain extends LitElement {
     bindGroup2?: GPUBindGroup;   // For 2 -> 1
     isForward = true;  // if false, goes 2->1
 
-    async start() {
+    async initWebGPU() {
+        if (!this.canvas) { throw "oops"; }
         if (!navigator.gpu) {
             this.noWebGPU = "no webgpu extension";
             return;
@@ -370,14 +378,20 @@ export class AppMain extends LitElement {
             this.noWebGPU = "no webgpu adapter";
             return;
         }
-        this.device = await adapter.requestDevice();
+        this.adapter = adapter;
+
+        this.device = await this.adapter.requestDevice();
+        // As of 2021-12-11, Firefox nightly does not support device.lost.
+        if (this.device.lost) {
+            this.device.lost.then((e) => {
+                console.error("device lost", e);
+                this.initWebGPU();
+            });
+        }
 
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.sizeX = this.demo.sizeX ?? window.innerWidth;
-        this.uniforms.sizeY = this.demo.sizeY ?? window.innerHeight;
-
-        this.canvas.width = this.uniforms.sizeX;
-        this.canvas.height = this.uniforms.sizeY;
+        this.uniforms.sizeX = this.demo.sizeX ?? this.canvas.width;
+        this.uniforms.sizeY = this.demo.sizeY ?? this.canvas.height;
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
@@ -410,7 +424,7 @@ export class AppMain extends LitElement {
         });
 
         this.bindGroup1 = this.device.createBindGroup({
-            layout: this.computePipeline.getBindGroupLayout(0 /* index */),
+            layout: this.computePipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
                 resource: { buffer: this.uniforms.buffer, }
@@ -424,7 +438,7 @@ export class AppMain extends LitElement {
         });
 
         this.bindGroup2 = this.device.createBindGroup({
-            layout: this.computePipeline.getBindGroupLayout(0 /* index */),
+            layout: this.computePipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
                 resource: { buffer: this.uniforms.buffer, }
@@ -437,7 +451,62 @@ export class AppMain extends LitElement {
             }]
         });
 
-        this.queueFrame();
+        // Now setup rendering.
+
+        // const devicePixelRatio = window.devicePixelRatio || 1;
+        this.context = this.canvas.getContext('webgpu');
+        if (!this.context) { throw "no webgpu canvas context"; }
+        const presentationFormat = this.context.getPreferredFormat(this.adapter);
+        this.context.configure({
+            device: this.device,
+            format: presentationFormat,
+            size: {
+                // As of 2021-12-12, Chrome stable & unstable do not accept
+                // a pixel more than 816x640 somehow - "device lost" otherwise.
+                width: 816, // this.canvas.clientWidth * devicePixelRatio,
+                height: 640, // this.canvas.clientHeight * devicePixelRatio,
+            },
+        });
+
+        this.renderPipeline = this.device.createRenderPipeline({
+            vertex: {
+                module: this.device.createShaderModule({
+                    code: `
+                        [[stage(vertex)]]
+                        fn main([[builtin(vertex_index)]] VertexIndex : u32)
+                            -> [[builtin(position)]] vec4<f32> {
+                        var pos = array<vec2<f32>, 3>(
+                            vec2<f32>(0.0, 0.5),
+                            vec2<f32>(-0.5, -0.5),
+                            vec2<f32>(0.5, -0.5));
+
+                        return vec4<f32>(pos[VertexIndex], 0.0, 1.0);
+                        }
+                    `,
+
+                }),
+                entryPoint: 'main',
+            },
+            fragment: {
+                module: this.device.createShaderModule({
+                    code: `
+                        [[stage(fragment)]]
+                        fn main() -> [[location(0)]] vec4<f32> {
+                            return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+                        }
+                    `,
+                }),
+                entryPoint: 'main',
+                targets: [
+                    {
+                        format: presentationFormat,
+                    },
+                ],
+            },
+            primitive: {
+                topology: 'triangle-list',
+            },
+        });
     }
 
     queueFrame() {
@@ -453,6 +522,8 @@ export class AppMain extends LitElement {
         if (!this.buffer1) { throw "oops"; }
         if (!this.buffer2) { throw "oops"; }
         if (!this.outputBuffer) { throw "oops"; }
+        if (!this.renderPipeline) { throw "oops"; }
+        if (!this.context) { throw "oops"; }
 
         let frameDelta = 0;
         if (this.previousTimestampMs) {
@@ -468,10 +539,17 @@ export class AppMain extends LitElement {
             this.previousStepMs = timestampMs;
         }
 
+        // Map uniforms
+        await this.uniforms.awaitMap();
+
+        //-- Build frame commands
         const commandEncoder = this.device.createCommandEncoder();
-        await this.uniforms.copyAsync(commandEncoder);
+
+        // Add uniforms, always.
+        this.uniforms.copy(commandEncoder);
 
         let dstBuffer = this.isForward ? this.buffer1 : this.buffer2;
+        // Run compute when needed.
         if (runStep) {
             const bindGroup = this.isForward ? this.bindGroup1 : this.bindGroup2;
             dstBuffer = this.isForward ? this.buffer2 : this.buffer1;
@@ -485,16 +563,33 @@ export class AppMain extends LitElement {
             this.isForward = !this.isForward;
         }
 
+        // Copy the data from render to a buffer suitable to display.
         commandEncoder.copyBufferToBuffer(
             dstBuffer, 0,
             this.outputBuffer, 0,
             4 * this.uniforms.sizeX * this.uniforms.sizeY,
         );
 
-        const gpuCommands = commandEncoder.finish();
-        this.device.queue.submit([gpuCommands]);
+        // Rendering.
+        const textureView = this.context.getCurrentTexture().createView();
+        const renderPassDescriptor: GPURenderPassDescriptor = {
+            colorAttachments: [
+                {
+                    view: textureView,
+                    loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    storeOp: 'store',
+                },
+            ],
+        };
+        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+        passEncoder.setPipeline(this.renderPipeline);
+        passEncoder.draw(3, 1, 0, 0);
+        passEncoder.endPass();
 
-        await this.outputBuffer.mapAsync(GPUMapMode.READ);
+        // And submit the work.
+        this.device.queue.submit([commandEncoder.finish()]);
+
+        /*await this.outputBuffer.mapAsync(GPUMapMode.READ);
         const data = new Uint8ClampedArray(this.outputBuffer.getMappedRange());
 
         const ctx = this.canvas.getContext("2d");
@@ -502,7 +597,7 @@ export class AppMain extends LitElement {
         ctx.imageSmoothingEnabled = false;
         ctx.putImageData(new ImageData(data, this.uniforms.sizeX, this.uniforms.sizeY), 0, 0);
 
-        this.outputBuffer.unmap();
+        this.outputBuffer.unmap();*/
         this.uniforms.startMap();
 
         this.queueFrame();
