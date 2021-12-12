@@ -394,10 +394,20 @@ export class AppMain extends LitElement {
             });
         }
 
+        // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
+        // 460.91.03) do not accept a pixel more than 816x640 somehow - "device
+        // lost" otherwise.
+        const renderWidth = 816;
+        const renderHeight = 640;
+        //const devicePixelRatio = window.devicePixelRatio || 1;
+        //const renderWidth = this.canvas.clientWidth * devicePixelRatio;
+        //const renderHeight = this.canvas.clientHeight * devicePixelRatio;
+
+
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.sizeX = this.demo.sizeX ?? this.canvas.width;
-        this.uniforms.sizeY = this.demo.sizeY ?? this.canvas.height;
-        console.log("uniforms size", this.uniforms.sizeX, this.uniforms.sizeY);
+        this.uniforms.sizeX = this.demo.sizeX ?? renderWidth;
+        this.uniforms.sizeY = this.demo.sizeY ?? renderHeight;
+        console.log("compute size", this.uniforms.sizeX, this.uniforms.sizeY, "render size", renderWidth, renderHeight);
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
@@ -458,8 +468,6 @@ export class AppMain extends LitElement {
         });
 
         // Now setup rendering.
-
-        // const devicePixelRatio = window.devicePixelRatio || 1;
         this.context = this.canvas.getContext('webgpu');
         if (!this.context) { throw "no webgpu canvas context"; }
         const presentationFormat = this.context.getPreferredFormat(this.adapter);
@@ -467,10 +475,8 @@ export class AppMain extends LitElement {
             device: this.device,
             format: presentationFormat,
             size: {
-                // As of 2021-12-12, Chrome stable & unstable do not accept
-                // a pixel more than 816x640 somehow - "device lost" otherwise.
-                width: 816, // this.canvas.clientWidth * devicePixelRatio,
-                height: 640, // this.canvas.clientHeight * devicePixelRatio,
+                width: renderWidth,
+                height: renderHeight,
             },
         });
 
