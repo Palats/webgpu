@@ -207,10 +207,16 @@ const allDemos = [
     conwayDemo,
     fallingDemo,
     fadeDemo,
-]
+];
 
-
-const currentDemo = allDemos[0];
+function demoByID(id: string): Demo {
+    for (const d of allDemos) {
+        if (d.id === id) {
+            return d;
+        }
+    }
+    return allDemos[0];
+}
 
 class Uniforms {
     sizeX = 320;
@@ -266,206 +272,40 @@ class Uniforms {
     }
 }
 
-@customElement('app-main')
-export class AppMain extends LitElement {
-    static styles = css`
-        /* Cover both shadow dom / non shadow dom cases */
-        :host, app-main {
-            background-color: #0f0f0f;
-            display: grid;
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            grid-template-columns: 250px 100fr;
-            grid-template-rows: 100fr;
-            box-sizing: border-box;
-        }
 
-        .nowebgpu {
-            background-color: white;
-            padding-left: 1em;
-        }
-
-        #display {
-            grid-column-start: 1;
-            grid-column-end: 3;
-            grid-row-start: 1;
-            grid-row-end: 2;
-            /* Avoid vertical scroll on canvas. */
-            min-height: 0;
-        }
-
-        #display canvas {
-            display: block;
-            height: 100%;
-            width: 100%;
-        }
-
-        #controls {
-            grid-column-start: 1;
-            grid-column-end: 2;
-            grid-row-start: 1;
-            grid-row-end: 2;
-            background-color: #d6d6d6de;
-            z-index: 10;
-        }
-        #overlay {
-            position: absolute;
-            left: 0;
-            top: 0;
-            background-color: #d6d6d6de;
-            z-index: 10;
-        }
-    `;
-
-    render() {
-        if (this.noWebGPU) {
-            return html`
-            <div class="nowebgpu">
-                <p>
-                Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
-                WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
-                </p>
-                <p>Issue: ${this.noWebGPU}</p>
-            </div>
-            `
-        }
-        return html`
-            <div id="display">
-                <canvas id="canvas"></canvas>
-            </div>
-            ${this.showControls ? html`
-                <div id="controls">
-                    <button @click="${() => { this.setShowControls(false) }}">Hide</button>
-                    <div>
-                    <select @change=${this.demoUpdate}>
-                        ${allDemos.map(d => html`
-                            <option value=${d.id}>${d.caption}</option>
-                        `)}
-                    </select>
-                    </div>
-                </div>
-            `: html`
-                <div id="overlay">
-                    <button @click="${() => { this.setShowControls(true) }}">More...</button>
-                </div>
-            `}
-        `;
-    }
-
-    demo!: Demo;
-
-    @property()
-    noWebGPU?: string;
-
-    @property({ type: Boolean })
-    showControls = false;
-
-    @property()
-    demoID = "conway";
-
-    constructor() {
-        super();
-        this.showControls = this.getBoolParam("c", true);
-        this.setDemo(this.getStringParam("d", allDemos[0].id));
-    }
-
-    override firstUpdated(_changedProperties: any) {
-        super.firstUpdated(_changedProperties);
-        this.canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
-
-        this.initWebGPU().then(() => {
-            if (!this.noWebGPU) {
-                this.queueFrame();
-            }
-        })
-    }
-
-    setShowControls(v: boolean) {
-        this.updateURL("c", v);
-        this.showControls = v;
-    }
-
-    setDemoID(v: string) {
-        this.updateURL("d", v);
-        this.demoID = v;
-    }
-
-    setDemo(id: string) {
-        for (const d of allDemos) {
-            if (d.id === id) {
-                this.demo = d;
-                return;
-            }
-        }
-        this.demo = allDemos[0];
-    }
-
-    demoUpdate(evt: Event) {
-        const options = (evt.target as HTMLSelectElement).selectedOptions;
-        if (!options) {
-            return;
-        }
-        this.setDemoID(options[0].value);
-    }
-
-    updateURL(k: string, v: string | boolean) {
-        if (typeof v == "boolean") {
-            v = v === true ? "1" : "0";
-        }
-        const params = new URLSearchParams(window.location.search)
-        params.set(k, v);
-        history.pushState(null, '', window.location.pathname + '?' + params.toString());
-    }
-
-    getBoolParam(k: string, defvalue = false): boolean {
-        const params = new URLSearchParams(window.location.search)
-        const v = params.get(k);
-        if (v === null) {
-            return defvalue;
-        }
-        if (v === "1" || v.toLowerCase() === "false") {
-            return true;
-        }
-        return false;
-    }
-
-    getStringParam(k: string, defvalue = ""): string {
-        const params = new URLSearchParams(window.location.search)
-        const v = params.get(k);
-        if (v === null) {
-            return defvalue;
-        }
-        return v;
-    }
+class Engine {
+    demo: Demo;
+    canvas: HTMLCanvasElement;
 
     previousTimestampMs: DOMHighResTimeStamp = 0;
     previousStepMs: DOMHighResTimeStamp = 0;
 
-    canvas?: HTMLCanvasElement;
-    uniforms?: Uniforms;
-    adapter?: GPUAdapter;
-    device?: GPUDevice;
-    outputBuffer?: GPUBuffer;
-    shaderModule?: GPUShaderModule;
-    computePipeline?: GPUComputePipeline;
-    renderPipeline?: GPURenderPipeline;
-    context?: GPUCanvasContext;
+    uniforms!: Uniforms;
+    adapter!: GPUAdapter;
+    device!: GPUDevice;
+    outputBuffer!: GPUBuffer;
+    shaderModule!: GPUShaderModule;
+    computePipeline!: GPUComputePipeline;
+    renderPipeline!: GPURenderPipeline;
+    context!: GPUCanvasContext;
 
-    buffer1?: GPUBuffer;
-    buffer2?: GPUBuffer;
-    bindGroup1?: GPUBindGroup;   // For 1 -> 2
-    bindGroup2?: GPUBindGroup;   // For 2 -> 1
-    bindGroupRender1?: GPUBindGroup;
-    bindGroupRender2?: GPUBindGroup;
+    buffer1!: GPUBuffer;
+    buffer2!: GPUBuffer;
+    bindGroup1!: GPUBindGroup;   // For 1 -> 2
+    bindGroup2!: GPUBindGroup;   // For 2 -> 1
+    bindGroupRender1!: GPUBindGroup;
+    bindGroupRender2!: GPUBindGroup;
 
     isForward = true;  // if false, goes 2->1
 
-    async initWebGPU() {
-        if (!this.canvas) { throw "oops"; }
+    constructor(canvas: HTMLCanvasElement, demo: Demo) {
+        this.canvas = canvas;
+        this.demo = demo;
+    }
+
+    async init() {
         if (!navigator.gpu) {
-            this.noWebGPU = "no webgpu extension";
-            return;
+            throw "no webgpu extension";
         }
 
         let adapter: GPUAdapter | null = null;
@@ -475,24 +315,22 @@ export class AppMain extends LitElement {
             adapter = await navigator.gpu.requestAdapter();
         } catch (e) {
             console.error("navigator.gpu.requestAdapter failed:", e);
-            this.noWebGPU = "requesting adapter failed";
-            return;
+            throw "requesting adapter failed";
         }
         if (!adapter) {
-            this.noWebGPU = "no webgpu adapter";
-            return;
+            throw "no webgpu adapter";
         }
         this.adapter = adapter;
 
         this.device = await this.adapter.requestDevice();
 
         // As of 2021-12-11, Firefox nightly does not support device.lost.
-        if (this.device.lost) {
+        /*if (this.device.lost) {
             this.device.lost.then((e) => {
                 console.error("device lost", e);
                 this.initWebGPU();
             });
-        }
+        }*/
 
         // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
         // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
@@ -502,7 +340,6 @@ export class AppMain extends LitElement {
         const devicePixelRatio = window.devicePixelRatio || 1;
         const renderWidth = this.canvas.clientWidth * devicePixelRatio;
         const renderHeight = this.canvas.clientHeight * devicePixelRatio;
-
 
         this.uniforms = new Uniforms(this.device);
         this.uniforms.sizeX = this.demo.sizeX ?? renderWidth;
@@ -710,24 +547,10 @@ export class AppMain extends LitElement {
                 resource: { buffer: this.buffer1, }
             }]
         });
-    }
 
-    queueFrame() {
-        window.requestAnimationFrame((ts) => this.frame(ts));
     }
 
     async frame(timestampMs: DOMHighResTimeStamp) {
-        if (!this.device) { throw "oops"; }
-        if (!this.uniforms) { throw "oops"; }
-        if (!this.computePipeline) { throw "oops"; }
-        if (!this.bindGroup1) { throw "oops"; }
-        if (!this.bindGroup2) { throw "oops"; }
-        if (!this.buffer1) { throw "oops"; }
-        if (!this.buffer2) { throw "oops"; }
-        if (!this.outputBuffer) { throw "oops"; }
-        if (!this.renderPipeline) { throw "oops"; }
-        if (!this.context) { throw "oops"; }
-
         let frameDelta = 0;
         if (this.previousTimestampMs) {
             frameDelta = timestampMs - this.previousTimestampMs;
@@ -804,8 +627,170 @@ export class AppMain extends LitElement {
 
         this.outputBuffer.unmap();*/
         this.uniforms.startMap();
+    }
+}
 
-        this.queueFrame();
+
+@customElement('app-main')
+export class AppMain extends LitElement {
+    static styles = css`
+        /* Cover both shadow dom / non shadow dom cases */
+        :host, app-main {
+            background-color: #0f0f0f;
+            display: grid;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            grid-template-columns: 250px 100fr;
+            grid-template-rows: 100fr;
+            box-sizing: border-box;
+        }
+
+        .nowebgpu {
+            background-color: white;
+            padding-left: 1em;
+        }
+
+        #display {
+            grid-column-start: 1;
+            grid-column-end: 3;
+            grid-row-start: 1;
+            grid-row-end: 2;
+            /* Avoid vertical scroll on canvas. */
+            min-height: 0;
+        }
+
+        #display canvas {
+            display: block;
+            height: 100%;
+            width: 100%;
+        }
+
+        #controls {
+            grid-column-start: 1;
+            grid-column-end: 2;
+            grid-row-start: 1;
+            grid-row-end: 2;
+            background-color: #d6d6d6de;
+            z-index: 10;
+        }
+        #overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #d6d6d6de;
+            z-index: 10;
+        }
+    `;
+
+    render() {
+        if (this.noWebGPU) {
+            return html`
+            <div class="nowebgpu">
+                <p>
+                Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
+                </p>
+                <p>Issue: ${this.noWebGPU}</p>
+            </div>
+            `
+        }
+        return html`
+            <div id="display">
+                <canvas id="canvas"></canvas>
+            </div>
+            ${this.showControls ? html`
+                <div id="controls">
+                    <button @click="${() => { this.setShowControls(false) }}">Hide</button>
+                    <div>
+                    <select @change=${this.demoUpdate}>
+                        ${allDemos.map(d => html`
+                            <option value=${d.id}>${d.caption}</option>
+                        `)}
+                    </select>
+                    </div>
+                </div>
+            `: html`
+                <div id="overlay">
+                    <button @click="${() => { this.setShowControls(true) }}">More...</button>
+                </div>
+            `}
+        `;
+    }
+
+    @property()
+    noWebGPU?: string;
+
+    @property({ type: Boolean })
+    showControls = false;
+
+    engine?: Engine;
+
+    constructor() {
+        super();
+        this.showControls = this.getBoolParam("c", true);
+    }
+
+    override firstUpdated(_changedProperties: any) {
+        super.firstUpdated(_changedProperties);
+        const canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
+        this.engine = new Engine(canvas, demoByID(this.getStringParam("d", allDemos[0].id)));
+
+        const queueFrame = () => {
+            window.requestAnimationFrame((ts) => {
+                this.engine!.frame(ts).then(() => queueFrame());
+            });
+        }
+        this.engine.init().then(() => {
+            queueFrame();
+        })
+    }
+
+    setShowControls(v: boolean) {
+        this.updateURL("c", v);
+        this.showControls = v;
+    }
+
+    setDemoID(v: string) {
+        this.updateURL("d", v);
+    }
+
+    demoUpdate(evt: Event) {
+        const options = (evt.target as HTMLSelectElement).selectedOptions;
+        if (!options) {
+            return;
+        }
+        this.setDemoID(options[0].value);
+    }
+
+    updateURL(k: string, v: string | boolean) {
+        if (typeof v == "boolean") {
+            v = v === true ? "1" : "0";
+        }
+        const params = new URLSearchParams(window.location.search)
+        params.set(k, v);
+        history.pushState(null, '', window.location.pathname + '?' + params.toString());
+    }
+
+    getBoolParam(k: string, defvalue = false): boolean {
+        const params = new URLSearchParams(window.location.search)
+        const v = params.get(k);
+        if (v === null) {
+            return defvalue;
+        }
+        if (v === "1" || v.toLowerCase() === "false") {
+            return true;
+        }
+        return false;
+    }
+
+    getStringParam(k: string, defvalue = ""): string {
+        const params = new URLSearchParams(window.location.search)
+        const v = params.get(k);
+        if (v === null) {
+            return defvalue;
+        }
+        return v;
     }
 }
 
