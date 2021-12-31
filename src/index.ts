@@ -263,7 +263,7 @@ export class AppMain extends LitElement {
             margin: 0;
             padding: 0;
             height: 100%;
-            grid-template-columns: 100fr;
+            grid-template-columns: 250px 100fr;
             grid-template-rows: 100fr;
             box-sizing: border-box;
         }
@@ -275,7 +275,7 @@ export class AppMain extends LitElement {
 
         #display {
             grid-column-start: 1;
-            grid-column-end: 2;
+            grid-column-end: 3;
             grid-row-start: 1;
             grid-row-end: 2;
             /* Avoid vertical scroll on canvas. */
@@ -287,6 +287,22 @@ export class AppMain extends LitElement {
             height: 100%;
             width: 100%;
         }
+
+        #controls {
+            grid-column-start: 1;
+            grid-column-end: 2;
+            grid-row-start: 1;
+            grid-row-end: 2;
+            background-color: #d6d6d6de;
+            z-index: 10;
+        }
+        #overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #d6d6d6de;
+            z-index: 10;
+        }
     `;
 
     render() {
@@ -295,32 +311,35 @@ export class AppMain extends LitElement {
             <div class="nowebgpu">
                 <p>
                 Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
                 </p>
-                WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration.
-
-                <ul>
-                    <li>For Chrome on Linux, run Chrome with the following extra flags - character case is important:
-                        <pre>$ google-chrome --enable-unsafe-webgpu --enable-features=Vulkan</pre>
-                    </li>
-                    <li>For Chrome on Windows, run Chrome with the following extra flag:
-                        <pre>chrome.exe --enable-unsafe-webgpu</pre>
-                    </li>
-                    <li>
-                        For Firefox, as of Dec. 2021, you need to run the nightly. Go in "about:config" and activate feature "dom.webgpu.enabled".
-                        You might need to restart Firefox.
-                    </li>
-                </ul>
                 <p>Issue: ${this.noWebGPU}</p>
             </div>
             `
         }
-        return html`<div id="display"><canvas id="canvas"></canvas></div>`;
+        return html`
+            <div id="display">
+                <canvas id="canvas"></canvas>
+            </div>
+            ${this.showControls ? html`
+                <div id="controls">
+                    <button @click="${() => { this.showControls = false }}">Hide</button>
+                </div>
+            `: html`
+                <div id="overlay">
+                    <button @click="${() => { this.showControls = true }}">More...</button>
+                </div>
+            `}
+        `;
     }
 
     demo: Demo;
 
     @property()
     noWebGPU?: string;
+
+    @property({ type: Boolean })
+    showControls = false;
 
     constructor() {
         super();
@@ -384,6 +403,7 @@ export class AppMain extends LitElement {
         this.adapter = adapter;
 
         this.device = await this.adapter.requestDevice();
+
         // As of 2021-12-11, Firefox nightly does not support device.lost.
         if (this.device.lost) {
             this.device.lost.then((e) => {
@@ -395,11 +415,11 @@ export class AppMain extends LitElement {
         // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
         // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
         // lost" otherwise.
-        const renderWidth = 816;
-        const renderHeight = 640;
-        //const devicePixelRatio = window.devicePixelRatio || 1;
-        //const renderWidth = this.canvas.clientWidth * devicePixelRatio;
-        //const renderHeight = this.canvas.clientHeight * devicePixelRatio;
+        //const renderWidth = 816;
+        //const renderHeight = 640;
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const renderWidth = this.canvas.clientWidth * devicePixelRatio;
+        const renderHeight = this.canvas.clientHeight * devicePixelRatio;
 
 
         this.uniforms = new Uniforms(this.device);
