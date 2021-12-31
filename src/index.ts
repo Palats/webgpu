@@ -12,7 +12,7 @@ interface Demo {
 }
 
 // Just fiddling with red component a bit.
-const testDemo = {
+const fadeDemo = {
     fps: 15,
     sizeX: 320,
     sizeY: 200,
@@ -37,7 +37,7 @@ const testDemo = {
             values: array<u32>;
         };
 
-        [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
         [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
         [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
 
@@ -61,8 +61,8 @@ const testDemo = {
     `,
 }
 
-// Falling pixels
-const test2Demo = {
+// Falling random pixels
+const fallingDemo = {
     fps: 4,
     sizeX: 320,
     sizeY: 200,
@@ -87,7 +87,7 @@ const test2Demo = {
             values: array<u32>;
         };
 
-        [[group(0), binding(0)]] var<storage, read> uniforms : Uniforms;
+        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
         [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
         [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
 
