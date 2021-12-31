@@ -323,11 +323,11 @@ export class AppMain extends LitElement {
             </div>
             ${this.showControls ? html`
                 <div id="controls">
-                    <button @click="${() => { this.showControls = false }}">Hide</button>
+                    <button @click="${() => { this.setShowControls(false) }}">Hide</button>
                 </div>
             `: html`
                 <div id="overlay">
-                    <button @click="${() => { this.showControls = true }}">More...</button>
+                    <button @click="${() => { this.setShowControls(true) }}">More...</button>
                 </div>
             `}
         `;
@@ -343,6 +343,7 @@ export class AppMain extends LitElement {
 
     constructor() {
         super();
+        this.showControls = this.getBoolParam("c");
         this.demo = currentDemo;
     }
 
@@ -355,6 +356,32 @@ export class AppMain extends LitElement {
                 this.queueFrame();
             }
         })
+    }
+
+    setShowControls(v: boolean) {
+        this.updateURL("c", v);
+        this.showControls = v;
+    }
+
+    updateURL(k: string, v: string | boolean) {
+        if (typeof v == "boolean") {
+            v = v === true ? "1" : "0";
+        }
+        const params = new URLSearchParams(window.location.search)
+        params.set(k, v);
+        history.pushState(null, '', window.location.pathname + '?' + params.toString());
+    }
+
+    getBoolParam(k: string, defvalue = false): boolean {
+        const params = new URLSearchParams(window.location.search)
+        const v = params.get(k);
+        if (v === null) {
+            return defvalue;
+        }
+        if (v === "1" || v.toLowerCase() === "false") {
+            return true;
+        }
+        return false;
     }
 
     previousTimestampMs: DOMHighResTimeStamp = 0;
