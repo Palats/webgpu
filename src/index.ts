@@ -4,6 +4,8 @@ import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 interface Demo {
+    id: string;
+    caption: string;
     fps: number;
     sizeX?: number;
     sizeY?: number;
@@ -13,6 +15,8 @@ interface Demo {
 
 // Just fiddling with red component a bit.
 const fadeDemo = {
+    id: "fade",
+    caption: "Fiddling with red component",
     fps: 15,
     sizeX: 320,
     sizeY: 200,
@@ -63,6 +67,8 @@ const fadeDemo = {
 
 // Falling random pixels
 const fallingDemo = {
+    id: "falling",
+    caption: "Falling random pixels",
     fps: 4,
     sizeX: 320,
     sizeY: 200,
@@ -116,6 +122,8 @@ const fallingDemo = {
 
 // A basic game of life.
 const conwayDemo = {
+    id: "conway",
+    caption: "Conway game of life",
     fps: 60,
     init: (uniforms: Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
@@ -195,9 +203,14 @@ const conwayDemo = {
     `,
 }
 
+const allDemos = [
+    conwayDemo,
+    fallingDemo,
+    fadeDemo,
+]
 
-const currentDemo = conwayDemo;
 
+const currentDemo = allDemos[0];
 
 class Uniforms {
     sizeX = 320;
@@ -324,6 +337,13 @@ export class AppMain extends LitElement {
             ${this.showControls ? html`
                 <div id="controls">
                     <button @click="${() => { this.setShowControls(false) }}">Hide</button>
+                    <div>
+                    <select @change=${this.demoUpdate}>
+                        ${allDemos.map(d => html`
+                            <option value=${d.id}>${d.caption}</option>
+                        `)}
+                    </select>
+                    </div>
                 </div>
             `: html`
                 <div id="overlay">
@@ -333,7 +353,7 @@ export class AppMain extends LitElement {
         `;
     }
 
-    demo: Demo;
+    demo!: Demo;
 
     @property()
     noWebGPU?: string;
@@ -341,10 +361,13 @@ export class AppMain extends LitElement {
     @property({ type: Boolean })
     showControls = false;
 
+    @property()
+    demoID = "conway";
+
     constructor() {
         super();
-        this.showControls = this.getBoolParam("c");
-        this.demo = currentDemo;
+        this.showControls = this.getBoolParam("c", true);
+        this.setDemo(this.getStringParam("d", allDemos[0].id));
     }
 
     override firstUpdated(_changedProperties: any) {
@@ -361,6 +384,29 @@ export class AppMain extends LitElement {
     setShowControls(v: boolean) {
         this.updateURL("c", v);
         this.showControls = v;
+    }
+
+    setDemoID(v: string) {
+        this.updateURL("d", v);
+        this.demoID = v;
+    }
+
+    setDemo(id: string) {
+        for (const d of allDemos) {
+            if (d.id === id) {
+                this.demo = d;
+                return;
+            }
+        }
+        this.demo = allDemos[0];
+    }
+
+    demoUpdate(evt: Event) {
+        const options = (evt.target as HTMLSelectElement).selectedOptions;
+        if (!options) {
+            return;
+        }
+        this.setDemoID(options[0].value);
     }
 
     updateURL(k: string, v: string | boolean) {
@@ -382,6 +428,15 @@ export class AppMain extends LitElement {
             return true;
         }
         return false;
+    }
+
+    getStringParam(k: string, defvalue = ""): string {
+        const params = new URLSearchParams(window.location.search)
+        const v = params.get(k);
+        if (v === null) {
+            return defvalue;
+        }
+        return v;
     }
 
     previousTimestampMs: DOMHighResTimeStamp = 0;
