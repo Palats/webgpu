@@ -733,17 +733,29 @@ export class AppMain extends LitElement {
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
+        this.run();
+    }
+
+    async run() {
         const canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
         this.engine = new Engine(canvas, demoByID(this.getStringParam("d", allDemos[0].id)));
 
-        const queueFrame = () => {
-            window.requestAnimationFrame((ts) => {
-                this.engine!.frame(ts).then(() => queueFrame());
-            });
+        try {
+            await this.engine.init();
+        } catch (e) {
+            console.log("init frame failure: ", e);
+            return;
         }
-        this.engine.init().then(() => {
-            queueFrame();
-        })
+
+        while (true) {
+            const ts = await new Promise(window.requestAnimationFrame);
+            try {
+                await this.engine!.frame(ts);
+            } catch (e) {
+                console.log("frame failure: ", e);
+                return;
+            }
+        }
     }
 
     setShowControls(v: boolean) {
