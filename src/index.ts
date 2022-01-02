@@ -272,6 +272,7 @@ class Uniforms {
     }
 }
 
+class NoWebGPU extends Error { }
 
 class Engine {
     demo: Demo;
@@ -305,7 +306,7 @@ class Engine {
 
     async init() {
         if (!navigator.gpu) {
-            throw "no webgpu extension";
+            throw new NoWebGPU("no webgpu extension");
         }
 
         let adapter: GPUAdapter | null = null;
@@ -315,10 +316,10 @@ class Engine {
             adapter = await navigator.gpu.requestAdapter();
         } catch (e) {
             console.error("navigator.gpu.requestAdapter failed:", e);
-            throw "requesting adapter failed";
+            throw new NoWebGPU("requesting adapter failed");
         }
         if (!adapter) {
-            throw "no webgpu adapter";
+            throw new NoWebGPU("no webgpu adapter");
         }
         this.adapter = adapter;
 
@@ -406,7 +407,7 @@ class Engine {
 
         // Now setup rendering.
         this.context = this.canvas.getContext('webgpu');
-        if (!this.context) { throw "no webgpu canvas context"; }
+        if (!this.context) { new Error("no webgpu canvas context"); }
         const presentationFormat = this.context.getPreferredFormat(this.adapter);
         this.context.configure({
             device: this.device,
@@ -649,6 +650,10 @@ export class AppMain extends LitElement {
         .nowebgpu {
             background-color: white;
             padding-left: 1em;
+            grid-column-start: 1;
+            grid-column-end: 3;
+            grid-row-start: 1;
+            grid-row-end: 2;
         }
 
         #display {
@@ -725,6 +730,7 @@ export class AppMain extends LitElement {
     showControls = false;
 
     engine?: Engine;
+    rebuildNeeded?: string;
 
     constructor() {
         super();
@@ -733,28 +739,42 @@ export class AppMain extends LitElement {
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
-        this.run();
+        const canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
+        this.rebuild("startup");
+        new ResizeObserver(() => {
+            this.rebuild("resize");
+        }).observe(canvas);
+        this.loop(canvas);
     }
 
-    async run() {
-        const canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
-        this.engine = new Engine(canvas, demoByID(this.getStringParam("d", allDemos[0].id)));
+    // rebuild tells to stop the current engine and create a new one.
+    rebuild(s: string) {
+        this.rebuildNeeded = s;
+    }
 
-        try {
-            await this.engine.init();
-        } catch (e) {
-            console.log("init frame failure: ", e);
-            return;
-        }
-
+    async loop(canvas: HTMLCanvasElement) {
         while (true) {
-            const ts = await new Promise(window.requestAnimationFrame);
+            console.log("new engine:", this.rebuildNeeded);
+            this.rebuildNeeded = undefined;
             try {
-                await this.engine!.frame(ts);
+                this.engine = new Engine(canvas, demoByID(this.getStringParam("d", allDemos[0].id)));
+                await this.engine.init();
+                while (!this.rebuildNeeded) {
+                    const ts = await new Promise(window.requestAnimationFrame);
+                    await this.engine!.frame(ts);
+                }
             } catch (e) {
-                console.log("frame failure: ", e);
-                return;
+                console.error("run", e);
+                if (e instanceof NoWebGPU) {
+                    this.noWebGPU = e.toString();
+                    return;
+                } else if (e instanceof Error) {
+                    //
+                } else {
+                    //
+                }
             }
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
     }
 
