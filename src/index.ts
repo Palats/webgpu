@@ -304,7 +304,7 @@ class Engine {
         this.demo = demo;
     }
 
-    async init() {
+    async init(renderWidth: number, renderHeight: number) {
         if (!navigator.gpu) {
             throw new NoWebGPU("no webgpu extension");
         }
@@ -332,15 +332,6 @@ class Engine {
                 this.initWebGPU();
             });
         }*/
-
-        // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
-        // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
-        // lost" otherwise.
-        //const renderWidth = 816;
-        //const renderHeight = 640;
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        const renderWidth = this.canvas.clientWidth * devicePixelRatio;
-        const renderHeight = this.canvas.clientHeight * devicePixelRatio;
 
         this.uniforms = new Uniforms(this.device);
         this.uniforms.sizeX = this.demo.sizeX ?? renderWidth;
@@ -647,13 +638,13 @@ export class AppMain extends LitElement {
             box-sizing: border-box;
         }
 
-        .nowebgpu {
-            background-color: white;
-            padding-left: 1em;
-            grid-column-start: 1;
+        .error {
+            grid-column-start: 2;
             grid-column-end: 3;
             grid-row-start: 1;
             grid-row-end: 2;
+            background-color: white;
+            padding-left: 1em;
         }
 
         #display {
@@ -689,62 +680,118 @@ export class AppMain extends LitElement {
     `;
 
     render() {
+        let blocks = [];
         if (this.noWebGPU) {
-            return html`
-            <div class="nowebgpu">
-                <p>
-                Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
-                WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
-                </p>
-                <p>Issue: ${this.noWebGPU}</p>
-            </div>
-            `
+            blocks.push(html`
+                <div class="error">
+                    <p>
+                    Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                    WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
+                    </p>
+                    <p>Issue: ${this.noWebGPU}</p>
+                </div>
+            `);
         }
-        return html`
+        if (this.otherError) {
+            blocks.push(html`
+                <div class="error">
+                    <p>Issue: ${this.otherError}</p>
+                </div>
+            `);
+        }
+        blocks.push(html`
             <div id="display">
                 <canvas id="canvas"></canvas>
             </div>
-            ${this.showControls ? html`
+        `);
+
+        if (this.showControls) {
+            blocks.push(html`
                 <div id="controls">
-                    <button @click="${() => { this.setShowControls(false) }}">Hide</button>
+                    <button @click="${() => { this.setShowControls(false) }}">Hide controls</button>
                     <div>
-                    <select @change=${this.demoUpdate}>
+                    <select @change=${this.demoChange}>
                         ${allDemos.map(d => html`
-                            <option value=${d.id}>${d.caption}</option>
+                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
                         `)}
                     </select>
                     </div>
+                    <div>
+                        <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>Limit canvas to 816x640</input>
+                    </div>
                 </div>
-            `: html`
+            `);
+        } else {
+            blocks.push(html`
                 <div id="overlay">
-                    <button @click="${() => { this.setShowControls(true) }}">More...</button>
+                    <button @click="${() => { this.setShowControls(true) }}">Show controls</button>
                 </div>
-            `}
-        `;
+            `);
+        }
+        return blocks;
     }
 
     @property()
     noWebGPU?: string;
 
+    @property()
+    otherError?: string;
+
     @property({ type: Boolean })
-    showControls = false;
+    showControls;
+
+    @property({ type: Boolean })
+    limitCanvas;
+
+    @property()
+    demoID: string;
+
+    canvas?: HTMLCanvasElement;
 
     engine?: Engine;
     rebuildNeeded?: string;
 
+    renderWidth: number = 0;
+    renderHeight: number = 0;
+
     constructor() {
         super();
         this.showControls = this.getBoolParam("c", true);
+        this.limitCanvas = this.getBoolParam("l", false);
+        this.demoID = this.getStringParam("d", allDemos[0].id)
     }
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
-        const canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
-        this.rebuild("startup");
+        this.canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
+        this.updateSize();
         new ResizeObserver(() => {
-            this.rebuild("resize");
-        }).observe(canvas);
-        this.loop(canvas);
+            this.updateSize();
+        }).observe(this.canvas);
+        this.loop(this.canvas);
+    }
+
+    updateSize() {
+        if (!this.canvas) { return; }
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        let renderWidth = this.canvas.clientWidth * devicePixelRatio;
+        let renderHeight = this.canvas.clientHeight * devicePixelRatio;
+        if (this.limitCanvas) {
+            // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
+            // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
+            // lost" otherwise.
+            renderWidth = 816;
+            renderHeight = 640;
+        }
+        if (!renderWidth || !renderHeight) {
+            return;
+        }
+        if (renderWidth === this.renderWidth && renderHeight === this.renderHeight) {
+            return;
+        }
+        this.renderWidth = renderWidth;
+        this.renderHeight = renderHeight;
+        this.rebuild(`resize to ${renderWidth}x${renderHeight}`);
     }
 
     // rebuild tells to stop the current engine and create a new one.
@@ -752,30 +799,48 @@ export class AppMain extends LitElement {
         this.rebuildNeeded = s;
     }
 
+    // loop is responsible for running each frame when needed, and recreating
+    // the engine when requested (e.g., on resize).
     async loop(canvas: HTMLCanvasElement) {
         while (true) {
             console.log("new engine:", this.rebuildNeeded);
             this.rebuildNeeded = undefined;
+            this.noWebGPU = undefined;
+            this.otherError = undefined;
             try {
-                this.engine = new Engine(canvas, demoByID(this.getStringParam("d", allDemos[0].id)));
-                await this.engine.init();
+                this.engine = new Engine(canvas, demoByID(this.demoID));
+
+                await this.engine.init(this.renderWidth, this.renderHeight);
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
                     await this.engine!.frame(ts);
                 }
+                await new Promise(resolve => setTimeout(resolve, 200));
             } catch (e) {
-                console.error("run", e);
+                console.error("Run:", e);
                 if (e instanceof NoWebGPU) {
                     this.noWebGPU = e.toString();
-                    return;
                 } else if (e instanceof Error) {
-                    //
+                    this.otherError = e.toString();
                 } else {
-                    //
+                    this.otherError = "See Javascript console for error";
+                }
+
+                // And now, wait for something to tell us to retry.
+                // Could be better done with a proper event, but here we are.
+                while (!this.rebuildNeeded) {
+                    await new Promise(window.requestAnimationFrame);
                 }
             }
-            await new Promise(resolve => setTimeout(resolve, 200));
         }
+    }
+
+    limitCanvasChange(evt: Event) {
+        const checked = (evt.target as HTMLInputElement).checked;
+        if (checked === this.limitCanvas) { return; }
+        this.limitCanvas = checked;
+        this.updateURL("l", this.limitCanvas);
+        this.updateSize();
     }
 
     setShowControls(v: boolean) {
@@ -783,16 +848,16 @@ export class AppMain extends LitElement {
         this.showControls = v;
     }
 
-    setDemoID(v: string) {
-        this.updateURL("d", v);
-    }
-
-    demoUpdate(evt: Event) {
+    demoChange(evt: Event) {
         const options = (evt.target as HTMLSelectElement).selectedOptions;
         if (!options) {
             return;
         }
-        this.setDemoID(options[0].value);
+        const v = options[0].value;
+        if (this.demoID === v) { return; }
+        this.demoID = v;
+        this.updateURL("d", this.demoID);
+        this.rebuild("changed demo");
     }
 
     updateURL(k: string, v: string | boolean) {
