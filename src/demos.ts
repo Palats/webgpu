@@ -1,7 +1,5 @@
 /// <reference types="@webgpu/types" />
 
-import { LitElement, html, css, } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
 import * as engine from './engine';
 
 
@@ -195,7 +193,70 @@ const conwayDemo = {
     `,
 }
 
+// A classic fire effect.
+const fireDemo = {
+    sizeX: 320,
+    sizeY: 200,
+    id: "fire",
+    caption: "Classic fire effect",
+    fps: 30,
+    init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
+        const a = new Uint8Array(data);
+        for (let y = 0; y < uniforms.sizeY; y++) {
+            for (let x = 0; x < uniforms.sizeX; x++) {
+                a[4 * (x + y * uniforms.sizeX) + 0] = 0;
+                a[4 * (x + y * uniforms.sizeX) + 1] = 0;
+                a[4 * (x + y * uniforms.sizeX) + 2] = 0;
+                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
+            }
+        }
+        for (let x = 0; x < uniforms.sizeX; x++) {
+            a[4 * ((uniforms.sizeY - 1) * uniforms.sizeX + x)] = 255;
+        }
+    },
+    code: `
+        [[block]] struct Uniforms {
+            sizex: u32;
+            sizey: u32;
+            elapsedMs: f32;
+        };
+        [[block]] struct Frame {
+            values: array<u32>;
+        };
+
+        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
+        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+
+        fn at(x: i32, y: i32) -> vec4<f32> {
+            if (x < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            if (y < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            if (x >= i32(uniforms.sizex)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            if (y >= i32(uniforms.sizey)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            let idx = x + y * i32(uniforms.sizex);
+            return unpack4x8unorm(srcFrame.values[idx]);
+        }
+
+        [[stage(compute), workgroup_size(8, 8)]]
+        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+            // Guard against out-of-bounds work group sizes
+            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+                return;
+            }
+
+            let x = i32(global_id.x);
+            let y = i32(global_id.y);
+
+            let v = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
+            let idx = global_id.x + global_id.y * uniforms.sizex;
+            dstFrame.values[idx] = pack4x8unorm(v / 4.0);
+        }
+    `,
+}
+
+
 export const allDemos = [
+    fireDemo,
     conwayDemo,
     fallingDemo,
     fadeDemo,
