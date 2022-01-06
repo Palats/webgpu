@@ -210,9 +210,6 @@ const fireDemo = {
                 a[4 * (x + y * uniforms.sizeX) + 3] = 255;
             }
         }
-        for (let x = 0; x < uniforms.sizeX; x++) {
-            a[4 * ((uniforms.sizeY - 1) * uniforms.sizeX + x)] = 255;
-        }
     },
     code: `
         [[block]] struct Uniforms {
@@ -227,6 +224,10 @@ const fireDemo = {
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
         [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
         [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+
+        fn rand(v: f32) -> f32 {
+            return fract(sin(dot(vec2<f32>(uniforms.elapsedMs, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
+        }
 
         fn at(x: i32, y: i32) -> vec4<f32> {
             if (x < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
@@ -246,10 +247,16 @@ const fireDemo = {
 
             let x = i32(global_id.x);
             let y = i32(global_id.y);
-
-            let v = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
             let idx = global_id.x + global_id.y * uniforms.sizex;
-            dstFrame.values[idx] = pack4x8unorm(v / 4.0);
+
+            if (y == (i32(uniforms.sizey) - 1)) {
+                let c = rand(f32(x));
+                let v = vec4<f32>(c, c, c, 1.0);
+                dstFrame.values[idx] = pack4x8unorm(v / 4.0);
+            } else {
+                let v = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
+                dstFrame.values[idx] = pack4x8unorm(v / 4.0);
+            }
         }
     `,
 }
