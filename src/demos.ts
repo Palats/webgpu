@@ -250,13 +250,59 @@ const fireDemo = {
             let idx = global_id.x + global_id.y * uniforms.sizex;
 
             if (y == (i32(uniforms.sizey) - 1)) {
-                let c = rand(f32(x));
-                let v = vec4<f32>(c, c, c, 1.0);
-                dstFrame.values[idx] = pack4x8unorm(v / 4.0);
+                if (rand(f32(x)) < 0.2) {
+                    dstFrame.values[idx] = pack4x8unorm(vec4<f32>(1.0, 1.0, 1.0, 1.0));
+                } else {
+                    dstFrame.values[idx] = pack4x8unorm(vec4<f32>(0.0, 0.0, 0.0, 1.0));
+                }
             } else {
                 let v = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
-                dstFrame.values[idx] = pack4x8unorm(v / 4.0);
+                dstFrame.values[idx] = pack4x8unorm((v / 4.0) - 0.01);
             }
+        }
+    `,
+
+    fragment: `
+        [[block]] struct Uniforms {
+            sizex: u32;
+            sizey: u32;
+            elapsedMs: f32;
+        };
+        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
+
+        [[block]] struct Frame {
+            values: array<u32>;
+        };
+        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+        [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
+
+        [[stage(fragment)]]
+        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+            let x = coord.x * f32(uniforms.sizex);
+            let y = coord.y * f32(uniforms.sizey);
+            let idx = u32(y) * uniforms.sizex + u32(x);
+            let v = unpack4x8unorm(dstFrame.values[idx]);
+            let c = v.r * 255.0;
+
+            /*for (var i = 0; i < 32; i++) {
+                fire.palette[i] = [0, 0, i*2];
+                fire.palette[i+32] = [i*8, 0, 64 - i*2];
+                fire.palette[i+64] = [255, i*8, 0];
+                fire.palette[i+96] = [255, 255, i*4];
+                fire.palette[i+128] = [255, 255, 64+i*4];
+                fire.palette[i+160] = [255, 255, 128+i*4];
+                fire.palette[i+192] = [255, 255, 192+i];
+                fire.palette[i+224] = [255, 255, 224+i];
+            }*/
+
+            if (c < 32.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 255.0, 1.0); }
+            if (c < 64.0) { return vec4<f32>(c * 8.0 / 255.0, 0.0, (64.0 - c * 2.0) / 255.0, 1.0); }
+            if (c < 96.0) { return vec4<f32>(1.0, c * 8.0 / 255.0, 0.0, 1.0); }
+            if (c < 128.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 255.0, 1.0); }
+            if (c < 160.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 255.0, 1.0); }
+            if (c < 192.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 255.0, 1.0); }
+            if (c < 224.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 255.0, 1.0); }
+            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 255.0, 1.0);
         }
     `,
 }

@@ -7,6 +7,7 @@ export interface Demo {
     sizeX?: number;
     sizeY?: number;
     code: string;
+    fragment?: string;
     init: (u: Uniforms, a: ArrayBuffer) => void;
 }
 
@@ -63,6 +64,32 @@ export class Uniforms {
         );
     }
 }
+
+// Default logic to take the compute buffer and display it on the canvas.
+// It just rescales whatever is in the compute buffer to the screen.
+const defaultFragment = `
+    [[block]] struct Uniforms {
+        sizex: u32;
+        sizey: u32;
+        elapsedMs: f32;
+    };
+    [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
+
+    [[block]] struct Frame {
+        values: array<u32>;
+    };
+    [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
+    [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
+
+    [[stage(fragment)]]
+    fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+        let x = coord.x * f32(uniforms.sizex);
+        let y = coord.y * f32(uniforms.sizey);
+        let idx = u32(y) * uniforms.sizex + u32(x);
+        let v = unpack4x8unorm(dstFrame.values[idx]);
+        return vec4<f32>(v.g, v.r, v.b, 1.0);
+    }
+`;
 
 export class NoWebGPU extends Error { }
 
@@ -232,9 +259,12 @@ export class Engine {
             ]
         });
 
+        const fragment = this.demo.fragment ?? defaultFragment;
+
         this.renderPipeline = this.device.createRenderPipeline({
             layout: bindGroupLayout,
             vertex: {
+                // Create full screen pair of triangles.
                 module: this.device.createShaderModule({
                     code: `
                         struct VSOut {
@@ -269,29 +299,7 @@ export class Engine {
             },
             fragment: {
                 module: this.device.createShaderModule({
-                    code: `
-                        [[block]] struct Uniforms {
-                            sizex: u32;
-                            sizey: u32;
-                            elapsedMs: f32;
-                        };
-                        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-
-                        [[block]] struct Frame {
-                            values: array<u32>;
-                        };
-                        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-                        [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
-
-                        [[stage(fragment)]]
-                        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-                            let x = coord.x * f32(uniforms.sizex);
-                            let y = coord.y * f32(uniforms.sizey);
-                            let idx = u32(y) * uniforms.sizex + u32(x);
-                            let v = unpack4x8unorm(dstFrame.values[idx]);
-                            return vec4<f32>(v.g, v.r, v.b, 1.0);
-                        }
-                    `,
+                    code: fragment,
                 }),
                 entryPoint: 'main',
                 targets: [
