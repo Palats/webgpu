@@ -282,27 +282,17 @@ const fireDemo = {
             let y = coord.y * f32(uniforms.sizey);
             let idx = u32(y) * uniforms.sizex + u32(x);
             let v = unpack4x8unorm(dstFrame.values[idx]);
-            let c = v.r * 255.0;
 
-            /*for (var i = 0; i < 32; i++) {
-                fire.palette[i] = [0, 0, i*2];
-                fire.palette[i+32] = [i*8, 0, 64 - i*2];
-                fire.palette[i+64] = [255, i*8, 0];
-                fire.palette[i+96] = [255, 255, i*4];
-                fire.palette[i+128] = [255, 255, 64+i*4];
-                fire.palette[i+160] = [255, 255, 128+i*4];
-                fire.palette[i+192] = [255, 255, 192+i];
-                fire.palette[i+224] = [255, 255, 224+i];
-            }*/
-
-            if (c < 32.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 255.0, 1.0); }
-            if (c < 64.0) { return vec4<f32>(c * 8.0 / 255.0, 0.0, (64.0 - c * 2.0) / 255.0, 1.0); }
-            if (c < 96.0) { return vec4<f32>(1.0, c * 8.0 / 255.0, 0.0, 1.0); }
-            if (c < 128.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 255.0, 1.0); }
-            if (c < 160.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 255.0, 1.0); }
-            if (c < 192.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 255.0, 1.0); }
-            if (c < 224.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 255.0, 1.0); }
-            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 255.0, 1.0);
+            let key = v.r * 8.0;
+            let c = (v.r * 256.0) % 32.0;
+            if (key < 1.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 256.0, 1.0); }
+            if (key < 2.0) { return vec4<f32>(c * 8.0 / 256.0, 0.0, (64.0 - c * 2.0) / 256.0, 1.0); }
+            if (key < 3.0) { return vec4<f32>(1.0, c * 8.0 / 256.0, 0.0, 1.0); }
+            if (key < 4.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 256.0, 1.0); }
+            if (key < 5.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 256.0, 1.0); }
+            if (key < 6.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 256.0, 1.0); }
+            if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
+            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
         }
     `,
 }
