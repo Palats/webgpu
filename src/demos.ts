@@ -275,13 +275,18 @@ const fireDemo = {
         };
         [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
         [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
+        [[group(0), binding(3)]] var dstTexture : texture_2d<f32>;
+        [[group(0), binding(4)]] var dstSampler : sampler;
+
 
         [[stage(fragment)]]
         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-            let x = coord.x * f32(uniforms.sizex);
-            let y = coord.y * f32(uniforms.sizey);
-            let idx = u32(y) * uniforms.sizex + u32(x);
-            let v = unpack4x8unorm(dstFrame.values[idx]);
+            let v = textureSample(dstTexture, dstSampler, coord);
+
+            //let x = coord.x * f32(uniforms.sizex);
+            //let y = coord.y * f32(uniforms.sizey);
+            // let idx = u32(y) * uniforms.sizex + u32(x);
+            //let v = unpack4x8unorm(dstFrame.values[idx]);
 
             let key = v.r * 8.0;
             let c = (v.r * 256.0) % 32.0;

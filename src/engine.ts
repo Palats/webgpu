@@ -103,7 +103,6 @@ export class Engine {
     uniforms!: Uniforms;
     adapter!: GPUAdapter;
     device!: GPUDevice;
-    outputBuffer!: GPUBuffer;
     shaderModule!: GPUShaderModule;
     computePipeline!: GPUComputePipeline;
     renderPipeline!: GPURenderPipeline;
@@ -111,6 +110,7 @@ export class Engine {
 
     buffer1!: GPUBuffer;
     buffer2!: GPUBuffer;
+    renderTexture!: GPUTexture;
     bindGroup1!: GPUBindGroup;   // For 1 -> 2
     bindGroup2!: GPUBindGroup;   // For 2 -> 1
     bindGroupRender1!: GPUBindGroup;
@@ -164,12 +164,6 @@ export class Engine {
                 module: this.shaderModule,
                 entryPoint: "main"
             }
-        });
-
-        // Get a GPU buffer for reading in an unmapped state.
-        this.outputBuffer = this.device.createBuffer({
-            size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
         });
 
         // Initial data.
@@ -228,6 +222,13 @@ export class Engine {
             },
         });
 
+        this.renderTexture = this.device.createTexture({
+            size: { width: this.uniforms.sizeX, height: this.uniforms.sizeY },
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+            // usage: GPUTextureUsage. GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+        })
+
         const bindGroupLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [
                 this.device.createBindGroupLayout({
@@ -251,6 +252,20 @@ export class Engine {
                             visibility: GPUShaderStage.FRAGMENT,
                             buffer: {
                                 type: "read-only-storage",
+                            }
+                        },
+                        {
+                            binding: 3,
+                            visibility: GPUShaderStage.FRAGMENT,
+                            texture: {
+                                multisampled: false,
+                            }
+                        },
+                        {
+                            binding: 4,
+                            visibility: GPUShaderStage.FRAGMENT,
+                            sampler: {
+                                type: "filtering",
                             }
                         },
                     ]
@@ -313,6 +328,9 @@ export class Engine {
             },
         });
 
+        const sampler = this.device.createSampler({ label: "sampler" });
+        const textureView = this.renderTexture.createView();
+
         this.bindGroupRender1 = this.device.createBindGroup({
             layout: this.renderPipeline.getBindGroupLayout(0),
             entries: [{
@@ -324,6 +342,12 @@ export class Engine {
             }, {
                 binding: 2,
                 resource: { buffer: this.buffer2, }
+            }, {
+                binding: 3,
+                resource: textureView,
+            }, {
+                binding: 4,
+                resource: sampler,
             }]
         });
         this.bindGroupRender2 = this.device.createBindGroup({
@@ -337,6 +361,12 @@ export class Engine {
             }, {
                 binding: 2,
                 resource: { buffer: this.buffer1, }
+            }, {
+                binding: 3,
+                resource: textureView,
+            }, {
+                binding: 4,
+                resource: sampler,
             }]
         });
 
@@ -381,11 +411,15 @@ export class Engine {
             this.isForward = !this.isForward;
         }
 
-        // Copy the data from render to a buffer suitable to display.
-        commandEncoder.copyBufferToBuffer(
-            dstBuffer, 0,
-            this.outputBuffer, 0,
-            4 * this.uniforms.sizeX * this.uniforms.sizeY,
+        // Copy the data from compute buffer to a texture to allow for sampling.
+        commandEncoder.copyBufferToTexture(
+            {
+                buffer: dstBuffer,
+                bytesPerRow: 4 * this.uniforms.sizeX,
+            },
+            { texture: this.renderTexture },
+            { width: this.uniforms.sizeX, height: this.uniforms.sizeY },
+            //4 * this.uniforms.sizeX * this.uniforms.sizeY,
         );
 
         // Rendering.
@@ -409,15 +443,6 @@ export class Engine {
         // And submit the work.
         this.device.queue.submit([commandEncoder.finish()]);
 
-        /*await this.outputBuffer.mapAsync(GPUMapMode.READ);
-        const data = new Uint8ClampedArray(this.outputBuffer.getMappedRange());
-
-        const ctx = this.canvas.getContext("2d");
-        if (!ctx) { throw "no canvas 2d context"; }
-        ctx.imageSmoothingEnabled = false;
-        ctx.putImageData(new ImageData(data, this.uniforms.sizeX, this.uniforms.sizeY), 0, 0);
-
-        this.outputBuffer.unmap();*/
         this.uniforms.startMap();
     }
 }
