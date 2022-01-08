@@ -14,13 +14,15 @@ export interface Demo {
 export class Uniforms {
     computeWidth = 320;
     computeHeight = 200;
+    renderWidth = 320;
+    renderHeight = 200;
     elapsedMs = 0;
 
     // Buffer for access from shaders.
     readonly buffer: GPUBuffer;
 
     // Total size of all the fields to write in uniforms.
-    private bytes = 4 + 4 + 4;
+    private bytes = 5 * 4;
     // Buffer for copy from Javascript.
     private mappedBuffer: GPUBuffer;
     // When mapping of the buffer to copy uniforms has been requested, this is
@@ -54,7 +56,9 @@ export class Uniforms {
         const d = new DataView(this.mappedBuffer.getMappedRange());
         d.setUint32(0, this.computeWidth, true);
         d.setUint32(4, this.computeHeight, true);
-        d.setFloat32(8, this.elapsedMs, true);
+        d.setUint32(8, this.renderWidth, true);
+        d.setUint32(12, this.renderHeight, true);
+        d.setFloat32(16, this.elapsedMs, true);
         this.mappedBuffer.unmap();
 
         commandEncoder.copyBufferToBuffer(
@@ -71,6 +75,8 @@ const defaultFragment = `
     [[block]] struct Uniforms {
         computeWidth: u32;
         computeHeight: u32;
+        renderWidth: u32;
+        renderHeight: u32;
         elapsedMs: f32;
     };
     [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
@@ -155,7 +161,9 @@ export class Engine {
         this.uniforms = new Uniforms(this.device);
         this.uniforms.computeWidth = this.demo.computeWidth ?? renderWidth;
         this.uniforms.computeHeight = this.demo.computeHeight ?? renderHeight;
-        console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", renderWidth, renderHeight);
+        this.uniforms.renderWidth = renderWidth;
+        this.uniforms.renderHeight = renderHeight;
+        console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", this.uniforms.renderWidth, this.uniforms.renderHeight);
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 

@@ -25,6 +25,8 @@ const fadeDemo = {
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
+            renderWidth: u32;
+            renderHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -77,6 +79,8 @@ const fallingDemo = {
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
+            renderWidth: u32;
+            renderHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -132,6 +136,8 @@ const conwayDemo = {
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
+            renderWidth: u32;
+            renderHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -195,8 +201,8 @@ const conwayDemo = {
 
 // A classic fire effect.
 const fireDemo = {
-    computeWidth: 640,
-    computeHeight: 200,
+    computeWidth: 64,
+    computeHeight: 20,
     id: "fire",
     caption: "Classic fire effect",
     fps: 30,
@@ -215,6 +221,8 @@ const fireDemo = {
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
+            renderWidth: u32;
+            renderHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -266,6 +274,8 @@ const fireDemo = {
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
+            renderWidth: u32;
+            renderHeight: u32;
             elapsedMs: f32;
         };
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
