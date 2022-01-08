@@ -4,16 +4,16 @@ export interface Demo {
     id: string;
     caption: string;
     fps: number;
-    sizeX?: number;
-    sizeY?: number;
+    computeWidth?: number;
+    computeHeight?: number;
     code: string;
     fragment?: string;
     init: (u: Uniforms, a: ArrayBuffer) => void;
 }
 
 export class Uniforms {
-    sizeX = 320;
-    sizeY = 200;
+    computeWidth = 320;
+    computeHeight = 200;
     elapsedMs = 0;
 
     // Buffer for access from shaders.
@@ -52,8 +52,8 @@ export class Uniforms {
 
     copy(commandEncoder: GPUCommandEncoder) {
         const d = new DataView(this.mappedBuffer.getMappedRange());
-        d.setUint32(0, this.sizeX, true);
-        d.setUint32(4, this.sizeY, true);
+        d.setUint32(0, this.computeWidth, true);
+        d.setUint32(4, this.computeHeight, true);
         d.setFloat32(8, this.elapsedMs, true);
         this.mappedBuffer.unmap();
 
@@ -69,8 +69,8 @@ export class Uniforms {
 // It just rescales whatever is in the compute buffer to the screen.
 const defaultFragment = `
     [[block]] struct Uniforms {
-        sizex: u32;
-        sizey: u32;
+        computeWidth: u32;
+        computeHeight: u32;
         elapsedMs: f32;
     };
     [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
@@ -83,9 +83,9 @@ const defaultFragment = `
 
     [[stage(fragment)]]
     fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-        let x = coord.x * f32(uniforms.sizex);
-        let y = coord.y * f32(uniforms.sizey);
-        let idx = u32(y) * uniforms.sizex + u32(x);
+        let x = coord.x * f32(uniforms.computeWidth);
+        let y = coord.y * f32(uniforms.computeHeight);
+        let idx = u32(y) * uniforms.computeWidth + u32(x);
         let v = unpack4x8unorm(dstFrame.values[idx]);
         return vec4<f32>(v.g, v.r, v.b, 1.0);
     }
@@ -153,9 +153,9 @@ export class Engine {
         }*/
 
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.sizeX = this.demo.sizeX ?? renderWidth;
-        this.uniforms.sizeY = this.demo.sizeY ?? renderHeight;
-        console.log("compute size", this.uniforms.sizeX, this.uniforms.sizeY, "render size", renderWidth, renderHeight);
+        this.uniforms.computeWidth = this.demo.computeWidth ?? renderWidth;
+        this.uniforms.computeHeight = this.demo.computeHeight ?? renderHeight;
+        console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", renderWidth, renderHeight);
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
@@ -169,7 +169,7 @@ export class Engine {
         // Initial data.
         this.buffer1 = this.device.createBuffer({
             mappedAtCreation: true,
-            size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
+            size: 4 * this.uniforms.computeWidth * this.uniforms.computeHeight,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
         this.demo.init(this.uniforms, this.buffer1.getMappedRange());
@@ -177,7 +177,7 @@ export class Engine {
 
         // Buffer for shader to write to.
         this.buffer2 = this.device.createBuffer({
-            size: 4 * this.uniforms.sizeX * this.uniforms.sizeY,
+            size: 4 * this.uniforms.computeWidth * this.uniforms.computeHeight,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
 
@@ -223,7 +223,7 @@ export class Engine {
         });
 
         this.renderTexture = this.device.createTexture({
-            size: { width: this.uniforms.sizeX, height: this.uniforms.sizeY },
+            size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
             format: "rgba8unorm",
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
             // usage: GPUTextureUsage. GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
@@ -405,7 +405,7 @@ export class Engine {
             const passEncoder = commandEncoder.beginComputePass();
             passEncoder.setPipeline(this.computePipeline);
             passEncoder.setBindGroup(0, bindGroup);
-            passEncoder.dispatch(Math.ceil(this.uniforms.sizeX / 8), Math.ceil(this.uniforms.sizeY / 8));
+            passEncoder.dispatch(Math.ceil(this.uniforms.computeWidth / 8), Math.ceil(this.uniforms.computeHeight / 8));
             passEncoder.endPass();
 
             this.isForward = !this.isForward;
@@ -415,11 +415,10 @@ export class Engine {
         commandEncoder.copyBufferToTexture(
             {
                 buffer: dstBuffer,
-                bytesPerRow: 4 * this.uniforms.sizeX,
+                bytesPerRow: 4 * this.uniforms.computeWidth,
             },
             { texture: this.renderTexture },
-            { width: this.uniforms.sizeX, height: this.uniforms.sizeY },
-            //4 * this.uniforms.sizeX * this.uniforms.sizeY,
+            { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
         );
 
         // Rendering.

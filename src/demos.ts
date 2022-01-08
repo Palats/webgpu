@@ -8,23 +8,23 @@ const fadeDemo = {
     id: "fade",
     caption: "Fiddling with red component",
     fps: 15,
-    sizeX: 320,
-    sizeY: 200,
+    computeWidth: 320,
+    computeHeight: 200,
     init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.sizeY; y++) {
-            for (let x = 0; x < uniforms.sizeX; x++) {
-                a[4 * (x + y * uniforms.sizeX) + 0] = Math.floor(x * 256 / uniforms.sizeX);
-                a[4 * (x + y * uniforms.sizeX) + 1] = Math.floor(y * 256 / uniforms.sizeX);
-                a[4 * (x + y * uniforms.sizeX) + 2] = 0;
-                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
+        for (let y = 0; y < uniforms.computeHeight; y++) {
+            for (let x = 0; x < uniforms.computeWidth; x++) {
+                a[4 * (x + y * uniforms.computeWidth) + 0] = Math.floor(x * 256 / uniforms.computeWidth);
+                a[4 * (x + y * uniforms.computeWidth) + 1] = Math.floor(y * 256 / uniforms.computeWidth);
+                a[4 * (x + y * uniforms.computeWidth) + 2] = 0;
+                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
             }
         }
     },
     code: `
         [[block]] struct Uniforms {
-            sizex: u32;
-            sizey: u32;
+            computeWidth: u32;
+            computeHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -38,11 +38,11 @@ const fadeDemo = {
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
             // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
                 return;
             }
 
-            let idx = global_id.y + global_id.x * uniforms.sizey;
+            let idx = global_id.y + global_id.x * uniforms.computeHeight;
 
             var v = unpack4x8unorm(srcFrame.values[idx]);
             // v.r = 1.0;
@@ -60,23 +60,23 @@ const fallingDemo = {
     id: "falling",
     caption: "Falling random pixels",
     fps: 4,
-    sizeX: 320,
-    sizeY: 200,
+    computeWidth: 320,
+    computeHeight: 200,
     init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.sizeY; y++) {
-            for (let x = 0; x < uniforms.sizeX; x++) {
-                a[4 * (x + y * uniforms.sizeX) + 0] = Math.random() * 255;
-                a[4 * (x + y * uniforms.sizeX) + 1] = Math.random() * 255;
-                a[4 * (x + y * uniforms.sizeX) + 2] = Math.random() * 255;
-                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
+        for (let y = 0; y < uniforms.computeHeight; y++) {
+            for (let x = 0; x < uniforms.computeWidth; x++) {
+                a[4 * (x + y * uniforms.computeWidth) + 0] = Math.random() * 255;
+                a[4 * (x + y * uniforms.computeWidth) + 1] = Math.random() * 255;
+                a[4 * (x + y * uniforms.computeWidth) + 2] = Math.random() * 255;
+                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
             }
         }
     },
     code: `
         [[block]] struct Uniforms {
-            sizex: u32;
-            sizey: u32;
+            computeWidth: u32;
+            computeHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -90,15 +90,15 @@ const fallingDemo = {
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
             // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
                 return;
             }
 
-            let idx = global_id.x + global_id.y * uniforms.sizex;
+            let idx = global_id.x + global_id.y * uniforms.computeWidth;
 
             var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
             if (global_id.y > 0u) {
-                let previdx = global_id.x + (global_id.y - 1u) * uniforms.sizex;
+                let previdx = global_id.x + (global_id.y - 1u) * uniforms.computeWidth;
                 v = unpack4x8unorm(srcFrame.values[previdx]);
                 let v2 = unpack4x8unorm(srcFrame.values[idx]);
                 v.g = v2.g;
@@ -117,21 +117,21 @@ const conwayDemo = {
     fps: 60,
     init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.sizeY; y++) {
-            for (let x = 0; x < uniforms.sizeX; x++) {
+        for (let y = 0; y < uniforms.computeHeight; y++) {
+            for (let x = 0; x < uniforms.computeWidth; x++) {
                 const hasLife = Math.random() > 0.8;
                 const v = hasLife ? 255 : 0;
-                a[4 * (x + y * uniforms.sizeX) + 0] = v;
-                a[4 * (x + y * uniforms.sizeX) + 1] = v;
-                a[4 * (x + y * uniforms.sizeX) + 2] = v;
-                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
+                a[4 * (x + y * uniforms.computeWidth) + 0] = v;
+                a[4 * (x + y * uniforms.computeWidth) + 1] = v;
+                a[4 * (x + y * uniforms.computeWidth) + 2] = v;
+                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
             }
         }
     },
     code: `
         [[block]] struct Uniforms {
-            sizex: u32;
-            sizey: u32;
+            computeWidth: u32;
+            computeHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -145,9 +145,9 @@ const conwayDemo = {
         fn isOn(x: i32, y: i32) -> i32 {
             if (x < 0) { return 0; }
             if (y < 0) { return 0; }
-            if (x >= i32(uniforms.sizex)) { return 0; }
-            if (y >= i32(uniforms.sizey)) { return 0; }
-            let idx = x + y * i32(uniforms.sizex);
+            if (x >= i32(uniforms.computeWidth)) { return 0; }
+            if (y >= i32(uniforms.computeHeight)) { return 0; }
+            let idx = x + y * i32(uniforms.computeWidth);
             let v = unpack4x8unorm(srcFrame.values[idx]);
             if (v.r < 0.5) { return 0;}
             return 1;
@@ -157,7 +157,7 @@ const conwayDemo = {
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
 
             // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
                 return;
             }
 
@@ -182,7 +182,7 @@ const conwayDemo = {
                 s = 1.0;
             }
 
-            let idx = global_id.x + global_id.y * uniforms.sizex;
+            let idx = global_id.x + global_id.y * uniforms.computeWidth;
             var v = unpack4x8unorm(srcFrame.values[idx]);
             v.r = s;
             v.g = s;
@@ -195,26 +195,26 @@ const conwayDemo = {
 
 // A classic fire effect.
 const fireDemo = {
-    sizeX: 320,
-    sizeY: 200,
+    computeWidth: 640,
+    computeHeight: 200,
     id: "fire",
     caption: "Classic fire effect",
     fps: 30,
     init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.sizeY; y++) {
-            for (let x = 0; x < uniforms.sizeX; x++) {
-                a[4 * (x + y * uniforms.sizeX) + 0] = 0;
-                a[4 * (x + y * uniforms.sizeX) + 1] = 0;
-                a[4 * (x + y * uniforms.sizeX) + 2] = 0;
-                a[4 * (x + y * uniforms.sizeX) + 3] = 255;
+        for (let y = 0; y < uniforms.computeHeight; y++) {
+            for (let x = 0; x < uniforms.computeWidth; x++) {
+                a[4 * (x + y * uniforms.computeWidth) + 0] = 0;
+                a[4 * (x + y * uniforms.computeWidth) + 1] = 0;
+                a[4 * (x + y * uniforms.computeWidth) + 2] = 0;
+                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
             }
         }
     },
     code: `
         [[block]] struct Uniforms {
-            sizex: u32;
-            sizey: u32;
+            computeWidth: u32;
+            computeHeight: u32;
             elapsedMs: f32;
         };
         [[block]] struct Frame {
@@ -232,24 +232,24 @@ const fireDemo = {
         fn at(x: i32, y: i32) -> vec4<f32> {
             if (x < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
             if (y < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            if (x >= i32(uniforms.sizex)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            if (y >= i32(uniforms.sizey)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            let idx = x + y * i32(uniforms.sizex);
+            if (x >= i32(uniforms.computeWidth)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            if (y >= i32(uniforms.computeHeight)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            let idx = x + y * i32(uniforms.computeWidth);
             return unpack4x8unorm(srcFrame.values[idx]);
         }
 
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
             // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.sizex || global_id.y >= uniforms.sizey) {
+            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
                 return;
             }
 
             let x = i32(global_id.x);
             let y = i32(global_id.y);
-            let idx = global_id.x + global_id.y * uniforms.sizex;
+            let idx = global_id.x + global_id.y * uniforms.computeWidth;
 
-            if (y == (i32(uniforms.sizey) - 1)) {
+            if (y == (i32(uniforms.computeHeight) - 1)) {
                 if (rand(f32(x)) < 0.2) {
                     dstFrame.values[idx] = pack4x8unorm(vec4<f32>(1.0, 1.0, 1.0, 1.0));
                 } else {
@@ -264,8 +264,8 @@ const fireDemo = {
 
     fragment: `
         [[block]] struct Uniforms {
-            sizex: u32;
-            sizey: u32;
+            computeWidth: u32;
+            computeHeight: u32;
             elapsedMs: f32;
         };
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
@@ -283,9 +283,9 @@ const fireDemo = {
         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
             let v = textureSample(dstTexture, dstSampler, coord);
 
-            //let x = coord.x * f32(uniforms.sizex);
-            //let y = coord.y * f32(uniforms.sizey);
-            // let idx = u32(y) * uniforms.sizex + u32(x);
+            //let x = coord.x * f32(uniforms.computeWidth);
+            //let y = coord.y * f32(uniforms.computeHeight);
+            // let idx = u32(y) * uniforms.computeWidth + u32(x);
             //let v = unpack4x8unorm(dstFrame.values[idx]);
 
             let key = v.r * 8.0;
