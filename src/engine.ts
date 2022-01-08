@@ -234,7 +234,6 @@ export class Engine {
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
             format: "rgba8unorm",
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-            // usage: GPUTextureUsage. GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         })
 
         const bindGroupLayout = this.device.createPipelineLayout({
@@ -336,7 +335,10 @@ export class Engine {
             },
         });
 
-        const sampler = this.device.createSampler({ label: "sampler" });
+        const sampler = this.device.createSampler({
+            label: "sampler",
+            magFilter: "linear",
+        });
         const textureView = this.renderTexture.createView();
 
         this.bindGroupRender1 = this.device.createBindGroup({

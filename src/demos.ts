@@ -201,8 +201,8 @@ const conwayDemo = {
 
 // A classic fire effect.
 const fireDemo = {
-    computeWidth: 64,
-    computeHeight: 20,
+    computeWidth: 320,
+    computeHeight: 200,
     id: "fire",
     caption: "Classic fire effect",
     fps: 30,
