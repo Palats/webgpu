@@ -283,11 +283,9 @@ const fireDemo = {
         [[block]] struct Frame {
             values: array<u32>;
         };
-        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-        [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
-        [[group(0), binding(3)]] var dstTexture : texture_2d<f32>;
-        [[group(0), binding(4)]] var dstSampler : sampler;
-
+        [[group(0), binding(1)]] var<storage, read> dstFrame : Frame;
+        [[group(0), binding(2)]] var dstTexture : texture_2d<f32>;
+        [[group(0), binding(3)]] var dstSampler : sampler;
 
         [[stage(fragment)]]
         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {

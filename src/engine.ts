@@ -84,8 +84,7 @@ const defaultFragment = `
     [[block]] struct Frame {
         values: array<u32>;
     };
-    [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-    [[group(0), binding(2)]] var<storage, read> dstFrame : Frame;
+    [[group(0), binding(1)]] var<storage, read> dstFrame : Frame;
 
     [[stage(fragment)]]
     fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
@@ -233,13 +232,14 @@ export class Engine {
         this.renderTexture = this.device.createTexture({
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
             format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
         })
 
-        const bindGroupLayout = this.device.createPipelineLayout({
+        const renderBindGroupLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [
                 this.device.createBindGroupLayout({
                     entries: [
+                        // Uniforms
                         {
                             binding: 0,
                             visibility: GPUShaderStage.FRAGMENT,
@@ -247,6 +247,7 @@ export class Engine {
                                 type: "uniform",
                             }
                         },
+                        // Current output compute buffer
                         {
                             binding: 1,
                             visibility: GPUShaderStage.FRAGMENT,
@@ -254,22 +255,17 @@ export class Engine {
                                 type: "read-only-storage",
                             }
                         },
+                        // Output compute buffer as texture
                         {
                             binding: 2,
-                            visibility: GPUShaderStage.FRAGMENT,
-                            buffer: {
-                                type: "read-only-storage",
-                            }
-                        },
-                        {
-                            binding: 3,
                             visibility: GPUShaderStage.FRAGMENT,
                             texture: {
                                 multisampled: false,
                             }
                         },
+                        // Sampler for  the texture
                         {
-                            binding: 4,
+                            binding: 3,
                             visibility: GPUShaderStage.FRAGMENT,
                             sampler: {
                                 type: "filtering",
@@ -284,7 +280,7 @@ export class Engine {
         const fragment = this.demo.fragment ?? defaultFragment;
 
         this.renderPipeline = this.device.createRenderPipeline({
-            layout: bindGroupLayout,
+            layout: renderBindGroupLayout,
             vertex: {
                 // Create full screen pair of triangles.
                 module: this.device.createShaderModule({
@@ -348,15 +344,12 @@ export class Engine {
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.buffer1, }
-            }, {
-                binding: 2,
                 resource: { buffer: this.buffer2, }
             }, {
-                binding: 3,
+                binding: 2,
                 resource: textureView,
             }, {
-                binding: 4,
+                binding: 3,
                 resource: sampler,
             }]
         });
@@ -367,15 +360,12 @@ export class Engine {
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.buffer2, }
-            }, {
-                binding: 2,
                 resource: { buffer: this.buffer1, }
             }, {
-                binding: 3,
+                binding: 2,
                 resource: textureView,
             }, {
-                binding: 4,
+                binding: 3,
                 resource: sampler,
             }]
         });
