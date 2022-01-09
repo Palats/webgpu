@@ -205,7 +205,7 @@ const fireDemo = {
     computeHeight: 200,
     id: "fire",
     caption: "Classic fire effect",
-    fps: 30,
+    fps: 60,
     init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
         const a = new Uint8Array(data);
         for (let y = 0; y < uniforms.computeHeight; y++) {
@@ -232,6 +232,8 @@ const fireDemo = {
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
         [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
         [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+        [[group(0), binding(3)]] var srcTexture : texture_2d<f32>;
+        [[group(0), binding(4)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
         fn rand(v: f32) -> f32 {
             return fract(sin(dot(vec2<f32>(uniforms.elapsedMs, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
@@ -257,16 +259,21 @@ const fireDemo = {
             let y = i32(global_id.y);
             let idx = global_id.x + global_id.y * uniforms.computeWidth;
 
+
+
+            var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
             if (y == (i32(uniforms.computeHeight) - 1)) {
                 if (rand(f32(x)) < 0.2) {
-                    dstFrame.values[idx] = pack4x8unorm(vec4<f32>(1.0, 1.0, 1.0, 1.0));
+                    v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
                 } else {
-                    dstFrame.values[idx] = pack4x8unorm(vec4<f32>(0.0, 0.0, 0.0, 1.0));
+                    v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
                 }
             } else {
-                let v = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
-                dstFrame.values[idx] = pack4x8unorm((v / 4.0) - 0.01);
+                let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
+                v = (sum / 4.0) - 0.01;
             }
+            dstFrame.values[idx] = pack4x8unorm(v);
+            textureStore(dstTexture, vec2<i32>(x, y), v);
         }
     `,
 
@@ -286,10 +293,12 @@ const fireDemo = {
         [[group(0), binding(1)]] var<storage, read> dstFrame : Frame;
         [[group(0), binding(2)]] var dstTexture : texture_2d<f32>;
         [[group(0), binding(3)]] var dstSampler : sampler;
+        [[group(0), binding(4)]] var computeTexture : texture_2d<f32>;
 
         [[stage(fragment)]]
         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-            let v = textureSample(dstTexture, dstSampler, coord);
+            //let v = textureSample(dstTexture, dstSampler, coord);
+            let v = textureSample(computeTexture, dstSampler, coord);
 
             //let x = coord.x * f32(uniforms.computeWidth);
             //let y = coord.y * f32(uniforms.computeHeight);

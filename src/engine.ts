@@ -166,13 +166,6 @@ export class Engine {
 
         this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
 
-        this.computePipeline = this.device.createComputePipeline({
-            compute: {
-                module: this.shaderModule,
-                entryPoint: "main"
-            }
-        });
-
         // Initial data.
         this.buffer1 = this.device.createBuffer({
             mappedAtCreation: true,
@@ -188,6 +181,80 @@ export class Engine {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
 
+        // Textures
+        const tex1 = this.device.createTexture({
+            size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const texView1 = tex1.createView();
+
+        const tex2 = this.device.createTexture({
+            size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const texView2 = tex2.createView();
+
+        const computeBindGroupLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [
+                this.device.createBindGroupLayout({
+                    entries: [
+                        // Uniforms
+                        {
+                            binding: 0,
+                            visibility: GPUShaderStage.COMPUTE,
+                            buffer: {
+                                type: "uniform",
+                            }
+                        },
+                        // Current input compute buffer
+                        {
+                            binding: 1,
+                            visibility: GPUShaderStage.COMPUTE,
+                            buffer: {
+                                type: "read-only-storage",
+                            }
+                        },
+                        // Current output compute buffer
+                        {
+                            binding: 2,
+                            visibility: GPUShaderStage.COMPUTE,
+                            buffer: {
+                                type: "storage",
+                            }
+                        },
+                        // Input compute buffer as texture
+                        {
+                            binding: 3,
+                            visibility: GPUShaderStage.COMPUTE,
+                            texture: {
+                                multisampled: false,
+                            }
+                        },
+                        // Output compute buffer as texture
+                        {
+                            binding: 4,
+                            visibility: GPUShaderStage.COMPUTE,
+                            storageTexture: {
+                                access: 'write-only',
+                                format: 'rgba8unorm',
+                            }
+                        },
+                    ]
+                },
+                ),
+            ]
+        });
+
+        this.computePipeline = this.device.createComputePipeline({
+            layout: computeBindGroupLayout,
+            compute: {
+                module: this.shaderModule,
+                entryPoint: "main"
+            }
+        });
+
         this.bindGroup1 = this.device.createBindGroup({
             layout: this.computePipeline.getBindGroupLayout(0),
             entries: [{
@@ -199,6 +266,12 @@ export class Engine {
             }, {
                 binding: 2,
                 resource: { buffer: this.buffer2, }
+            }, {
+                binding: 3,
+                resource: texView1,
+            }, {
+                binding: 4,
+                resource: texView2,
             }]
         });
 
@@ -213,6 +286,12 @@ export class Engine {
             }, {
                 binding: 2,
                 resource: { buffer: this.buffer1, }
+            }, {
+                binding: 3,
+                resource: texView2,
+            }, {
+                binding: 4,
+                resource: texView1,
             }]
         });
 
@@ -233,7 +312,7 @@ export class Engine {
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
             format: "rgba8unorm",
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
-        })
+        });
 
         const renderBindGroupLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [
@@ -255,7 +334,7 @@ export class Engine {
                                 type: "read-only-storage",
                             }
                         },
-                        // Output compute buffer as texture
+                        // Output compute texture copied from buffer
                         {
                             binding: 2,
                             visibility: GPUShaderStage.FRAGMENT,
@@ -269,6 +348,14 @@ export class Engine {
                             visibility: GPUShaderStage.FRAGMENT,
                             sampler: {
                                 type: "filtering",
+                            }
+                        },
+                        // Output compute texture
+                        {
+                            binding: 4,
+                            visibility: GPUShaderStage.FRAGMENT,
+                            texture: {
+                                multisampled: false,
                             }
                         },
                     ]
@@ -351,6 +438,9 @@ export class Engine {
             }, {
                 binding: 3,
                 resource: sampler,
+            }, {
+                binding: 4,
+                resource: texView2,
             }]
         });
         this.bindGroupRender2 = this.device.createBindGroup({
@@ -367,6 +457,9 @@ export class Engine {
             }, {
                 binding: 3,
                 resource: sampler,
+            }, {
+                binding: 4,
+                resource: texView1,
             }]
         });
 
