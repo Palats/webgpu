@@ -240,12 +240,13 @@ const fireDemo = {
         }
 
         fn at(x: i32, y: i32) -> vec4<f32> {
-            if (x < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
+            /*if (x < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
             if (y < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
             if (x >= i32(uniforms.computeWidth)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            if (y >= i32(uniforms.computeHeight)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            let idx = x + y * i32(uniforms.computeWidth);
-            return unpack4x8unorm(srcFrame.values[idx]);
+            if (y >= i32(uniforms.computeHeight)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }*/
+            //let idx = x + y * i32(uniforms.computeWidth);
+            //return unpack4x8unorm(srcFrame.values[idx]);
+            return textureLoad(srcTexture, vec2<i32>(x, y), 0);
         }
 
         [[stage(compute), workgroup_size(8, 8)]]
@@ -257,9 +258,6 @@ const fireDemo = {
 
             let x = i32(global_id.x);
             let y = i32(global_id.y);
-            let idx = global_id.x + global_id.y * uniforms.computeWidth;
-
-
 
             var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
             if (y == (i32(uniforms.computeHeight) - 1)) {
@@ -272,7 +270,8 @@ const fireDemo = {
                 let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
                 v = (sum / 4.0) - 0.01;
             }
-            dstFrame.values[idx] = pack4x8unorm(v);
+            // let idx = global_id.x + global_id.y * uniforms.computeWidth;
+            // dstFrame.values[idx] = pack4x8unorm(v);
             textureStore(dstTexture, vec2<i32>(x, y), v);
         }
     `,
