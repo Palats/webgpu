@@ -8,7 +8,7 @@ export interface Demo {
     computeHeight?: number;
     code: string;
     fragment?: string;
-    init: (u: Uniforms, a: ArrayBuffer) => void;
+    init?: (u: Uniforms, a: ArrayBuffer) => void;
 }
 
 export class Uniforms {
@@ -99,36 +99,25 @@ const defaultFragment = `
 export class NoWebGPU extends Error { }
 
 export class Engine {
-    demo: Demo;
-    canvas: HTMLCanvasElement;
-
     previousTimestampMs: DOMHighResTimeStamp = 0;
     previousStepMs: DOMHighResTimeStamp = 0;
+    fps: number = 60;
 
     uniforms!: Uniforms;
     adapter!: GPUAdapter;
     device!: GPUDevice;
-    shaderModule!: GPUShaderModule;
+    context!: GPUCanvasContext;
     computePipeline!: GPUComputePipeline;
     renderPipeline!: GPURenderPipeline;
-    context!: GPUCanvasContext;
 
-    buffer1!: GPUBuffer;
-    buffer2!: GPUBuffer;
-    renderTexture!: GPUTexture;
-    bindGroup1!: GPUBindGroup;   // For 1 -> 2
-    bindGroup2!: GPUBindGroup;   // For 2 -> 1
-    bindGroupRender1!: GPUBindGroup;
-    bindGroupRender2!: GPUBindGroup;
+    computeBindGroup1!: GPUBindGroup;   // For 1 -> 2
+    computeBindGroup2!: GPUBindGroup;   // For 2 -> 1
+    renderBindGroup1!: GPUBindGroup;
+    renderBindGroup2!: GPUBindGroup;
 
     isForward = true;  // if false, goes 2->1
 
-    constructor(canvas: HTMLCanvasElement, demo: Demo) {
-        this.canvas = canvas;
-        this.demo = demo;
-    }
-
-    async init(renderWidth: number, renderHeight: number) {
+    async init(canvas: HTMLCanvasElement, demo: Demo, renderWidth: number, renderHeight: number) {
         if (!navigator.gpu) {
             throw new NoWebGPU("no webgpu extension");
         }
@@ -149,6 +138,18 @@ export class Engine {
 
         this.device = await this.adapter.requestDevice();
 
+        this.context = canvas.getContext('webgpu');
+        if (!this.context) { new Error("no webgpu canvas context"); }
+        const presentationFormat = this.context.getPreferredFormat(this.adapter);
+        this.context.configure({
+            device: this.device,
+            format: presentationFormat,
+            size: {
+                width: renderWidth,
+                height: renderHeight,
+            },
+        });
+
         // As of 2021-12-11, Firefox nightly does not support device.lost.
         /*if (this.device.lost) {
             this.device.lost.then((e) => {
@@ -157,31 +158,17 @@ export class Engine {
             });
         }*/
 
+        this.fps = demo.fps;
+
+        // Uniforms setup.
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.computeWidth = this.demo.computeWidth ?? renderWidth;
-        this.uniforms.computeHeight = this.demo.computeHeight ?? renderHeight;
+        this.uniforms.computeWidth = demo.computeWidth ?? renderWidth;
+        this.uniforms.computeHeight = demo.computeHeight ?? renderHeight;
         this.uniforms.renderWidth = renderWidth;
         this.uniforms.renderHeight = renderHeight;
         console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", this.uniforms.renderWidth, this.uniforms.renderHeight);
 
-        this.shaderModule = this.device.createShaderModule({ code: this.demo.code });
-
-        // Initial data.
-        this.buffer1 = this.device.createBuffer({
-            mappedAtCreation: true,
-            size: 4 * this.uniforms.computeWidth * this.uniforms.computeHeight,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-        });
-        this.demo.init(this.uniforms, this.buffer1.getMappedRange());
-        this.buffer1.unmap();
-
-        // Buffer for shader to write to.
-        this.buffer2 = this.device.createBuffer({
-            size: 4 * this.uniforms.computeWidth * this.uniforms.computeHeight,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-        });
-
-        // Textures
+        // Textures, used for compute part swapchain.
         const tex1 = this.device.createTexture({
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
             format: "rgba8unorm",
@@ -196,6 +183,7 @@ export class Engine {
         });
         const texView2 = tex2.createView();
 
+        // Create compute pipeline.
         const computeBindGroupLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [
                 this.device.createBindGroupLayout({
@@ -208,25 +196,9 @@ export class Engine {
                                 type: "uniform",
                             }
                         },
-                        // Current input compute buffer
-                        {
-                            binding: 1,
-                            visibility: GPUShaderStage.COMPUTE,
-                            buffer: {
-                                type: "read-only-storage",
-                            }
-                        },
-                        // Current output compute buffer
-                        {
-                            binding: 2,
-                            visibility: GPUShaderStage.COMPUTE,
-                            buffer: {
-                                type: "storage",
-                            }
-                        },
                         // Input compute buffer as texture
                         {
-                            binding: 3,
+                            binding: 1,
                             visibility: GPUShaderStage.COMPUTE,
                             texture: {
                                 multisampled: false,
@@ -234,7 +206,7 @@ export class Engine {
                         },
                         // Output compute buffer as texture
                         {
-                            binding: 4,
+                            binding: 2,
                             visibility: GPUShaderStage.COMPUTE,
                             storageTexture: {
                                 access: 'write-only',
@@ -250,70 +222,40 @@ export class Engine {
         this.computePipeline = this.device.createComputePipeline({
             layout: computeBindGroupLayout,
             compute: {
-                module: this.shaderModule,
+                module: this.device.createShaderModule({ code: demo.code }),
                 entryPoint: "main"
             }
         });
 
-        this.bindGroup1 = this.device.createBindGroup({
+        this.computeBindGroup1 = this.device.createBindGroup({
             layout: this.computePipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.buffer1, }
-            }, {
-                binding: 2,
-                resource: { buffer: this.buffer2, }
-            }, {
-                binding: 3,
                 resource: texView1,
             }, {
-                binding: 4,
+                binding: 2,
                 resource: texView2,
             }]
         });
 
-        this.bindGroup2 = this.device.createBindGroup({
+        this.computeBindGroup2 = this.device.createBindGroup({
             layout: this.computePipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.buffer2, }
-            }, {
-                binding: 2,
-                resource: { buffer: this.buffer1, }
-            }, {
-                binding: 3,
                 resource: texView2,
             }, {
-                binding: 4,
+                binding: 2,
                 resource: texView1,
             }]
         });
 
-        // Now setup rendering.
-        this.context = this.canvas.getContext('webgpu');
-        if (!this.context) { new Error("no webgpu canvas context"); }
-        const presentationFormat = this.context.getPreferredFormat(this.adapter);
-        this.context.configure({
-            device: this.device,
-            format: presentationFormat,
-            size: {
-                width: renderWidth,
-                height: renderHeight,
-            },
-        });
-
-        this.renderTexture = this.device.createTexture({
-            size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
-            format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
-        });
-
+        // Create rendering pipeline.
         const renderBindGroupLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [
                 this.device.createBindGroupLayout({
@@ -326,17 +268,9 @@ export class Engine {
                                 type: "uniform",
                             }
                         },
-                        // Current output compute buffer
+                        // Output compute texture
                         {
                             binding: 1,
-                            visibility: GPUShaderStage.FRAGMENT,
-                            buffer: {
-                                type: "read-only-storage",
-                            }
-                        },
-                        // Output compute texture copied from buffer
-                        {
-                            binding: 2,
                             visibility: GPUShaderStage.FRAGMENT,
                             texture: {
                                 multisampled: false,
@@ -344,18 +278,10 @@ export class Engine {
                         },
                         // Sampler for  the texture
                         {
-                            binding: 3,
+                            binding: 2,
                             visibility: GPUShaderStage.FRAGMENT,
                             sampler: {
                                 type: "filtering",
-                            }
-                        },
-                        // Output compute texture
-                        {
-                            binding: 4,
-                            visibility: GPUShaderStage.FRAGMENT,
-                            texture: {
-                                multisampled: false,
                             }
                         },
                     ]
@@ -364,7 +290,7 @@ export class Engine {
             ]
         });
 
-        const fragment = this.demo.fragment ?? defaultFragment;
+        const fragment = demo.fragment ?? defaultFragment;
 
         this.renderPipeline = this.device.createRenderPipeline({
             layout: renderBindGroupLayout,
@@ -422,44 +348,31 @@ export class Engine {
             label: "sampler",
             magFilter: "linear",
         });
-        const textureView = this.renderTexture.createView();
 
-        this.bindGroupRender1 = this.device.createBindGroup({
+        this.renderBindGroup1 = this.device.createBindGroup({
             layout: this.renderPipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.buffer2, }
+                resource: texView2,
             }, {
                 binding: 2,
-                resource: textureView,
-            }, {
-                binding: 3,
                 resource: sampler,
-            }, {
-                binding: 4,
-                resource: texView2,
             }]
         });
-        this.bindGroupRender2 = this.device.createBindGroup({
+        this.renderBindGroup2 = this.device.createBindGroup({
             layout: this.renderPipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
                 resource: { buffer: this.uniforms.buffer, }
             }, {
                 binding: 1,
-                resource: { buffer: this.buffer1, }
+                resource: texView1,
             }, {
                 binding: 2,
-                resource: textureView,
-            }, {
-                binding: 3,
                 resource: sampler,
-            }, {
-                binding: 4,
-                resource: texView1,
             }]
         });
 
@@ -473,7 +386,7 @@ export class Engine {
         this.uniforms.elapsedMs += frameDelta;
 
         let simulDelta = timestampMs - this.previousStepMs;
-        const runStep = simulDelta > (1000 / this.demo.fps);
+        const runStep = simulDelta > (1000 / this.fps);
 
         this.previousTimestampMs = timestampMs;
         if (runStep) {
@@ -489,11 +402,9 @@ export class Engine {
         // Add uniforms, always.
         this.uniforms.copy(commandEncoder);
 
-        let dstBuffer = this.isForward ? this.buffer1 : this.buffer2;
         // Run compute when needed.
         if (runStep) {
-            const bindGroup = this.isForward ? this.bindGroup1 : this.bindGroup2;
-            dstBuffer = this.isForward ? this.buffer2 : this.buffer1;
+            const bindGroup = this.isForward ? this.computeBindGroup1 : this.computeBindGroup2;
 
             const passEncoder = commandEncoder.beginComputePass();
             passEncoder.setPipeline(this.computePipeline);
@@ -503,16 +414,6 @@ export class Engine {
 
             this.isForward = !this.isForward;
         }
-
-        // Copy the data from compute buffer to a texture to allow for sampling.
-        commandEncoder.copyBufferToTexture(
-            {
-                buffer: dstBuffer,
-                bytesPerRow: 4 * this.uniforms.computeWidth,
-            },
-            { texture: this.renderTexture },
-            { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
-        );
 
         // Rendering.
         const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -525,7 +426,7 @@ export class Engine {
             ],
         };
 
-        const renderBindGroup = this.isForward ? this.bindGroupRender1! : this.bindGroupRender2!;
+        const renderBindGroup = this.isForward ? this.renderBindGroup1! : this.renderBindGroup2!;
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(this.renderPipeline);
         passEncoder.setBindGroup(0, renderBindGroup);

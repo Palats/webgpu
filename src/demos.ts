@@ -206,17 +206,7 @@ const fireDemo = {
     id: "fire",
     caption: "Classic fire effect",
     fps: 60,
-    init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
-        const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.computeHeight; y++) {
-            for (let x = 0; x < uniforms.computeWidth; x++) {
-                a[4 * (x + y * uniforms.computeWidth) + 0] = 0;
-                a[4 * (x + y * uniforms.computeWidth) + 1] = 0;
-                a[4 * (x + y * uniforms.computeWidth) + 2] = 0;
-                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
-            }
-        }
-    },
+
     code: `
         [[block]] struct Uniforms {
             computeWidth: u32;
@@ -225,27 +215,16 @@ const fireDemo = {
             renderHeight: u32;
             elapsedMs: f32;
         };
-        [[block]] struct Frame {
-            values: array<u32>;
-        };
 
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
-        [[group(0), binding(3)]] var srcTexture : texture_2d<f32>;
-        [[group(0), binding(4)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
+        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
+        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
         fn rand(v: f32) -> f32 {
             return fract(sin(dot(vec2<f32>(uniforms.elapsedMs, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
         }
 
         fn at(x: i32, y: i32) -> vec4<f32> {
-            /*if (x < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            if (y < 0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            if (x >= i32(uniforms.computeWidth)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }
-            if (y >= i32(uniforms.computeHeight)) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }*/
-            //let idx = x + y * i32(uniforms.computeWidth);
-            //return unpack4x8unorm(srcFrame.values[idx]);
             return textureLoad(srcTexture, vec2<i32>(x, y), 0);
         }
 
@@ -270,8 +249,6 @@ const fireDemo = {
                 let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
                 v = (sum / 4.0) - 0.01;
             }
-            // let idx = global_id.x + global_id.y * uniforms.computeWidth;
-            // dstFrame.values[idx] = pack4x8unorm(v);
             textureStore(dstTexture, vec2<i32>(x, y), v);
         }
     `,
@@ -285,14 +262,8 @@ const fireDemo = {
             elapsedMs: f32;
         };
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-
-        [[block]] struct Frame {
-            values: array<u32>;
-        };
-        [[group(0), binding(1)]] var<storage, read> dstFrame : Frame;
-        [[group(0), binding(2)]] var dstTexture : texture_2d<f32>;
-        [[group(0), binding(3)]] var dstSampler : sampler;
-        [[group(0), binding(4)]] var computeTexture : texture_2d<f32>;
+        [[group(0), binding(1)]] var computeTexture : texture_2d<f32>;
+        [[group(0), binding(2)]] var dstSampler : sampler;
 
         [[stage(fragment)]]
         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {

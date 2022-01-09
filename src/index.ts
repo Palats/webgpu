@@ -191,9 +191,8 @@ export class AppMain extends LitElement {
             this.noWebGPU = undefined;
             this.otherError = undefined;
             try {
-                this.engine = new engine.Engine(canvas, demos.demoByID(this.demoID));
-
-                await this.engine.init(this.renderWidth, this.renderHeight);
+                this.engine = new engine.Engine();
+                await this.engine.init(canvas, demos.demoByID(this.demoID), this.renderWidth, this.renderHeight);
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
                     await this.engine!.frame(ts);
