@@ -158,7 +158,7 @@ export class AppMain extends LitElement {
         const devicePixelRatio = window.devicePixelRatio || 1;
         let renderWidth = this.canvas.clientWidth * devicePixelRatio;
         let renderHeight = this.canvas.clientHeight * devicePixelRatio;
-        if (this.limitCanvas) {
+        if (this.limitCanvas && ((renderWidth > 816) || (renderHeight > 640))) {
             // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
             // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
             // lost" otherwise.
