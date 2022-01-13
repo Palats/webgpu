@@ -131,7 +131,6 @@ export class AppMain extends LitElement {
 
     canvas?: HTMLCanvasElement;
 
-    engine?: engine.Engine;
     rebuildNeeded?: string;
 
     renderWidth: number = 0;
@@ -191,11 +190,10 @@ export class AppMain extends LitElement {
             this.noWebGPU = undefined;
             this.otherError = undefined;
             try {
-                this.engine = new engine.Engine();
-                await this.engine.init(canvas, demos.demoByID(this.demoID), this.renderWidth, this.renderHeight);
+                const runner = await demos.byID(this.demoID).init(canvas, this.renderWidth, this.renderHeight);
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
-                    await this.engine!.frame(ts);
+                    await runner.frame(ts);
                 }
                 await new Promise(resolve => setTimeout(resolve, 200));
             } catch (e) {

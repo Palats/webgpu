@@ -1,16 +1,5 @@
 /// <reference types="@webgpu/types" />
 
-export interface Demo {
-    id: string;
-    caption: string;
-    fps: number;
-    computeWidth?: number;
-    computeHeight?: number;
-    code: string;
-    fragment?: string;
-    init?: (u: Uniforms, a: ArrayBuffer) => void;
-}
-
 export class Uniforms {
     computeWidth = 320;
     computeHeight = 200;
@@ -99,9 +88,20 @@ const defaultFragment = `
 export class NoWebGPU extends Error { }
 
 export class Engine {
+    // Class info
+    static id: string;
+    static caption: string;
+
+    // Setup
+    computeWidth?: number;
+    computeHeight?: number;
+    fps: number = 60;
+    computeCode: string = "";
+    fragmentCode = defaultFragment;
+
+    // State
     previousTimestampMs: DOMHighResTimeStamp = 0;
     previousStepMs: DOMHighResTimeStamp = 0;
-    fps: number = 60;
 
     uniforms!: Uniforms;
     adapter!: GPUAdapter;
@@ -117,7 +117,7 @@ export class Engine {
 
     isForward = true;  // if false, goes 2->1
 
-    async init(canvas: HTMLCanvasElement, demo: Demo, renderWidth: number, renderHeight: number) {
+    async init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number) {
         if (!navigator.gpu) {
             throw new NoWebGPU("no webgpu extension");
         }
@@ -158,12 +158,10 @@ export class Engine {
             });
         }*/
 
-        this.fps = demo.fps;
-
         // Uniforms setup.
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.computeWidth = demo.computeWidth ?? renderWidth;
-        this.uniforms.computeHeight = demo.computeHeight ?? renderHeight;
+        this.uniforms.computeWidth = this.computeWidth ?? renderWidth;
+        this.uniforms.computeHeight = this.computeHeight ?? renderHeight;
         this.uniforms.renderWidth = renderWidth;
         this.uniforms.renderHeight = renderHeight;
         console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", this.uniforms.renderWidth, this.uniforms.renderHeight);
@@ -222,7 +220,7 @@ export class Engine {
         this.computePipeline = this.device.createComputePipeline({
             layout: computeBindGroupLayout,
             compute: {
-                module: this.device.createShaderModule({ code: demo.code }),
+                module: this.device.createShaderModule({ code: this.computeCode }),
                 entryPoint: "main"
             }
         });
@@ -290,8 +288,6 @@ export class Engine {
             ]
         });
 
-        const fragment = demo.fragment ?? defaultFragment;
-
         this.renderPipeline = this.device.createRenderPipeline({
             layout: renderBindGroupLayout,
             vertex: {
@@ -330,7 +326,7 @@ export class Engine {
             },
             fragment: {
                 module: this.device.createShaderModule({
-                    code: fragment,
+                    code: this.fragmentCode,
                 }),
                 entryPoint: 'main',
                 targets: [

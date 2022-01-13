@@ -200,14 +200,15 @@ const conwayDemo = {
 }
 
 // A classic fire effect.
-const fireDemo = {
-    computeWidth: 320,
-    computeHeight: 200,
-    id: "fire",
-    caption: "Classic fire effect",
-    fps: 60,
+export class fireDemo extends engine.Engine {
+    static id = "fire";
+    static caption = "Classic fire effect";
 
-    code: `
+    computeWidth = 320;
+    computeHeight = 200;
+    fps = 60;
+
+    computeCode = `
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
@@ -251,9 +252,9 @@ const fireDemo = {
             }
             textureStore(dstTexture, vec2<i32>(x, y), v);
         }
-    `,
+    `;
 
-    fragment: `
+    fragmentCode = `
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
@@ -286,18 +287,37 @@ const fireDemo = {
             if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
             return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
         }
-    `,
+    `;
 }
 
 
-export const allDemos = [
-    fireDemo,
-    conwayDemo,
-    fallingDemo,
-    fadeDemo,
+interface Demo {
+    id: string;
+    caption: string;
+    init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number): Promise<Runner>;
+}
+
+type Runner = {
+    frame(timestampMs: DOMHighResTimeStamp): Promise<void>;
+}
+
+export const asDemo = (t: typeof engine.Engine) => {
+    return {
+        id: t.id,
+        caption: t.caption,
+        async init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number) {
+            const d = new t();
+            await d.init(canvas, renderWidth, renderHeight);
+            return d;
+        }
+    };
+};
+
+export const allDemos: Demo[] = [
+    asDemo(fireDemo),
 ];
 
-export function demoByID(id: string): engine.Demo {
+export function byID(id: string): Demo {
     for (const d of allDemos) {
         if (d.id === id) {
             return d;
