@@ -115,24 +115,25 @@ const fallingDemo = {
 }
 
 // A basic game of life.
-const conwayDemo = {
-    id: "conway",
-    caption: "Conway game of life",
-    fps: 60,
-    init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
-        const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.computeHeight; y++) {
-            for (let x = 0; x < uniforms.computeWidth; x++) {
+export class conwayDemo extends engine.Engine {
+    static id = "conway";
+    static caption = "Conway game of life";
+
+    initCompute(buffer: ArrayBuffer) {
+        const a = new Uint8Array(buffer);
+        for (let y = 0; y < this.uniforms.computeHeight; y++) {
+            for (let x = 0; x < this.uniforms.computeWidth; x++) {
                 const hasLife = Math.random() > 0.8;
                 const v = hasLife ? 255 : 0;
-                a[4 * (x + y * uniforms.computeWidth) + 0] = v;
-                a[4 * (x + y * uniforms.computeWidth) + 1] = v;
-                a[4 * (x + y * uniforms.computeWidth) + 2] = v;
-                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
+                a[4 * (x + y * this.uniforms.computeWidth) + 0] = v;
+                a[4 * (x + y * this.uniforms.computeWidth) + 1] = v;
+                a[4 * (x + y * this.uniforms.computeWidth) + 2] = v;
+                a[4 * (x + y * this.uniforms.computeWidth) + 3] = 255;
             }
         }
-    },
-    code: `
+    };
+
+    computeCode = `
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
@@ -140,28 +141,19 @@ const conwayDemo = {
             renderHeight: u32;
             elapsedMs: f32;
         };
-        [[block]] struct Frame {
-            values: array<u32>;
-        };
 
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
+        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
         fn isOn(x: i32, y: i32) -> i32 {
-            if (x < 0) { return 0; }
-            if (y < 0) { return 0; }
-            if (x >= i32(uniforms.computeWidth)) { return 0; }
-            if (y >= i32(uniforms.computeHeight)) { return 0; }
-            let idx = x + y * i32(uniforms.computeWidth);
-            let v = unpack4x8unorm(srcFrame.values[idx]);
+            let v = textureLoad(srcTexture, vec2<i32>(x, y), 0);
             if (v.r < 0.5) { return 0;}
             return 1;
         }
 
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-
             // Guard against out-of-bounds work group sizes
             if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
                 return;
@@ -187,16 +179,9 @@ const conwayDemo = {
             if (current == 0 && neighbors == 3) {
                 s = 1.0;
             }
-
-            let idx = global_id.x + global_id.y * uniforms.computeWidth;
-            var v = unpack4x8unorm(srcFrame.values[idx]);
-            v.r = s;
-            v.g = s;
-            v.b = s;
-            v.a = 1.0;
-            dstFrame.values[idx] = pack4x8unorm(v);
+            textureStore(dstTexture, vec2<i32>(x, y), vec4<f32>(s, s, s, 1.0));
         }
-    `,
+    `;
 }
 
 // A classic fire effect.
@@ -268,13 +253,7 @@ export class fireDemo extends engine.Engine {
 
         [[stage(fragment)]]
         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-            //let v = textureSample(dstTexture, dstSampler, coord);
             let v = textureSample(computeTexture, dstSampler, coord);
-
-            //let x = coord.x * f32(uniforms.computeWidth);
-            //let y = coord.y * f32(uniforms.computeHeight);
-            // let idx = u32(y) * uniforms.computeWidth + u32(x);
-            //let v = unpack4x8unorm(dstFrame.values[idx]);
 
             let key = v.r * 8.0;
             let c = (v.r * 256.0) % 32.0;
@@ -315,6 +294,7 @@ export const asDemo = (t: typeof engine.Engine) => {
 
 export const allDemos: Demo[] = [
     asDemo(fireDemo),
+    asDemo(conwayDemo),
 ];
 
 export function byID(id: string): Demo {

@@ -58,33 +58,6 @@ export class Uniforms {
     }
 }
 
-// Default logic to take the compute buffer and display it on the canvas.
-// It just rescales whatever is in the compute buffer to the screen.
-const defaultFragment = `
-    [[block]] struct Uniforms {
-        computeWidth: u32;
-        computeHeight: u32;
-        renderWidth: u32;
-        renderHeight: u32;
-        elapsedMs: f32;
-    };
-    [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-
-    [[block]] struct Frame {
-        values: array<u32>;
-    };
-    [[group(0), binding(1)]] var<storage, read> dstFrame : Frame;
-
-    [[stage(fragment)]]
-    fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-        let x = coord.x * f32(uniforms.computeWidth);
-        let y = coord.y * f32(uniforms.computeHeight);
-        let idx = u32(y) * uniforms.computeWidth + u32(x);
-        let v = unpack4x8unorm(dstFrame.values[idx]);
-        return vec4<f32>(v.g, v.r, v.b, 1.0);
-    }
-`;
-
 export class NoWebGPU extends Error { }
 
 export class Engine {
@@ -97,7 +70,6 @@ export class Engine {
     computeHeight?: number;
     fps: number = 60;
     computeCode: string = "";
-    fragmentCode = defaultFragment;
 
     // State
     previousTimestampMs: DOMHighResTimeStamp = 0;
@@ -116,6 +88,8 @@ export class Engine {
     renderBindGroup2!: GPUBindGroup;
 
     isForward = true;  // if false, goes 2->1
+
+    initCompute(buffer: ArrayBuffer): void { }
 
     async init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number) {
         if (!navigator.gpu) {
@@ -170,7 +144,7 @@ export class Engine {
         const tex1 = this.device.createTexture({
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
             format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
         });
         const texView1 = tex1.createView();
 
@@ -180,6 +154,17 @@ export class Engine {
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
         });
         const texView2 = tex2.createView();
+
+        // Setup the initial texture1, to allow for initial data.
+        // A bit useless when no init is needed, but that's a one time thing.
+        const buffer = new ArrayBuffer(this.uniforms.computeWidth * this.uniforms.computeHeight * 4);
+        this.initCompute(buffer);
+        await this.device.queue.writeTexture(
+            { texture: tex1 },
+            buffer,
+            { bytesPerRow: this.uniforms.computeWidth * 4 },
+            { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight }
+        );
 
         // Create compute pipeline.
         const computeBindGroupLayout = this.device.createPipelineLayout({
@@ -373,6 +358,26 @@ export class Engine {
         });
 
     }
+
+    // Default logic to take the compute buffer and display it on the canvas.
+    // It just rescales whatever is in the compute buffer to the screen.
+    fragmentCode = `
+        [[block]] struct Uniforms {
+            computeWidth: u32;
+            computeHeight: u32;
+            renderWidth: u32;
+            renderHeight: u32;
+            elapsedMs: f32;
+        };
+        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
+        [[group(0), binding(1)]] var computeTexture : texture_2d<f32>;
+        [[group(0), binding(2)]] var dstSampler : sampler;
+
+        [[stage(fragment)]]
+        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+            return textureSample(computeTexture, dstSampler, coord);
+        }
+    `;
 
     async frame(timestampMs: DOMHighResTimeStamp) {
         let frameDelta = 0;
