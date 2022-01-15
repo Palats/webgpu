@@ -58,24 +58,26 @@ const fadeDemo = {
 }
 
 // Falling random pixels
-const fallingDemo = {
-    id: "falling",
-    caption: "Falling random pixels",
-    fps: 4,
-    computeWidth: 320,
-    computeHeight: 200,
-    init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
-        const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.computeHeight; y++) {
-            for (let x = 0; x < uniforms.computeWidth; x++) {
-                a[4 * (x + y * uniforms.computeWidth) + 0] = Math.random() * 255;
-                a[4 * (x + y * uniforms.computeWidth) + 1] = Math.random() * 255;
-                a[4 * (x + y * uniforms.computeWidth) + 2] = Math.random() * 255;
-                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
+class fallingDemo extends engine.Engine {
+    static id = "falling";
+    static caption = "Falling random pixels";
+    fps = 4;
+    computeWidth = 320;
+    computeHeight = 200;
+
+    initCompute(buffer: ArrayBuffer) {
+        const a = new Uint8Array(buffer);
+        for (let y = 0; y < this.uniforms.computeHeight; y++) {
+            for (let x = 0; x < this.uniforms.computeWidth; x++) {
+                a[4 * (x + y * this.uniforms.computeWidth) + 0] = Math.random() * 255;
+                a[4 * (x + y * this.uniforms.computeWidth) + 1] = Math.random() * 255;
+                a[4 * (x + y * this.uniforms.computeWidth) + 2] = Math.random() * 255;
+                a[4 * (x + y * this.uniforms.computeWidth) + 3] = 255;
             }
         }
-    },
-    code: `
+    }
+
+    computeCode = `
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
@@ -83,35 +85,19 @@ const fallingDemo = {
             renderHeight: u32;
             elapsedMs: f32;
         };
-        [[block]] struct Frame {
-            values: array<u32>;
-        };
 
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
+        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
-                return;
-            }
-
-            let idx = global_id.x + global_id.y * uniforms.computeWidth;
-
-            var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-            if (global_id.y > 0u) {
-                let previdx = global_id.x + (global_id.y - 1u) * uniforms.computeWidth;
-                v = unpack4x8unorm(srcFrame.values[previdx]);
-                let v2 = unpack4x8unorm(srcFrame.values[idx]);
-                v.g = v2.g;
-                v.b = v2.b;
-            }
-
-            dstFrame.values[idx] = pack4x8unorm(v);
+            let x = i32(global_id.x);
+            let y = i32(global_id.y);
+            let v = textureLoad(srcTexture,vec2<i32>(x, y - 1), 0);
+            textureStore(dstTexture, vec2<i32>(x, y), v);
         }
-    `,
+    `;
 }
 
 // A basic game of life.
@@ -295,6 +281,7 @@ export const asDemo = (t: typeof engine.Engine) => {
 export const allDemos: Demo[] = [
     asDemo(fireDemo),
     asDemo(conwayDemo),
+    asDemo(fallingDemo),
 ];
 
 export function byID(id: string): Demo {
