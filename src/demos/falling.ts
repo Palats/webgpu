@@ -1,7 +1,7 @@
 import * as engine from '../engine';
 
 // Falling random pixels
-class demo extends engine.Engine {
+class Engine extends engine.Engine {
     static id = "falling";
     static caption = "Falling random pixels";
     fps = 4;
@@ -44,3 +44,4 @@ class demo extends engine.Engine {
     `;
 }
 
+export const demo = engine.asDemo(Engine);

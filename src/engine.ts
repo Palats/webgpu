@@ -440,3 +440,17 @@ export class Engine {
         this.uniforms.startMap();
     }
 }
+
+// Takes a class deriving from Engine and create something suitable
+// for the UI to run.
+export const asDemo = (t: typeof Engine) => {
+    return {
+        id: t.id,
+        caption: t.caption,
+        async init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number) {
+            const d = new t();
+            await d.init(canvas, renderWidth, renderHeight);
+            return d;
+        }
+    };
+};

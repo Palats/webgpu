@@ -1,7 +1,7 @@
 import * as engine from '../engine';
 
 // A basic game of life.
-export class demo extends engine.Engine {
+export class Engine extends engine.Engine {
     static id = "conway";
     static caption = "Conway game of life";
 
@@ -69,3 +69,5 @@ export class demo extends engine.Engine {
         }
     `;
 }
+
+export const demo = engine.asDemo(Engine);

@@ -3,8 +3,37 @@
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as engine from './engine';
-import * as demos from './demos';
 
+interface Demo {
+    id: string;
+    caption: string;
+    init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number): Promise<Runner>;
+}
+
+interface Runner {
+    frame(timestampMs: DOMHighResTimeStamp): Promise<void>;
+}
+
+import * as conway from './demos/conway';
+import * as fire from './demos/fire';
+import * as falling from './demos/falling';
+import * as fade from './demos/fade';
+
+export const allDemos: Demo[] = [
+    fire.demo,
+    conway.demo,
+    falling.demo,
+    fade.demo,
+];
+
+export function demoByID(id: string): Demo {
+    for (const d of allDemos) {
+        if (d.id === id) {
+            return d;
+        }
+    }
+    return allDemos[0];
+}
 
 @customElement('app-main')
 export class AppMain extends LitElement {
@@ -94,7 +123,7 @@ export class AppMain extends LitElement {
                     <button @click="${() => { this.setShowControls(false) }}">Hide controls</button>
                     <div>
                     <select @change=${this.demoChange}>
-                        ${demos.allDemos.map(d => html`
+                        ${allDemos.map(d => html`
                             <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
                         `)}
                     </select>
@@ -140,7 +169,7 @@ export class AppMain extends LitElement {
         super();
         this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
-        this.demoID = this.getStringParam("d", demos.allDemos[0].id)
+        this.demoID = this.getStringParam("d", allDemos[0].id)
     }
 
     override firstUpdated(_changedProperties: any) {
@@ -190,7 +219,7 @@ export class AppMain extends LitElement {
             this.noWebGPU = undefined;
             this.otherError = undefined;
             try {
-                const runner = await demos.byID(this.demoID).init(canvas, this.renderWidth, this.renderHeight);
+                const runner = await demoByID(this.demoID).init(canvas, this.renderWidth, this.renderHeight);
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
                     await runner.frame(ts);

@@ -1,7 +1,7 @@
 import * as engine from '../engine';
 
 // A classic fire effect.
-export class demo extends engine.Engine {
+class Engine extends engine.Engine {
     static id = "fire";
     static caption = "Classic fire effect";
 
@@ -84,3 +84,5 @@ export class demo extends engine.Engine {
         }
     `;
 }
+
+export const demo = engine.asDemo(Engine);

@@ -1,7 +1,7 @@
 import * as engine from '../engine';
 
 // Just fiddling with red component a bit.
-class demo extends engine.Engine {
+class Engine extends engine.Engine {
     static id = "fade";
     static caption = "Fiddling with red component";
     fps = 15;
@@ -40,3 +40,4 @@ class demo extends engine.Engine {
     `;
 }
 
+export const demo = engine.asDemo(Engine);
