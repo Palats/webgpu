@@ -86,7 +86,7 @@ export class AppMain extends LitElement {
             position: absolute;
             left: 0;
             top: 0;
-            background-color: #d6d6d6de;
+            background-color: #d6d6d680;
             z-index: 10;
         }
     `;
@@ -136,7 +136,12 @@ export class AppMain extends LitElement {
         } else {
             blocks.push(html`
                 <div id="overlay">
-                    <button @click="${() => { this.setShowControls(true) }}">Show controls</button>
+                    <select @change=${this.demoChange}>
+                        ${allDemos.map(d => html`
+                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
+                        `)}
+                    </select>
+                    <button @click="${() => { this.setShowControls(true) }}">...</button>
                 </div>
             `);
         }

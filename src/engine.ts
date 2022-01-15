@@ -6,12 +6,14 @@ export class Uniforms {
     renderWidth = 320;
     renderHeight = 200;
     elapsedMs = 0;
+    // An rngseed is also added, only available in the shaders.
+    // rngSeed = 0;
 
     // Buffer for access from shaders.
     readonly buffer: GPUBuffer;
 
     // Total size of all the fields to write in uniforms.
-    private bytes = 5 * 4;
+    private bytes = 6 * 4;
     // Buffer for copy from Javascript.
     private mappedBuffer: GPUBuffer;
     // When mapping of the buffer to copy uniforms has been requested, this is
@@ -48,6 +50,7 @@ export class Uniforms {
         d.setUint32(8, this.renderWidth, true);
         d.setUint32(12, this.renderHeight, true);
         d.setFloat32(16, this.elapsedMs, true);
+        d.setFloat32(20, Math.random(), true);
         this.mappedBuffer.unmap();
 
         commandEncoder.copyBufferToBuffer(

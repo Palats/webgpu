@@ -5,8 +5,8 @@ class Engine extends engine.Engine {
     static id = "fire";
     static caption = "Classic fire effect";
 
-    computeWidth = 320;
-    computeHeight = 200;
+    computeWidth = 160;
+    computeHeight = 100;
     fps = 60;
 
     computeCode = `
@@ -16,6 +16,7 @@ class Engine extends engine.Engine {
             renderWidth: u32;
             renderHeight: u32;
             elapsedMs: f32;
+            rngSeed: f32;
         };
 
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
@@ -23,7 +24,7 @@ class Engine extends engine.Engine {
         [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
         fn rand(v: f32) -> f32 {
-            return fract(sin(dot(vec2<f32>(uniforms.elapsedMs, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
+            return fract(sin(dot(vec2<f32>(uniforms.rngSeed, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
         }
 
         fn at(x: i32, y: i32) -> vec4<f32> {
@@ -49,7 +50,7 @@ class Engine extends engine.Engine {
                 }
             } else {
                 let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
-                v = (sum / 4.0) - 0.01;
+                v = (sum / 4.0) - 0.005;
             }
             textureStore(dstTexture, vec2<i32>(x, y), v);
         }
@@ -62,6 +63,7 @@ class Engine extends engine.Engine {
             renderWidth: u32;
             renderHeight: u32;
             elapsedMs: f32;
+            rngSeed: f32;
         };
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
         [[group(0), binding(1)]] var computeTexture : texture_2d<f32>;
