@@ -4,24 +4,23 @@ import * as engine from './engine';
 
 
 // Just fiddling with red component a bit.
-const fadeDemo = {
-    id: "fade",
-    caption: "Fiddling with red component",
-    fps: 15,
-    computeWidth: 320,
-    computeHeight: 200,
-    init: (uniforms: engine.Uniforms, data: ArrayBuffer) => {
-        const a = new Uint8Array(data);
-        for (let y = 0; y < uniforms.computeHeight; y++) {
-            for (let x = 0; x < uniforms.computeWidth; x++) {
-                a[4 * (x + y * uniforms.computeWidth) + 0] = Math.floor(x * 256 / uniforms.computeWidth);
-                a[4 * (x + y * uniforms.computeWidth) + 1] = Math.floor(y * 256 / uniforms.computeWidth);
-                a[4 * (x + y * uniforms.computeWidth) + 2] = 0;
-                a[4 * (x + y * uniforms.computeWidth) + 3] = 255;
+class fadeDemo extends engine.Engine {
+    static id = "fade";
+    static caption = "Fiddling with red component";
+    fps = 15;
+
+    initCompute(buffer: ArrayBuffer) {
+        const a = new Uint8Array(buffer);
+        for (let y = 0; y < this.uniforms.computeHeight; y++) {
+            for (let x = 0; x < this.uniforms.computeWidth; x++) {
+                a[4 * (x + y * this.uniforms.computeWidth) + 0] = Math.floor(x * 256 / this.uniforms.computeWidth);
+                a[4 * (x + y * this.uniforms.computeWidth) + 1] = Math.floor(y * 256 / this.uniforms.computeWidth);
+                a[4 * (x + y * this.uniforms.computeWidth) + 2] = 0;
+                a[4 * (x + y * this.uniforms.computeWidth) + 3] = 255;
             }
         }
-    },
-    code: `
+    };
+    computeCode = `
         [[block]] struct Uniforms {
             computeWidth: u32;
             computeHeight: u32;
@@ -29,32 +28,19 @@ const fadeDemo = {
             renderHeight: u32;
             elapsedMs: f32;
         };
-        [[block]] struct Frame {
-            values: array<u32>;
-        };
 
         [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var<storage, read> srcFrame : Frame;
-        [[group(0), binding(2)]] var<storage, write> dstFrame : Frame;
+        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
+        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
-                return;
-            }
-
-            let idx = global_id.y + global_id.x * uniforms.computeHeight;
-
-            var v = unpack4x8unorm(srcFrame.values[idx]);
-            // v.r = 1.0;
-            // v.g = 0.5;
-            // v.b = 0.1;
+            let xy = vec2<i32>(global_id.xy);
+            var v = textureLoad(srcTexture, xy, 0);
             v.r = clamp(uniforms.elapsedMs / 1000.0 / 5.0, 0.0, 1.0);
-            v.a = 1.0;
-            dstFrame.values[idx] = pack4x8unorm(v);
+            textureStore(dstTexture, xy, v);
         }
-    `,
+    `;
 }
 
 // Falling random pixels
@@ -90,12 +76,13 @@ class fallingDemo extends engine.Engine {
         [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
         [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
 
+        let vect = vec2<i32>(0, -1);
+
         [[stage(compute), workgroup_size(8, 8)]]
         fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            let x = i32(global_id.x);
-            let y = i32(global_id.y);
-            let v = textureLoad(srcTexture,vec2<i32>(x, y - 1), 0);
-            textureStore(dstTexture, vec2<i32>(x, y), v);
+            let xy = vec2<i32>(global_id.xy);
+            let v = textureLoad(srcTexture, xy + vect, 0);
+            textureStore(dstTexture, xy, v);
         }
     `;
 }
@@ -282,6 +269,7 @@ export const allDemos: Demo[] = [
     asDemo(fireDemo),
     asDemo(conwayDemo),
     asDemo(fallingDemo),
+    asDemo(fadeDemo),
 ];
 
 export function byID(id: string): Demo {
