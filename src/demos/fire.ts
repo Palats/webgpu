@@ -7,6 +7,7 @@ class Engine extends engine.Engine {
 
     computeWidth = 160;
     computeHeight = 100;
+    computeTexFormat: GPUTextureFormat = "rgba8unorm";
     fps = 60;
 
     computeCode = `

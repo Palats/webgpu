@@ -73,6 +73,7 @@ export class Engine {
     computeHeight?: number;
     fps: number = 60;
     computeCode: string = "";
+    computeTexFormat: GPUTextureFormat = "rgba8unorm";
 
     // State
     previousTimestampMs: DOMHighResTimeStamp = 0;
@@ -146,17 +147,21 @@ export class Engine {
         // Textures, used for compute part swapchain.
         const tex1 = this.device.createTexture({
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
-            format: "rgba8unorm",
+            format: this.computeTexFormat,
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
         });
-        const texView1 = tex1.createView();
+        const texView1 = tex1.createView({
+            format: this.computeTexFormat,
+        });
 
         const tex2 = this.device.createTexture({
             size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
-            format: "rgba8unorm",
+            format: this.computeTexFormat,
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
         });
-        const texView2 = tex2.createView();
+        const texView2 = tex2.createView({
+            format: this.computeTexFormat,
+        });
 
         // Setup the initial texture1, to allow for initial data.
         // A bit useless when no init is needed, but that's a one time thing.
@@ -196,7 +201,7 @@ export class Engine {
                             visibility: GPUShaderStage.COMPUTE,
                             storageTexture: {
                                 access: 'write-only',
-                                format: 'rgba8unorm',
+                                format: this.computeTexFormat,
                             }
                         },
                     ]
