@@ -27,6 +27,9 @@ export function demoByID(id: string): types.Demo {
     return allDemos[0];
 }
 
+export class NoWebGPU extends Error { }
+
+
 @customElement('app-main')
 export class AppMain extends LitElement {
     static styles = css`
@@ -200,12 +203,37 @@ export class AppMain extends LitElement {
             this.rebuildNeeded = undefined;
             this.noWebGPU = undefined;
             this.otherError = undefined;
+
             try {
+                if (!navigator.gpu) {
+                    throw new NoWebGPU("no webgpu extension");
+                }
+
+                let adapter: GPUAdapter | null = null;
+                try {
+                    // Firefox can have navigator.gpu but still throw when
+                    // calling requestAdapter.
+                    adapter = await navigator.gpu.requestAdapter();
+                } catch (e) {
+                    console.error("navigator.gpu.requestAdapter failed:", e);
+                    throw new NoWebGPU("requesting adapter failed");
+                }
+                if (!adapter) {
+                    throw new NoWebGPU("no webgpu adapter");
+                }
+                const device = await adapter.requestDevice();
+                const context = canvas.getContext('webgpu');
+                if (!context) { new Error("no webgpu canvas context"); }
+
                 const runner = await demoByID(this.demoID).init({
-                    canvas,
+                    context: context,
+                    adapter: adapter,
+                    device: device,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight
                 });
+
+                // Render loop
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
                     await runner.frame(ts);
@@ -213,7 +241,7 @@ export class AppMain extends LitElement {
                 await new Promise(resolve => setTimeout(resolve, 200));
             } catch (e) {
                 console.error("Run:", e);
-                if (e instanceof engine.NoWebGPU) {
+                if (e instanceof NoWebGPU) {
                     this.noWebGPU = e.toString();
                 } else if (e instanceof Error) {
                     this.otherError = e.toString();

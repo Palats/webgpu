@@ -8,7 +8,10 @@ export interface Demo {
 }
 
 export interface InitParams {
-    canvas: HTMLCanvasElement;
+    adapter: GPUAdapter;
+    device: GPUDevice;
+    context: GPUCanvasContext;
+
     // Size of the rendering area on the canvas.
     renderWidth: number;
     renderHeight: number;

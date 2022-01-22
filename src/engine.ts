@@ -63,8 +63,6 @@ export class Uniforms {
     }
 }
 
-export class NoWebGPU extends Error { }
-
 export class Engine {
     // Class info
     static id: string;
@@ -82,7 +80,6 @@ export class Engine {
     previousStepMs: DOMHighResTimeStamp = 0;
 
     uniforms!: Uniforms;
-    adapter!: GPUAdapter;
     device!: GPUDevice;
     context!: GPUCanvasContext;
     computePipeline!: GPUComputePipeline;
@@ -98,29 +95,9 @@ export class Engine {
     initCompute(buffer: ArrayBuffer): void { }
 
     async init(params: types.InitParams) {
-        if (!navigator.gpu) {
-            throw new NoWebGPU("no webgpu extension");
-        }
-
-        let adapter: GPUAdapter | null = null;
-        try {
-            // Firefox can have navigator.gpu but still throw when
-            // calling requestAdapter.
-            adapter = await navigator.gpu.requestAdapter();
-        } catch (e) {
-            console.error("navigator.gpu.requestAdapter failed:", e);
-            throw new NoWebGPU("requesting adapter failed");
-        }
-        if (!adapter) {
-            throw new NoWebGPU("no webgpu adapter");
-        }
-        this.adapter = adapter;
-
-        this.device = await this.adapter.requestDevice();
-
-        this.context = params.canvas.getContext('webgpu');
-        if (!this.context) { new Error("no webgpu canvas context"); }
-        const presentationFormat = this.context.getPreferredFormat(this.adapter);
+        this.context = params.context;
+        this.device = params.device;
+        const presentationFormat = this.context.getPreferredFormat(params.adapter);
         this.context.configure({
             device: this.device,
             format: presentationFormat,
