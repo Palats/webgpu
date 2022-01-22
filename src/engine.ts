@@ -1,5 +1,7 @@
 /// <reference types="@webgpu/types" />
 
+import * as types from './types';
+
 export class Uniforms {
     computeWidth = 320;
     computeHeight = 200;
@@ -95,7 +97,7 @@ export class Engine {
 
     initCompute(buffer: ArrayBuffer): void { }
 
-    async init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number) {
+    async init(params: types.InitParams) {
         if (!navigator.gpu) {
             throw new NoWebGPU("no webgpu extension");
         }
@@ -116,15 +118,15 @@ export class Engine {
 
         this.device = await this.adapter.requestDevice();
 
-        this.context = canvas.getContext('webgpu');
+        this.context = params.canvas.getContext('webgpu');
         if (!this.context) { new Error("no webgpu canvas context"); }
         const presentationFormat = this.context.getPreferredFormat(this.adapter);
         this.context.configure({
             device: this.device,
             format: presentationFormat,
             size: {
-                width: renderWidth,
-                height: renderHeight,
+                width: params.renderWidth,
+                height: params.renderHeight,
             },
         });
 
@@ -138,10 +140,10 @@ export class Engine {
 
         // Uniforms setup.
         this.uniforms = new Uniforms(this.device);
-        this.uniforms.computeWidth = this.computeWidth ?? renderWidth;
-        this.uniforms.computeHeight = this.computeHeight ?? renderHeight;
-        this.uniforms.renderWidth = renderWidth;
-        this.uniforms.renderHeight = renderHeight;
+        this.uniforms.computeWidth = this.computeWidth ?? params.renderWidth;
+        this.uniforms.computeHeight = this.computeHeight ?? params.renderHeight;
+        this.uniforms.renderWidth = params.renderWidth;
+        this.uniforms.renderHeight = params.renderHeight;
         console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", this.uniforms.renderWidth, this.uniforms.renderHeight);
 
         // Textures, used for compute part swapchain.
@@ -455,9 +457,9 @@ export const asDemo = (t: typeof Engine) => {
     return {
         id: t.id,
         caption: t.caption,
-        async init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number) {
+        async init(params: types.InitParams) {
             const d = new t();
-            await d.init(canvas, renderWidth, renderHeight);
+            await d.init(params);
             return d;
         }
     };

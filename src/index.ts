@@ -3,30 +3,22 @@
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as engine from './engine';
+import * as types from './types';
 
-interface Demo {
-    id: string;
-    caption: string;
-    init(canvas: HTMLCanvasElement, renderWidth: number, renderHeight: number): Promise<Runner>;
-}
-
-interface Runner {
-    frame(timestampMs: DOMHighResTimeStamp): Promise<void>;
-}
 
 import * as conway from './demos/conway';
 import * as fire from './demos/fire';
 import * as falling from './demos/falling';
 import * as fade from './demos/fade';
 
-export const allDemos: Demo[] = [
+export const allDemos: types.Demo[] = [
     fire.demo,
     conway.demo,
     falling.demo,
     fade.demo,
 ];
 
-export function demoByID(id: string): Demo {
+export function demoByID(id: string): types.Demo {
     for (const d of allDemos) {
         if (d.id === id) {
             return d;
@@ -209,7 +201,11 @@ export class AppMain extends LitElement {
             this.noWebGPU = undefined;
             this.otherError = undefined;
             try {
-                const runner = await demoByID(this.demoID).init(canvas, this.renderWidth, this.renderHeight);
+                const runner = await demoByID(this.demoID).init({
+                    canvas,
+                    renderWidth: this.renderWidth,
+                    renderHeight: this.renderHeight
+                });
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
                     await runner.frame(ts);
