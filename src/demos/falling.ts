@@ -4,7 +4,6 @@ import * as engine from '../engine';
 class Engine extends engine.Engine {
     static id = "falling";
     static caption = "Falling random pixels";
-    fps = 4;
     computeWidth = 320;
     computeHeight = 200;
 
