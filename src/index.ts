@@ -27,8 +27,6 @@ export function demoByID(id: string): types.Demo {
     return allDemos[0];
 }
 
-export class NoWebGPU extends Error { }
-
 
 @customElement('app-main')
 export class AppMain extends LitElement {
@@ -40,23 +38,14 @@ export class AppMain extends LitElement {
             margin: 0;
             padding: 0;
             height: 100%;
-            grid-template-columns: 250px 100fr;
+            grid-template-columns: 100fr;
             grid-template-rows: 100fr;
             box-sizing: border-box;
         }
 
-        .error {
-            grid-column-start: 2;
-            grid-column-end: 3;
-            grid-row-start: 1;
-            grid-row-end: 2;
-            background-color: white;
-            padding-left: 1em;
-        }
-
         #display {
             grid-column-start: 1;
-            grid-column-end: 3;
+            grid-column-end: 2;
             grid-row-start: 1;
             grid-row-end: 2;
             /* Avoid vertical scroll on canvas. */
@@ -67,6 +56,7 @@ export class AppMain extends LitElement {
             display: block;
             height: 100%;
             width: 100%;
+            background-color: black;
         }
 
         #overlay {
@@ -76,32 +66,17 @@ export class AppMain extends LitElement {
             z-index: 10;
         }
 
+        .error {
+            background-color: #ffbebede;
+        }
+
         #controls {
             background-color: #d6d6d6de;
         }
     `;
 
     render() {
-        let blocks = [];
-        if (this.noWebGPU) {
-            blocks.push(html`
-                <div class="error">
-                    <p>
-                    Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
-                    WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
-                    </p>
-                    <p>Issue: ${this.noWebGPU}</p>
-                </div>
-            `);
-        }
-        if (this.otherError) {
-            blocks.push(html`
-                <div class="error">
-                    <p>Issue: ${this.otherError}</p>
-                </div>
-            `);
-        }
-        blocks.push(html`
+        return html`
             <div id="display">
                 <canvas id="canvas"></canvas>
             </div>
@@ -115,24 +90,35 @@ export class AppMain extends LitElement {
                     </select>
                     <button @click="${() => { this.setShowControls(!this.showControls) }}">...</button>
                 </span>
-                ${this.showControls ? html`
-                    <div id="controls">
-                        <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
-                            Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
-                        </input>
-                    </div>
-                `: ``}
+                <div id="controls">
+                    ${this.webGPUpresent ? '' : html`
+                        <div class="error">
+                            Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                            WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
+                        </div>
+                    `}
+                    ${this.error ? html`
+                        <div class="error">
+                            Issue: ${this.error}
+                        </div>
+                    `: ``}
+                    ${this.showControls ? html`
+                        <div>
+                            <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
+                                Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
+                            </input>
+                        </div>
+                    `: ``}
+                </div>
             </div>
-        `);
-
-        return blocks;
+        `;
     }
 
-    @property()
-    noWebGPU?: string;
+    @property({ type: Boolean })
+    webGPUpresent: boolean = false;
 
     @property()
-    otherError?: string;
+    error: string = "";
 
     @property({ type: Boolean })
     showControls;
@@ -152,7 +138,7 @@ export class AppMain extends LitElement {
 
     constructor() {
         super();
-        this.showControls = this.getBoolParam("c", true);
+        this.showControls = this.getBoolParam("c", false);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", allDemos[0].id)
     }
@@ -201,12 +187,12 @@ export class AppMain extends LitElement {
         while (true) {
             console.log("new engine:", this.rebuildNeeded);
             this.rebuildNeeded = undefined;
-            this.noWebGPU = undefined;
-            this.otherError = undefined;
+            this.webGPUpresent = false;
+            this.error = "";
 
             try {
                 if (!navigator.gpu) {
-                    throw new NoWebGPU("no webgpu extension");
+                    throw new Error("no webgpu extension");
                 }
 
                 let adapter: GPUAdapter | null = null;
@@ -216,14 +202,16 @@ export class AppMain extends LitElement {
                     adapter = await navigator.gpu.requestAdapter();
                 } catch (e) {
                     console.error("navigator.gpu.requestAdapter failed:", e);
-                    throw new NoWebGPU("requesting adapter failed");
+                    throw new Error("requesting adapter failed");
                 }
                 if (!adapter) {
-                    throw new NoWebGPU("no webgpu adapter");
+                    throw new Error("no webgpu adapter");
                 }
                 const device = await adapter.requestDevice();
                 const context = canvas.getContext('webgpu');
                 if (!context) { new Error("no webgpu canvas context"); }
+
+                this.webGPUpresent = true;
 
                 const runner = await demoByID(this.demoID).init({
                     context: context,
@@ -241,12 +229,10 @@ export class AppMain extends LitElement {
                 await new Promise(resolve => setTimeout(resolve, 200));
             } catch (e) {
                 console.error("Run:", e);
-                if (e instanceof NoWebGPU) {
-                    this.noWebGPU = e.toString();
-                } else if (e instanceof Error) {
-                    this.otherError = e.toString();
+                if (e instanceof Error) {
+                    this.error = e.toString();
                 } else {
-                    this.otherError = "See Javascript console for error";
+                    this.error = "See Javascript console for error";
                 }
 
                 // And now, wait for something to tell us to retry.
