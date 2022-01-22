@@ -74,20 +74,15 @@ export class AppMain extends LitElement {
             width: 100%;
         }
 
-        #controls {
-            grid-column-start: 1;
-            grid-column-end: 2;
-            grid-row-start: 1;
-            grid-row-end: 2;
-            background-color: #d6d6d6de;
-            z-index: 10;
-        }
         #overlay {
             position: absolute;
             left: 0;
             top: 0;
-            background-color: #d6d6d680;
             z-index: 10;
+        }
+
+        #controls {
+            background-color: #d6d6d6de;
         }
     `;
 
@@ -115,36 +110,26 @@ export class AppMain extends LitElement {
             <div id="display">
                 <canvas id="canvas"></canvas>
             </div>
+
+            <div id="overlay">
+                <span>
+                    <select @change=${this.demoChange}>
+                        ${allDemos.map(d => html`
+                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
+                        `)}
+                    </select>
+                    <button @click="${() => { this.setShowControls(!this.showControls) }}">...</button>
+                </span>
+                ${this.showControls ? html`
+                    <div id="controls">
+                        <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
+                            Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
+                        </input>
+                    </div>
+                `: ``}
+            </div>
         `);
 
-        if (this.showControls) {
-            blocks.push(html`
-                <div id="controls">
-                    <button @click="${() => { this.setShowControls(false) }}">Hide controls</button>
-                    <div>
-                    <select @change=${this.demoChange}>
-                        ${allDemos.map(d => html`
-                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
-                        `)}
-                    </select>
-                    </div>
-                    <div>
-                        <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>Limit canvas to 816x640</input>
-                    </div>
-                </div>
-            `);
-        } else {
-            blocks.push(html`
-                <div id="overlay">
-                    <select @change=${this.demoChange}>
-                        ${allDemos.map(d => html`
-                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
-                        `)}
-                    </select>
-                    <button @click="${() => { this.setShowControls(true) }}">...</button>
-                </div>
-            `);
-        }
         return blocks;
     }
 
