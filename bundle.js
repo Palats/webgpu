@@ -698,7 +698,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.AppMain = exports.NoWebGPU = exports.demoByID = exports.allDemos = void 0;
+exports.AppMain = exports.demoByID = exports.allDemos = void 0;
 const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
 const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
 const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts");
@@ -720,39 +720,19 @@ function demoByID(id) {
     return exports.allDemos[0];
 }
 exports.demoByID = demoByID;
-class NoWebGPU extends Error {
-}
-exports.NoWebGPU = NoWebGPU;
 let AppMain = class AppMain extends lit_1.LitElement {
     constructor() {
         super();
+        this.webGPUpresent = false;
+        this.error = "";
         this.renderWidth = 0;
         this.renderHeight = 0;
-        this.showControls = this.getBoolParam("c", true);
+        this.showControls = this.getBoolParam("c", false);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", exports.allDemos[0].id);
     }
     render() {
-        let blocks = [];
-        if (this.noWebGPU) {
-            blocks.push((0, lit_1.html) `
-                <div class="error">
-                    <p>
-                    Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
-                    WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
-                    </p>
-                    <p>Issue: ${this.noWebGPU}</p>
-                </div>
-            `);
-        }
-        if (this.otherError) {
-            blocks.push((0, lit_1.html) `
-                <div class="error">
-                    <p>Issue: ${this.otherError}</p>
-                </div>
-            `);
-        }
-        blocks.push((0, lit_1.html) `
+        return (0, lit_1.html) `
             <div id="display">
                 <canvas id="canvas"></canvas>
             </div>
@@ -766,16 +746,28 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     </select>
                     <button @click="${() => { this.setShowControls(!this.showControls); }}">...</button>
                 </span>
-                ${this.showControls ? (0, lit_1.html) `
-                    <div id="controls">
-                        <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
-                            Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
-                        </input>
-                    </div>
-                ` : ``}
+                <div id="controls">
+                    ${this.webGPUpresent ? '' : (0, lit_1.html) `
+                        <div class="error">
+                            Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                            WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
+                        </div>
+                    `}
+                    ${this.error ? (0, lit_1.html) `
+                        <div class="error">
+                            Issue: ${this.error}
+                        </div>
+                    ` : ``}
+                    ${this.showControls ? (0, lit_1.html) `
+                        <div>
+                            <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
+                                Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
+                            </input>
+                        </div>
+                    ` : ``}
+                </div>
             </div>
-        `);
-        return blocks;
+        `;
     }
     firstUpdated(_changedProperties) {
         super.firstUpdated(_changedProperties);
@@ -820,11 +812,11 @@ let AppMain = class AppMain extends lit_1.LitElement {
         while (true) {
             console.log("new engine:", this.rebuildNeeded);
             this.rebuildNeeded = undefined;
-            this.noWebGPU = undefined;
-            this.otherError = undefined;
+            this.webGPUpresent = false;
+            this.error = "";
             try {
                 if (!navigator.gpu) {
-                    throw new NoWebGPU("no webgpu extension");
+                    throw new Error("no webgpu extension");
                 }
                 let adapter = null;
                 try {
@@ -834,16 +826,17 @@ let AppMain = class AppMain extends lit_1.LitElement {
                 }
                 catch (e) {
                     console.error("navigator.gpu.requestAdapter failed:", e);
-                    throw new NoWebGPU("requesting adapter failed");
+                    throw new Error("requesting adapter failed");
                 }
                 if (!adapter) {
-                    throw new NoWebGPU("no webgpu adapter");
+                    throw new Error("no webgpu adapter");
                 }
                 const device = await adapter.requestDevice();
                 const context = canvas.getContext('webgpu');
                 if (!context) {
                     new Error("no webgpu canvas context");
                 }
+                this.webGPUpresent = true;
                 const runner = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
@@ -860,14 +853,11 @@ let AppMain = class AppMain extends lit_1.LitElement {
             }
             catch (e) {
                 console.error("Run:", e);
-                if (e instanceof NoWebGPU) {
-                    this.noWebGPU = e.toString();
-                }
-                else if (e instanceof Error) {
-                    this.otherError = e.toString();
+                if (e instanceof Error) {
+                    this.error = e.toString();
                 }
                 else {
-                    this.otherError = "See Javascript console for error";
+                    this.error = "See Javascript console for error";
                 }
                 // And now, wait for something to tell us to retry.
                 // Could be better done with a proper event, but here we are.
@@ -939,23 +929,14 @@ AppMain.styles = (0, lit_1.css) `
             margin: 0;
             padding: 0;
             height: 100%;
-            grid-template-columns: 250px 100fr;
+            grid-template-columns: 100fr;
             grid-template-rows: 100fr;
             box-sizing: border-box;
         }
 
-        .error {
-            grid-column-start: 2;
-            grid-column-end: 3;
-            grid-row-start: 1;
-            grid-row-end: 2;
-            background-color: white;
-            padding-left: 1em;
-        }
-
         #display {
             grid-column-start: 1;
-            grid-column-end: 3;
+            grid-column-end: 2;
             grid-row-start: 1;
             grid-row-end: 2;
             /* Avoid vertical scroll on canvas. */
@@ -966,6 +947,7 @@ AppMain.styles = (0, lit_1.css) `
             display: block;
             height: 100%;
             width: 100%;
+            background-color: black;
         }
 
         #overlay {
@@ -975,16 +957,20 @@ AppMain.styles = (0, lit_1.css) `
             z-index: 10;
         }
 
+        .error {
+            background-color: #ffbebede;
+        }
+
         #controls {
             background-color: #d6d6d6de;
         }
     `;
 __decorate([
-    (0, decorators_js_1.property)()
-], AppMain.prototype, "noWebGPU", void 0);
+    (0, decorators_js_1.property)({ type: Boolean })
+], AppMain.prototype, "webGPUpresent", void 0);
 __decorate([
     (0, decorators_js_1.property)()
-], AppMain.prototype, "otherError", void 0);
+], AppMain.prototype, "error", void 0);
 __decorate([
     (0, decorators_js_1.property)({ type: Boolean })
 ], AppMain.prototype, "showControls", void 0);
