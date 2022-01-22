@@ -1,5 +1,7 @@
 # Some WebGPU effects.
 
+[> Live version <](https://palats.github.io/webgpu/)
+
 WebGPU is an API to drive compute & rendering on GPUs from browsers (and others). This is to WebGL what Vulkan is to OpenGL. This repository implements some effects using both compute & rendering WebGPU APIs:
  - `fire`: A classic demoscene style fire effect.
  - `conway`: A binary Conway [game of life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
