@@ -7,6 +7,7 @@ WebGPU is an API to drive compute & rendering on GPUs from browsers (and others)
  - `conway`: A binary Conway [game of life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
  - `fade`: Trivial example modifying the red channel.
  - `falling`: Trivial compute example, moving data a bit around.
+ - `minimal`: Minimalistic render pipeline with no compute.
 
 ## Activating WebGPU
 As of Jan. 2022, WebGPU is not available by default in browsers, and thus require experimental features to be available:

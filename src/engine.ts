@@ -2,6 +2,51 @@
 
 import * as types from './types';
 
+// A vertex shader creating full screen rendering using 2 triangles.
+// It sets:
+//   - builtin position: the position of the vertex.
+//   - location(0): screen coordinates, normalized to [0..1].
+// The render should:
+//   - Set `primitive: { topology: 'triangle-list' }`
+//   - Use `passEncoder.draw(6, 1, 0, 0)` on the render pass encoder, with no vertex buffer.
+export function vertexFullScreen(params: types.InitParams): GPUVertexState {
+    return {
+        // Create full screen pair of triangles.
+        entryPoint: 'main',
+        module: params.device.createShaderModule({
+            code: `
+            struct VSOut {
+                [[builtin(position)]] pos: vec4<f32>;
+                [[location(0)]] coord: vec2<f32>;
+            };
+            [[stage(vertex)]]
+            fn main([[builtin(vertex_index)]] idx : u32) -> VSOut {
+                var data = array<vec2<f32>, 6>(
+                    vec2<f32>(-1.0, -1.0),
+                    vec2<f32>(1.0, -1.0),
+                    vec2<f32>(1.0, 1.0),
+
+                    vec2<f32>(-1.0, -1.0),
+                    vec2<f32>(-1.0, 1.0),
+                    vec2<f32>(1.0, 1.0),
+                );
+
+                let pos = data[idx];
+
+                var out : VSOut;
+                out.pos = vec4<f32>(pos, 0.0, 1.0);
+                out.coord.x = (pos.x + 1.0) / 2.0;
+                out.coord.y = (1.0 - pos.y) / 2.0;
+
+                return out;
+            }
+        `,
+
+        }),
+    }
+}
+
+
 export class Uniforms {
     computeWidth = 320;
     computeHeight = 200;
@@ -97,15 +142,6 @@ export class Engine {
     async init(params: types.InitParams) {
         this.context = params.context;
         this.device = params.device;
-        const presentationFormat = this.context.getPreferredFormat(params.adapter);
-        this.context.configure({
-            device: this.device,
-            format: presentationFormat,
-            size: {
-                width: params.renderWidth,
-                height: params.renderHeight,
-            },
-        });
 
         // Uniforms setup.
         this.uniforms = new Uniforms(this.device);
@@ -254,50 +290,15 @@ export class Engine {
 
         this.renderPipeline = this.device.createRenderPipeline({
             layout: renderBindGroupLayout,
-            vertex: {
-                // Create full screen pair of triangles.
-                module: this.device.createShaderModule({
-                    code: `
-                        struct VSOut {
-                            [[builtin(position)]] pos: vec4<f32>;
-                            [[location(0)]] coord: vec2<f32>;
-                        };
-                        [[stage(vertex)]]
-                        fn main([[builtin(vertex_index)]] idx : u32) -> VSOut {
-                            var data = array<vec2<f32>, 6>(
-                                vec2<f32>(-1.0, -1.0),
-                                vec2<f32>(1.0, -1.0),
-                                vec2<f32>(1.0, 1.0),
-
-                                vec2<f32>(-1.0, -1.0),
-                                vec2<f32>(-1.0, 1.0),
-                                vec2<f32>(1.0, 1.0),
-                            );
-
-                            let pos = data[idx];
-
-                            var out : VSOut;
-                            out.pos = vec4<f32>(pos, 0.0, 1.0);
-                            out.coord.x = (pos.x + 1.0) / 2.0;
-                            out.coord.y = (1.0 - pos.y) / 2.0;
-
-                            return out;
-                        }
-                    `,
-
-                }),
-                entryPoint: 'main',
-            },
+            vertex: vertexFullScreen(params),
             fragment: {
                 module: this.device.createShaderModule({
                     code: this.fragmentCode,
                 }),
                 entryPoint: 'main',
-                targets: [
-                    {
-                        format: presentationFormat,
-                    },
-                ],
+                targets: [{
+                    format: params.renderFormat,
+                }],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -425,7 +426,7 @@ export const asDemo = (t: typeof Engine) => {
         async init(params: types.InitParams) {
             const d = new t();
             await d.init(params);
-            return d;
+            return (nfo: types.FrameInfo) => { return d.frame(nfo) };
         }
     };
 };

@@ -10,12 +10,14 @@ import * as conway from './demos/conway';
 import * as fire from './demos/fire';
 import * as falling from './demos/falling';
 import * as fade from './demos/fade';
+import * as minimal from './demos/minimal';
 
 export const allDemos: types.Demo[] = [
     fire.demo,
     conway.demo,
     falling.demo,
     fade.demo,
+    minimal.demo,
 ];
 
 export function demoByID(id: string): types.Demo {
@@ -220,13 +222,23 @@ export class AppMain extends LitElement {
                 const context = canvas.getContext('webgpu');
                 if (!context) { new Error("no webgpu canvas context"); }
 
-
                 this.webGPUpresent = true;
 
-                const runner = await demoByID(this.demoID).init({
+                const renderFormat = context.getPreferredFormat(adapter);
+                context.configure({
+                    device: device,
+                    format: renderFormat,
+                    size: {
+                        width: this.renderWidth,
+                        height: this.renderHeight,
+                    },
+                });
+
+                const renderer = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
                     device: device,
+                    renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight
                 });
@@ -241,7 +253,7 @@ export class AppMain extends LitElement {
                         deltaMs = ts - elapsedMs;
                         elapsedMs += deltaMs;
                     }
-                    await runner.frame({
+                    await renderer({
                         timestampMs: ts,
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
