@@ -19,5 +19,11 @@ export interface InitParams {
 
 export interface Runner {
     // Called on every frame to render the effect to the canvas.
-    frame(timestampMs: DOMHighResTimeStamp): Promise<void>;
+    frame(info: FrameInfo): Promise<void>;
+}
+
+export interface FrameInfo {
+    timestampMs: DOMHighResTimeStamp;
+    elapsedMs: DOMHighResTimeStamp;
+    deltaMs: DOMHighResTimeStamp | null;
 }

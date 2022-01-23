@@ -107,14 +107,6 @@ export class Engine {
             },
         });
 
-        // As of 2021-12-11, Firefox nightly does not support device.lost.
-        /*if (this.device.lost) {
-            this.device.lost.then((e) => {
-                console.error("device lost", e);
-                this.initWebGPU();
-            });
-        }*/
-
         // Uniforms setup.
         this.uniforms = new Uniforms(this.device);
         this.uniforms.computeWidth = this.computeWidth ?? params.renderWidth;
@@ -366,19 +358,15 @@ export class Engine {
         }
     `;
 
-    async frame(timestampMs: DOMHighResTimeStamp) {
-        let frameDelta = 0;
-        if (this.previousTimestampMs) {
-            frameDelta = timestampMs - this.previousTimestampMs;
-        }
-        this.uniforms.elapsedMs += frameDelta;
+    async frame(info: types.FrameInfo) {
+        this.uniforms.elapsedMs = info.elapsedMs;
 
-        let simulDelta = timestampMs - this.previousStepMs;
+        // Allow to run compute at a lower FPS than rendering.
+        let simulDelta = info.timestampMs - this.previousStepMs;
         const runStep = simulDelta > (1000 / this.fps);
-
-        this.previousTimestampMs = timestampMs;
+        this.previousTimestampMs = info.timestampMs;
         if (runStep) {
-            this.previousStepMs = timestampMs;
+            this.previousStepMs = info.timestampMs;
         }
 
         // Map uniforms

@@ -208,8 +208,18 @@ export class AppMain extends LitElement {
                     throw new Error("no webgpu adapter");
                 }
                 const device = await adapter.requestDevice();
+
+                // As of 2021-12-11, Firefox nightly does not support device.lost.
+                /*if (this.device.lost) {
+                    this.device.lost.then((e) => {
+                        console.error("device lost", e);
+                        this.initWebGPU();
+                    });
+                }*/
+
                 const context = canvas.getContext('webgpu');
                 if (!context) { new Error("no webgpu canvas context"); }
+
 
                 this.webGPUpresent = true;
 
@@ -222,9 +232,20 @@ export class AppMain extends LitElement {
                 });
 
                 // Render loop
+                let elapsedMs = 0;
+                let timestampMs = 0;
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
-                    await runner.frame(ts);
+                    let deltaMs = null;
+                    if (timestampMs) {
+                        deltaMs = ts - elapsedMs;
+                        elapsedMs += deltaMs;
+                    }
+                    await runner.frame({
+                        timestampMs: ts,
+                        elapsedMs: elapsedMs,
+                        deltaMs: deltaMs,
+                    });
                 }
                 await new Promise(resolve => setTimeout(resolve, 200));
             } catch (e) {
