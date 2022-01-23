@@ -11,6 +11,7 @@ import * as fire from './demos/fire';
 import * as falling from './demos/falling';
 import * as fade from './demos/fade';
 import * as minimal from './demos/minimal';
+import * as conway2 from './demos/conway2';
 
 export const allDemos: types.Demo[] = [
     fire.demo,
@@ -18,6 +19,7 @@ export const allDemos: types.Demo[] = [
     falling.demo,
     fade.demo,
     minimal.demo,
+    conway2.demo,
 ];
 
 export function demoByID(id: string): types.Demo {
