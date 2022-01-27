@@ -121,10 +121,14 @@ export const demo = {
                         [[group(0), binding(2)]] var trailSrc : texture_2d<f32>;
                         [[group(0), binding(3)]] var trailDst : texture_storage_2d<rgba8unorm, write>;
 
-                        fn isOn(x: i32, y: i32) -> i32 {
+                        fn cellAt(x: i32, y: i32) -> i32 {
                             let v = textureLoad(cellsSrc, vec2<i32>(x, y), 0);
                             if (v.r < 0.5) { return 0;}
                             return 1;
+                        }
+
+                        fn trailAt(x: i32, y: i32) -> vec4<f32> {
+                            return textureLoad(trailSrc, vec2<i32>(x, y), 0);
                         }
 
                         [[stage(compute), workgroup_size(8, 8)]]
@@ -134,16 +138,16 @@ export const demo = {
                             let pos = vec2<i32>(x, y);
 
                             // Update cellular automata.
-                            let current = isOn(x, y);
+                            let current = cellAt(x, y);
                             let neighbors =
-                                isOn(x - 1, y - 1)
-                                + isOn(x, y - 1)
-                                + isOn(x + 1, y - 1)
-                                + isOn(x - 1, y)
-                                + isOn(x + 1, y)
-                                + isOn(x - 1, y + 1)
-                                + isOn(x, y + 1)
-                                + isOn(x + 1, y + 1);
+                                cellAt(x - 1, y - 1)
+                                + cellAt(x, y - 1)
+                                + cellAt(x + 1, y - 1)
+                                + cellAt(x - 1, y)
+                                + cellAt(x + 1, y)
+                                + cellAt(x - 1, y + 1)
+                                + cellAt(x, y + 1)
+                                + cellAt(x + 1, y + 1);
 
                             var s = 0.0;
                             if (current != 0 && (neighbors == 2 || neighbors == 3)) {
@@ -156,23 +160,23 @@ export const demo = {
 
                             // Update trailing.
                             let trail =
-                                textureLoad(trailSrc, vec2<i32>(x - 1, y - 1), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x - 1, y), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x - 1, y + 1), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x, y - 1), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x, y), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x, y + 1), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x + 1, y - 1), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x + 1, y), 0)
-                                + textureLoad(trailSrc, vec2<i32>(x + 1, y + 1), 0);
+                                trailAt(x - 1, y - 1)
+                                + trailAt(x, y - 1)
+                                + trailAt(x + 1, y - 1)
+                                + trailAt(x - 1, y)
+                                + trailAt(x + 1, y)
+                                + trailAt(x - 1, y + 1)
+                                + trailAt(x, y + 1)
+                                + trailAt(x + 1, y + 1);
 
-                            var v = 1.0;
+                            var v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
                             if (s < 1.0) {
-                                // Use 10 instead of 9 to guarantee decay, even
+                                // Use a value higher than 9 to guarantee decay, even
                                 // if all neighbors are at full power.
-                                v = trail.r / 10.0;
+                                v = trail / 9.5;
+                                v.a = 1.0;
                             }
-                            textureStore(trailDst, pos, vec4<f32>(v, v, v, 1.0));
+                            textureStore(trailDst, pos, v);
                         }
                     `,
                 }),
