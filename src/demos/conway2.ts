@@ -256,9 +256,22 @@ export const demo = {
                         [[group(0), binding(0)]] var tex : texture_2d<f32>;
                         [[group(0), binding(1)]] var smplr : sampler;
 
+                        fn palette(v: f32) -> vec4<f32> {
+                            let key = v * 8.0;
+                            let c = (v * 256.0) % 32.0;
+                            if (key < 1.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 256.0, 1.0); }
+                            if (key < 2.0) { return vec4<f32>(c * 8.0 / 256.0, 0.0, (64.0 - c * 2.0) / 256.0, 1.0); }
+                            if (key < 3.0) { return vec4<f32>(1.0, c * 8.0 / 256.0, 0.0, 1.0); }
+                            if (key < 4.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 256.0, 1.0); }
+                            if (key < 5.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 256.0, 1.0); }
+                            if (key < 6.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 256.0, 1.0); }
+                            if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
+                            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
+                        }
+
                         [[stage(fragment)]]
                         fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-                            return textureSample(tex, smplr, coord);
+                            return palette(textureSample(tex, smplr, coord).r);
                         }
                     `,
                 }),
