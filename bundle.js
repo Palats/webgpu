@@ -89,6 +89,336 @@ exports.demo = engine.asDemo(Engine);
 
 /***/ }),
 
+/***/ "./src/demos/conway2.ts":
+/*!******************************!*\
+  !*** ./src/demos/conway2.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+// A conway game of life with indirect rendering.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
+exports.demo = {
+    id: "conway2",
+    caption: "Game of life with special rendering",
+    async init(params) {
+        const computeWidth = params.renderWidth;
+        const computeHeight = params.renderHeight;
+        const computeTexFormat = "rgba8unorm";
+        const computeTexBytes = 4; // Bytes per pixel in compute.
+        // Swapchain for the cellular automata progression.
+        const cells1 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        const cellsView1 = cells1.createView({
+            format: computeTexFormat,
+        });
+        const cells2 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const cellsView2 = cells2.createView({
+            format: computeTexFormat,
+        });
+        // Swap chain for the intermediate compute effect on top of the cellular
+        // automata.
+        const trail1 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        const trailView1 = trail1.createView({
+            format: computeTexFormat,
+        });
+        const trail2 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const trailView2 = trail2.createView({
+            format: computeTexFormat,
+        });
+        // Setup the initial cellular automata.
+        const buffer = new ArrayBuffer(computeWidth * computeHeight * computeTexBytes);
+        const a = new Uint8Array(buffer);
+        for (let y = 0; y < computeHeight; y++) {
+            for (let x = 0; x < computeWidth; x++) {
+                const hasLife = Math.random() > 0.8;
+                const v = hasLife ? 255 : 0;
+                a[computeTexBytes * (x + y * computeWidth) + 0] = v;
+                a[computeTexBytes * (x + y * computeWidth) + 1] = v;
+                a[computeTexBytes * (x + y * computeWidth) + 2] = v;
+                a[computeTexBytes * (x + y * computeWidth) + 3] = 255;
+            }
+        }
+        await params.device.queue.writeTexture({ texture: cells1 }, buffer, { bytesPerRow: computeWidth * computeTexBytes }, { width: computeWidth, height: computeHeight });
+        // Compute pipeline.
+        const computePipeline = params.device.createComputePipeline({
+            layout: params.device.createPipelineLayout({
+                bindGroupLayouts: [params.device.createBindGroupLayout({
+                        entries: [
+                            // Input automata texture
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.COMPUTE,
+                                texture: { multisampled: false },
+                            },
+                            // Output automata texture
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.COMPUTE,
+                                storageTexture: {
+                                    access: 'write-only',
+                                    format: computeTexFormat,
+                                }
+                            },
+                            // Input trail texture
+                            {
+                                binding: 2,
+                                visibility: GPUShaderStage.COMPUTE,
+                                texture: { multisampled: false },
+                            },
+                            // Output trail texture
+                            {
+                                binding: 3,
+                                visibility: GPUShaderStage.COMPUTE,
+                                storageTexture: {
+                                    access: 'write-only',
+                                    format: computeTexFormat,
+                                }
+                            },
+                        ]
+                    })],
+            }),
+            compute: {
+                entryPoint: "main",
+                module: params.device.createShaderModule({
+                    code: `
+                        [[group(0), binding(0)]] var cellsSrc : texture_2d<f32>;
+                        [[group(0), binding(1)]] var cellsDst : texture_storage_2d<rgba8unorm, write>;
+                        [[group(0), binding(2)]] var trailSrc : texture_2d<f32>;
+                        [[group(0), binding(3)]] var trailDst : texture_storage_2d<rgba8unorm, write>;
+
+                        fn cellAt(x: i32, y: i32) -> i32 {
+                            let v = textureLoad(cellsSrc, vec2<i32>(x, y), 0);
+                            if (v.r < 0.5) { return 0;}
+                            return 1;
+                        }
+
+                        fn trailAt(x: i32, y: i32) -> vec4<f32> {
+                            return textureLoad(trailSrc, vec2<i32>(x, y), 0);
+                        }
+
+                        [[stage(compute), workgroup_size(8, 8)]]
+                        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+                            let x = i32(global_id.x);
+                            let y = i32(global_id.y);
+                            let pos = vec2<i32>(x, y);
+
+                            // Update cellular automata.
+                            let current = cellAt(x, y);
+                            let neighbors =
+                                cellAt(x - 1, y - 1)
+                                + cellAt(x, y - 1)
+                                + cellAt(x + 1, y - 1)
+                                + cellAt(x - 1, y)
+                                + cellAt(x + 1, y)
+                                + cellAt(x - 1, y + 1)
+                                + cellAt(x, y + 1)
+                                + cellAt(x + 1, y + 1);
+
+                            var s = 0.0;
+                            if (current != 0 && (neighbors == 2 || neighbors == 3)) {
+                                s = 1.0;
+                            }
+                            if (current == 0 && neighbors == 3) {
+                                s = 1.0;
+                            }
+                            textureStore(cellsDst, pos, vec4<f32>(s, s, s, 1.0));
+
+                            // Update trailing.
+                            let trail =
+                                trailAt(x - 1, y - 1)
+                                + trailAt(x, y - 1)
+                                + trailAt(x + 1, y - 1)
+                                + trailAt(x - 1, y)
+                                + trailAt(x + 1, y)
+                                + trailAt(x - 1, y + 1)
+                                + trailAt(x, y + 1)
+                                + trailAt(x + 1, y + 1);
+
+                            var v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+                            if (s < 1.0) {
+                                // Use a value higher than 9 to guarantee decay, even
+                                // if all neighbors are at full power.
+                                v = trail / 9.5;
+                                v.a = 1.0;
+                            }
+                            textureStore(trailDst, pos, v);
+                        }
+                    `,
+                }),
+            }
+        });
+        // Compute binding group for rendering 1 -> 2
+        const computeBindGroup1 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: cellsView1,
+                }, {
+                    binding: 1,
+                    resource: cellsView2,
+                }, {
+                    binding: 2,
+                    resource: trailView1,
+                }, {
+                    binding: 3,
+                    resource: trailView2,
+                }]
+        });
+        // Compute binding group for rendering 2 -> 1
+        const computeBindGroup2 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: cellsView2,
+                }, {
+                    binding: 1,
+                    resource: cellsView1,
+                }, {
+                    binding: 2,
+                    resource: trailView2,
+                }, {
+                    binding: 3,
+                    resource: trailView1,
+                }]
+        });
+        // Render pipeline.
+        const renderPipeline = params.device.createRenderPipeline({
+            layout: params.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        entries: [
+                            // Texture from compute
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                texture: { multisampled: false }
+                            },
+                            // Sampler for the texture
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                sampler: { type: "filtering" }
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            // Create triangles to cover the screen.
+            vertex: engine.vertexFullScreen(params),
+            primitive: {
+                topology: 'triangle-list',
+            },
+            // Just write some color on each pixel.
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule({
+                    code: `
+                        [[group(0), binding(0)]] var tex : texture_2d<f32>;
+                        [[group(0), binding(1)]] var smplr : sampler;
+
+                        fn palette(v: f32) -> vec4<f32> {
+                            let key = v * 8.0;
+                            let c = (v * 256.0) % 32.0;
+                            if (key < 1.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 256.0, 1.0); }
+                            if (key < 2.0) { return vec4<f32>(c * 8.0 / 256.0, 0.0, (64.0 - c * 2.0) / 256.0, 1.0); }
+                            if (key < 3.0) { return vec4<f32>(1.0, c * 8.0 / 256.0, 0.0, 1.0); }
+                            if (key < 4.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 256.0, 1.0); }
+                            if (key < 5.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 256.0, 1.0); }
+                            if (key < 6.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 256.0, 1.0); }
+                            if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
+                            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
+                        }
+
+                        [[stage(fragment)]]
+                        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+                            return palette(textureSample(tex, smplr, coord).r);
+                        }
+                    `,
+                }),
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+        });
+        const sampler = params.device.createSampler({
+            label: "sampler",
+            magFilter: "linear",
+        });
+        // When rendering 1 -> 2
+        const renderBindGroup1 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: trailView2,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                },
+            ],
+        });
+        // When rendering 2 -> 1
+        const renderBindGroup2 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: trailView1,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                },
+            ],
+        });
+        // Single frame rendering.
+        let isForward = true;
+        return async (info) => {
+            const commandEncoder = params.device.createCommandEncoder();
+            // Frame compute
+            const computeEncoder = commandEncoder.beginComputePass();
+            computeEncoder.setPipeline(computePipeline);
+            computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
+            computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
+            computeEncoder.endPass();
+            // Frame rendering.
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+            });
+            renderEncoder.setPipeline(renderPipeline);
+            renderEncoder.setBindGroup(0, isForward ? renderBindGroup1 : renderBindGroup2);
+            renderEncoder.draw(6, 1, 0, 0);
+            renderEncoder.endPass();
+            params.device.queue.submit([commandEncoder.finish()]);
+            isForward = !isForward;
+        };
+    }
+};
+
+
+/***/ }),
+
 /***/ "./src/demos/fade.ts":
 /*!***************************!*\
   !*** ./src/demos/fade.ts ***!
@@ -305,6 +635,80 @@ exports.demo = engine.asDemo(Engine);
 
 /***/ }),
 
+/***/ "./src/demos/minimal.ts":
+/*!******************************!*\
+  !*** ./src/demos/minimal.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+// Minimal effect, with only a basic render pass.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
+exports.demo = {
+    id: "minimal",
+    caption: "Minimal render pass",
+    async init(params) {
+        const pipeline = params.device.createRenderPipeline({
+            layout: params.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    // We do not need here a bind group, as we are not binding
+                    // anything in this example - keeping it around for
+                    // reference.
+                    params.device.createBindGroupLayout({
+                        entries: [],
+                    }),
+                ]
+            }),
+            // Create triangles to cover the screen.
+            vertex: engine.vertexFullScreen(params),
+            primitive: {
+                topology: 'triangle-list',
+            },
+            // Just write some color on each pixel.
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule({
+                    code: `
+                        [[stage(fragment)]]
+                        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+                            return vec4<f32>(coord.x, coord.y, 0.5, 1.0);
+                        }
+                    `,
+                }),
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+        });
+        const bindgroup = params.device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            // Minimal, nothing to bind.
+            entries: []
+        });
+        // Single frame rendering.
+        return async (info) => {
+            const commandEncoder = params.device.createCommandEncoder();
+            const passEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+            });
+            passEncoder.setPipeline(pipeline);
+            passEncoder.setBindGroup(0, bindgroup);
+            passEncoder.draw(6, 1, 0, 0);
+            passEncoder.endPass();
+            params.device.queue.submit([commandEncoder.finish()]);
+        };
+    }
+};
+
+
+/***/ }),
+
 /***/ "./src/engine.ts":
 /*!***********************!*\
   !*** ./src/engine.ts ***!
@@ -314,7 +718,50 @@ exports.demo = engine.asDemo(Engine);
 
 /// <reference types="@webgpu/types" />
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.asDemo = exports.Engine = exports.Uniforms = void 0;
+exports.asDemo = exports.Engine = exports.Uniforms = exports.vertexFullScreen = void 0;
+// A vertex shader creating full screen rendering using 2 triangles.
+// It sets:
+//   - builtin position: the position of the vertex.
+//   - location(0): screen coordinates, normalized to [0..1].
+// The render should:
+//   - Set `primitive: { topology: 'triangle-list' }`
+//   - Use `passEncoder.draw(6, 1, 0, 0)` on the render pass encoder, with no vertex buffer.
+function vertexFullScreen(params) {
+    return {
+        // Create full screen pair of triangles.
+        entryPoint: 'main',
+        module: params.device.createShaderModule({
+            code: `
+            struct VSOut {
+                [[builtin(position)]] pos: vec4<f32>;
+                [[location(0)]] coord: vec2<f32>;
+            };
+            [[stage(vertex)]]
+            fn main([[builtin(vertex_index)]] idx : u32) -> VSOut {
+                var data = array<vec2<f32>, 6>(
+                    vec2<f32>(-1.0, -1.0),
+                    vec2<f32>(1.0, -1.0),
+                    vec2<f32>(1.0, 1.0),
+
+                    vec2<f32>(-1.0, -1.0),
+                    vec2<f32>(-1.0, 1.0),
+                    vec2<f32>(1.0, 1.0),
+                );
+
+                let pos = data[idx];
+
+                var out : VSOut;
+                out.pos = vec4<f32>(pos, 0.0, 1.0);
+                out.coord.x = (pos.x + 1.0) / 2.0;
+                out.coord.y = (1.0 - pos.y) / 2.0;
+
+                return out;
+            }
+        `,
+        }),
+    };
+}
+exports.vertexFullScreen = vertexFullScreen;
 class Uniforms {
     constructor(device) {
         this.computeWidth = 320;
@@ -389,22 +836,6 @@ class Engine {
     async init(params) {
         this.context = params.context;
         this.device = params.device;
-        const presentationFormat = this.context.getPreferredFormat(params.adapter);
-        this.context.configure({
-            device: this.device,
-            format: presentationFormat,
-            size: {
-                width: params.renderWidth,
-                height: params.renderHeight,
-            },
-        });
-        // As of 2021-12-11, Firefox nightly does not support device.lost.
-        /*if (this.device.lost) {
-            this.device.lost.then((e) => {
-                console.error("device lost", e);
-                this.initWebGPU();
-            });
-        }*/
         // Uniforms setup.
         this.uniforms = new Uniforms(this.device);
         this.uniforms.computeWidth = this.computeWidth ?? params.renderWidth;
@@ -536,49 +967,15 @@ class Engine {
         });
         this.renderPipeline = this.device.createRenderPipeline({
             layout: renderBindGroupLayout,
-            vertex: {
-                // Create full screen pair of triangles.
-                module: this.device.createShaderModule({
-                    code: `
-                        struct VSOut {
-                            [[builtin(position)]] pos: vec4<f32>;
-                            [[location(0)]] coord: vec2<f32>;
-                        };
-                        [[stage(vertex)]]
-                        fn main([[builtin(vertex_index)]] idx : u32) -> VSOut {
-                            var data = array<vec2<f32>, 6>(
-                                vec2<f32>(-1.0, -1.0),
-                                vec2<f32>(1.0, -1.0),
-                                vec2<f32>(1.0, 1.0),
-
-                                vec2<f32>(-1.0, -1.0),
-                                vec2<f32>(-1.0, 1.0),
-                                vec2<f32>(1.0, 1.0),
-                            );
-
-                            let pos = data[idx];
-
-                            var out : VSOut;
-                            out.pos = vec4<f32>(pos, 0.0, 1.0);
-                            out.coord.x = (pos.x + 1.0) / 2.0;
-                            out.coord.y = (1.0 - pos.y) / 2.0;
-
-                            return out;
-                        }
-                    `,
-                }),
-                entryPoint: 'main',
-            },
+            vertex: vertexFullScreen(params),
             fragment: {
                 module: this.device.createShaderModule({
                     code: this.fragmentCode,
                 }),
                 entryPoint: 'main',
-                targets: [
-                    {
-                        format: presentationFormat,
-                    },
-                ],
+                targets: [{
+                        format: params.renderFormat,
+                    }],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -615,17 +1012,14 @@ class Engine {
                 }]
         });
     }
-    async frame(timestampMs) {
-        let frameDelta = 0;
-        if (this.previousTimestampMs) {
-            frameDelta = timestampMs - this.previousTimestampMs;
-        }
-        this.uniforms.elapsedMs += frameDelta;
-        let simulDelta = timestampMs - this.previousStepMs;
+    async frame(info) {
+        this.uniforms.elapsedMs = info.elapsedMs;
+        // Allow to run compute at a lower FPS than rendering.
+        let simulDelta = info.timestampMs - this.previousStepMs;
         const runStep = simulDelta > (1000 / this.fps);
-        this.previousTimestampMs = timestampMs;
+        this.previousTimestampMs = info.timestampMs;
         if (runStep) {
-            this.previousStepMs = timestampMs;
+            this.previousStepMs = info.timestampMs;
         }
         // Map uniforms
         await this.uniforms.awaitMap();
@@ -674,7 +1068,7 @@ const asDemo = (t) => {
         async init(params) {
             const d = new t();
             await d.init(params);
-            return d;
+            return (nfo) => { return d.frame(nfo); };
         }
     };
 };
@@ -705,11 +1099,15 @@ const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts"
 const fire = __webpack_require__(/*! ./demos/fire */ "./src/demos/fire.ts");
 const falling = __webpack_require__(/*! ./demos/falling */ "./src/demos/falling.ts");
 const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
+const minimal = __webpack_require__(/*! ./demos/minimal */ "./src/demos/minimal.ts");
+const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.ts");
 exports.allDemos = [
     fire.demo,
     conway.demo,
     falling.demo,
     fade.demo,
+    minimal.demo,
+    conway2.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -832,22 +1230,50 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     throw new Error("no webgpu adapter");
                 }
                 const device = await adapter.requestDevice();
+                // As of 2021-12-11, Firefox nightly does not support device.lost.
+                /*if (this.device.lost) {
+                    this.device.lost.then((e) => {
+                        console.error("device lost", e);
+                        this.initWebGPU();
+                    });
+                }*/
                 const context = canvas.getContext('webgpu');
                 if (!context) {
                     new Error("no webgpu canvas context");
                 }
                 this.webGPUpresent = true;
-                const runner = await demoByID(this.demoID).init({
+                const renderFormat = context.getPreferredFormat(adapter);
+                context.configure({
+                    device: device,
+                    format: renderFormat,
+                    size: {
+                        width: this.renderWidth,
+                        height: this.renderHeight,
+                    },
+                });
+                const renderer = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
                     device: device,
+                    renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight
                 });
                 // Render loop
+                let elapsedMs = 0;
+                let timestampMs = 0;
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
-                    await runner.frame(ts);
+                    let deltaMs = null;
+                    if (timestampMs) {
+                        deltaMs = ts - elapsedMs;
+                        elapsedMs += deltaMs;
+                    }
+                    await renderer({
+                        timestampMs: ts,
+                        elapsedMs: elapsedMs,
+                        deltaMs: deltaMs,
+                    });
                 }
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
