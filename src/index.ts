@@ -68,15 +68,87 @@ export class AppMain extends LitElement {
             left: 0;
             top: 0;
             z-index: 10;
+
+            display: grid;
+            grid-template-columns: 250px 100fr;
+            grid-template-rows: 100fr;
+        }
+
+        #controls {
+            background-color: #d6d6d6f0;
+            border: #8b8b8b 1px solid;
+            grid-column-start: 1;
+            grid-column-end: 2;
+            grid-row-start: 1;
+            grid-row-end: 2;
+
+            font-size: 11px;
+        }
+
+        .doc {
+            font-style: italic;
+            font-size: 12px;
+            padding: 2px 1px 2px 1px;
+        }
+
+        .github {
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #4d4d4d;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .labelvalue {
+            display: grid;
+            grid-template-columns: 8em 100fr;
+            grid-template-rows: 100fr;
+
+            border-top: 1px solid #4d4d4d;
+            padding: 2px 1px 2px 1px;
+            font: 11px 'Lucida Grande', sans-serif;
+        }
+
+        .labelvalue select, .labelvalue input {
+            font: 11px 'Lucida Grande', sans-serif;
+            margin: 0;
+        }
+
+        .labelvalue label {
+            grid-column-start: 1;
+            grid-column-end: 2;
+        }
+
+        .value {
+            grid-column-start: 2;
+            grid-column-end: 3;
+        }
+
+        .line {
+            border-top: 1px solid #4d4d4d;
+            display: flex;
+            justify-content: center;
+        }
+
+        .line button {
+            flex-grow: 1;
+            font: italic 11px 'Lucida Grande', sans-serif;
+            border: none;
+            background-color: transparent;
+        }
+
+        #errors {
+            background-color: #d6d6d6de;
+            grid-column-start: 2;
+            grid-column-end: 3;
+            grid-row-start: 1;
+            grid-row-end: 2;
         }
 
         .error {
             background-color: #ffbebede;
         }
 
-        #controls {
-            background-color: #d6d6d6de;
-        }
     `;
 
     render() {
@@ -86,15 +158,32 @@ export class AppMain extends LitElement {
             </div>
 
             <div id="overlay">
-                <span>
-                    <select @change=${this.demoChange}>
-                        ${allDemos.map(d => html`
-                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
-                        `)}
-                    </select>
-                    <button @click="${() => { this.setShowControls(!this.showControls) }}">...</button>
-                </span>
                 <div id="controls">
+                    <div class="labelvalue">
+                        <label>Demo</label>
+                        <select class="value" @change=${this.demoChange}>
+                            ${allDemos.map(d => html`
+                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
+                            `)}
+                        </select>
+                    </div>
+                    ${this.showControls ? html`
+                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
+                    <div class="labelvalue">
+                        <label>Limit canvas</label>
+                        <input class="value" type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}></input>
+                    </div>
+                    <div class="doc">
+                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
+                    </div>
+                `: ``}
+                    <div class="line">
+                        <button @click="${() => { this.setShowControls(!this.showControls) }}">
+                            ${this.showControls ? 'Close' : 'Open'} controls
+                        </button>
+                    </div>
+                </div>
+                <div id="errors">
                     ${this.webGPUpresent ? '' : html`
                         <div class="error">
                             Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
@@ -104,13 +193,6 @@ export class AppMain extends LitElement {
                     ${this.error ? html`
                         <div class="error">
                             Issue: ${this.error}
-                        </div>
-                    `: ``}
-                    ${this.showControls ? html`
-                        <div>
-                            <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
-                                Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
-                            </input>
                         </div>
                     `: ``}
                 </div>
@@ -199,6 +281,7 @@ export class AppMain extends LitElement {
                     throw new Error("no webgpu extension");
                 }
 
+
                 let adapter: GPUAdapter | null = null;
                 try {
                     // Firefox can have navigator.gpu but still throw when
@@ -222,7 +305,7 @@ export class AppMain extends LitElement {
                 }*/
 
                 const context = canvas.getContext('webgpu');
-                if (!context) { new Error("no webgpu canvas context"); }
+                if (!context) { throw new Error("no webgpu canvas context"); }
 
                 this.webGPUpresent = true;
 
