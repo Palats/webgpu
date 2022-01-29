@@ -71,7 +71,7 @@ export class AppMain extends LitElement {
 
             display: grid;
             grid-template-columns: 250px 100fr;
-            grid-template-rows: 100fr;
+            align-items: start;
         }
 
         #controls {
@@ -79,9 +79,6 @@ export class AppMain extends LitElement {
             border: #8b8b8b 1px solid;
             grid-column-start: 1;
             grid-column-end: 2;
-            grid-row-start: 1;
-            grid-row-end: 2;
-
             font-size: 11px;
         }
 
@@ -138,17 +135,11 @@ export class AppMain extends LitElement {
         }
 
         #errors {
-            background-color: #d6d6d6de;
+            background-color: #ffbebede;
             grid-column-start: 2;
             grid-column-end: 3;
-            grid-row-start: 1;
-            grid-row-end: 2;
+            padding: 2px;
         }
-
-        .error {
-            background-color: #ffbebede;
-        }
-
     `;
 
     render() {
@@ -185,13 +176,13 @@ export class AppMain extends LitElement {
                 </div>
                 <div id="errors">
                     ${this.webGPUpresent ? '' : html`
-                        <div class="error">
+                        <div>
                             Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
                             WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
                         </div>
                     `}
                     ${this.error ? html`
-                        <div class="error">
+                        <div>
                             Issue: ${this.error}
                         </div>
                     `: ``}
@@ -297,12 +288,10 @@ export class AppMain extends LitElement {
                 const device = await adapter.requestDevice();
 
                 // As of 2021-12-11, Firefox nightly does not support device.lost.
-                /*if (this.device.lost) {
-                    this.device.lost.then((e) => {
-                        console.error("device lost", e);
-                        this.initWebGPU();
-                    });
-                }*/
+                device.lost.then((e) => {
+                    console.error("device lost", e);
+                    this.rebuildNeeded = "device lost";
+                });
 
                 const context = canvas.getContext('webgpu');
                 if (!context) { throw new Error("no webgpu canvas context"); }
