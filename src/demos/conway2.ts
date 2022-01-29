@@ -137,6 +137,19 @@ export const demo = {
                             let y = i32(global_id.y);
                             let pos = vec2<i32>(x, y);
 
+                            // Prepare trailing.
+                            var trail =
+                                trailAt(x - 1, y - 1)
+                                + trailAt(x, y - 1)
+                                + trailAt(x + 1, y - 1)
+                                + trailAt(x - 1, y)
+                                + trailAt(x + 1, y)
+                                + trailAt(x - 1, y + 1)
+                                + trailAt(x, y + 1)
+                                + trailAt(x + 1, y + 1);
+                            trail = trail / 9.5;
+                            trail.a = 1.0;
+
                             // Update cellular automata.
                             let current = cellAt(x, y);
                             let neighbors =
@@ -152,31 +165,16 @@ export const demo = {
                             var s = 0.0;
                             if (current != 0 && (neighbors == 2 || neighbors == 3)) {
                                 s = 1.0;
-                            }
-                            if (current == 0 && neighbors == 3) {
+                                trail = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+                            } else if (current == 0 && neighbors == 3) {
                                 s = 1.0;
+                                trail = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+                            } else {
+
                             }
+
                             textureStore(cellsDst, pos, vec4<f32>(s, s, s, 1.0));
-
-                            // Update trailing.
-                            let trail =
-                                trailAt(x - 1, y - 1)
-                                + trailAt(x, y - 1)
-                                + trailAt(x + 1, y - 1)
-                                + trailAt(x - 1, y)
-                                + trailAt(x + 1, y)
-                                + trailAt(x - 1, y + 1)
-                                + trailAt(x, y + 1)
-                                + trailAt(x + 1, y + 1);
-
-                            var v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
-                            if (s < 1.0) {
-                                // Use a value higher than 9 to guarantee decay, even
-                                // if all neighbors are at full power.
-                                v = trail / 9.5;
-                                v.a = 1.0;
-                            }
-                            textureStore(trailDst, pos, v);
+                            textureStore(trailDst, pos, trail);
                         }
                     `,
                 }),
