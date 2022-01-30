@@ -102,7 +102,7 @@ exports.demo = void 0;
 const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
 exports.demo = {
     id: "conway2",
-    caption: "Game of life with special rendering",
+    caption: "Conway 2",
     async init(params) {
         const computeWidth = params.renderWidth;
         const computeHeight = params.renderHeight;
@@ -220,6 +220,19 @@ exports.demo = {
                             let y = i32(global_id.y);
                             let pos = vec2<i32>(x, y);
 
+                            // Prepare trailing.
+                            var trail =
+                                trailAt(x - 1, y - 1)
+                                + trailAt(x, y - 1)
+                                + trailAt(x + 1, y - 1)
+                                + trailAt(x - 1, y)
+                                + trailAt(x + 1, y)
+                                + trailAt(x - 1, y + 1)
+                                + trailAt(x, y + 1)
+                                + trailAt(x + 1, y + 1);
+                            trail = trail / 9.5;
+                            trail.a = 1.0;
+
                             // Update cellular automata.
                             let current = cellAt(x, y);
                             let neighbors =
@@ -235,31 +248,16 @@ exports.demo = {
                             var s = 0.0;
                             if (current != 0 && (neighbors == 2 || neighbors == 3)) {
                                 s = 1.0;
-                            }
-                            if (current == 0 && neighbors == 3) {
+                                trail = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+                            } else if (current == 0 && neighbors == 3) {
                                 s = 1.0;
+                                trail = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+                            } else {
+
                             }
+
                             textureStore(cellsDst, pos, vec4<f32>(s, s, s, 1.0));
-
-                            // Update trailing.
-                            let trail =
-                                trailAt(x - 1, y - 1)
-                                + trailAt(x, y - 1)
-                                + trailAt(x + 1, y - 1)
-                                + trailAt(x - 1, y)
-                                + trailAt(x + 1, y)
-                                + trailAt(x - 1, y + 1)
-                                + trailAt(x, y + 1)
-                                + trailAt(x + 1, y + 1);
-
-                            var v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
-                            if (s < 1.0) {
-                                // Use a value higher than 9 to guarantee decay, even
-                                // if all neighbors are at full power.
-                                v = trail / 9.5;
-                                v.a = 1.0;
-                            }
-                            textureStore(trailDst, pos, v);
+                            textureStore(trailDst, pos, trail);
                         }
                     `,
                 }),
@@ -1102,12 +1100,12 @@ const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
 const minimal = __webpack_require__(/*! ./demos/minimal */ "./src/demos/minimal.ts");
 const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.ts");
 exports.allDemos = [
+    conway2.demo,
     fire.demo,
     conway.demo,
-    falling.demo,
     fade.demo,
+    falling.demo,
     minimal.demo,
-    conway2.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -1125,7 +1123,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
         this.error = "";
         this.renderWidth = 0;
         this.renderHeight = 0;
-        this.showControls = this.getBoolParam("c", false);
+        this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", exports.allDemos[0].id);
     }
@@ -1136,34 +1134,45 @@ let AppMain = class AppMain extends lit_1.LitElement {
             </div>
 
             <div id="overlay">
-                <span>
-                    <select @change=${this.demoChange}>
-                        ${exports.allDemos.map(d => (0, lit_1.html) `
-                            <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
-                        `)}
-                    </select>
-                    <button @click="${() => { this.setShowControls(!this.showControls); }}">...</button>
-                </span>
                 <div id="controls">
+                    ${this.showControls ? (0, lit_1.html) `
+                    <div class="labelvalue">
+                        <label>Demo</label>
+                        <select class="value" @change=${this.demoChange}>
+                            ${exports.allDemos.map(d => (0, lit_1.html) `
+                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
+                            `)}
+                        </select>
+                    </div>
+                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
+                    <div class="labelvalue">
+                        <label>Limit canvas</label>
+                        <input class="value" type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}></input>
+                    </div>
+                    <div class="doc">
+                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
+                    </div>
+                ` : ``}
+                    <div class="line">
+                        <button @click="${() => { this.setShowControls(!this.showControls); }}">
+                            ${this.showControls ? 'Close' : 'Open'} controls
+                        </button>
+                    </div>
+                </div>
+                ${(!this.webGPUpresent || this.error) ? (0, lit_1.html) `
+                <div id="errors">
                     ${this.webGPUpresent ? '' : (0, lit_1.html) `
-                        <div class="error">
+                        <div>
                             Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
                             WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
                         </div>
                     `}
                     ${this.error ? (0, lit_1.html) `
-                        <div class="error">
-                            Issue: ${this.error}
-                        </div>
-                    ` : ``}
-                    ${this.showControls ? (0, lit_1.html) `
-                        <div>
-                            <input type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}>
-                                Limit canvas to 816x640 (<a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>)
-                            </input>
-                        </div>
+                        <div><pre>${this.error}</pre></div>
+                        <div>See javascript console for more details.</div>
                     ` : ``}
                 </div>
+                ` : ``}
             </div>
         `;
     }
@@ -1231,15 +1240,17 @@ let AppMain = class AppMain extends lit_1.LitElement {
                 }
                 const device = await adapter.requestDevice();
                 // As of 2021-12-11, Firefox nightly does not support device.lost.
-                /*if (this.device.lost) {
-                    this.device.lost.then((e) => {
-                        console.error("device lost", e);
-                        this.initWebGPU();
-                    });
-                }*/
+                device.lost.then((e) => {
+                    console.error("device lost", e);
+                    this.error = "device lost";
+                });
+                device.onuncapturederror = (ev) => {
+                    console.error("webgpu error", ev);
+                    this.error = "webgpu device error";
+                };
                 const context = canvas.getContext('webgpu');
                 if (!context) {
-                    new Error("no webgpu canvas context");
+                    throw new Error("no webgpu canvas context");
                 }
                 this.webGPUpresent = true;
                 const renderFormat = context.getPreferredFormat(adapter);
@@ -1259,21 +1270,28 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight
                 });
+                if (this.error) {
+                    throw new Error("init failed");
+                }
                 // Render loop
                 let elapsedMs = 0;
                 let timestampMs = 0;
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
-                    let deltaMs = null;
+                    let deltaMs = 0;
                     if (timestampMs) {
-                        deltaMs = ts - elapsedMs;
-                        elapsedMs += deltaMs;
+                        deltaMs = ts - timestampMs;
                     }
+                    timestampMs = ts;
+                    elapsedMs += deltaMs;
                     await renderer({
                         timestampMs: ts,
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                     });
+                    if (this.error) {
+                        throw new Error("frame failed");
+                    }
                 }
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
@@ -1283,7 +1301,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     this.error = e.toString();
                 }
                 else {
-                    this.error = "See Javascript console for error";
+                    this.error = "generic error";
                 }
                 // And now, wait for something to tell us to retry.
                 // Could be better done with a proper event, but here we are.
@@ -1381,14 +1399,77 @@ AppMain.styles = (0, lit_1.css) `
             left: 0;
             top: 0;
             z-index: 10;
-        }
 
-        .error {
-            background-color: #ffbebede;
+            display: grid;
+            grid-template-columns: 250px 100fr;
+            align-items: start;
         }
 
         #controls {
-            background-color: #d6d6d6de;
+            background-color: #d6d6d6f0;
+            border: #8b8b8b 1px solid;
+            grid-column-start: 1;
+            grid-column-end: 2;
+            font-size: 11px;
+        }
+
+        .doc {
+            font-style: italic;
+            font-size: 12px;
+            padding: 2px 1px 2px 1px;
+        }
+
+        .github {
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #4d4d4d;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .labelvalue {
+            display: grid;
+            grid-template-columns: 8em 100fr;
+            grid-template-rows: 100fr;
+
+            border-top: 1px solid #4d4d4d;
+            padding: 2px 1px 2px 1px;
+            font: 11px 'Lucida Grande', sans-serif;
+        }
+
+        .labelvalue select, .labelvalue input {
+            font: 11px 'Lucida Grande', sans-serif;
+            margin: 0;
+        }
+
+        .labelvalue label {
+            grid-column-start: 1;
+            grid-column-end: 2;
+        }
+
+        .value {
+            grid-column-start: 2;
+            grid-column-end: 3;
+        }
+
+        .line {
+            border-top: 1px solid #4d4d4d;
+            display: flex;
+            justify-content: center;
+        }
+
+        .line button {
+            flex-grow: 1;
+            font: italic 11px 'Lucida Grande', sans-serif;
+            border: none;
+            background-color: transparent;
+        }
+
+        #errors {
+            background-color: #ffbebede;
+            grid-column-start: 2;
+            grid-column-end: 3;
+            padding: 2px;
         }
     `;
 __decorate([
