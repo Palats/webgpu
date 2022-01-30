@@ -23,6 +23,10 @@ As of Jan. 2022, WebGPU is not available by default in browsers, and thus requir
   ```
 - Firefox: run the nightly, go in "about:config" and activate feature "dom.webgpu.enabled". You might need to restart Firefox.
 
+## Example of conway2
+
+https://user-images.githubusercontent.com/905855/151704281-b2c7c4dd-c814-4cae-a48c-c69bbedfae6e.mp4
+
 ## Related links
  - [WebGPU API](https://gpuweb.github.io/gpuweb/) ; [API quick reference](https://webgpu.rocks/)
  - [WebGPU shader language (GLSL)](https://gpuweb.github.io/gpuweb/wgsl)
