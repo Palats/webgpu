@@ -2,7 +2,6 @@
 
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import * as engine from './engine';
 import * as types from './types';
 
 
@@ -183,9 +182,8 @@ export class AppMain extends LitElement {
                         </div>
                     `}
                     ${this.error ? html`
-                        <div>
-                            Issue: ${this.error}
-                        </div>
+                        <div><pre>${this.error}</pre></div>
+                        <div>See javascript console for more details.</div>
                     `: ``}
                 </div>
                 `: ``}
@@ -274,7 +272,6 @@ export class AppMain extends LitElement {
                     throw new Error("no webgpu extension");
                 }
 
-
                 let adapter: GPUAdapter | null = null;
                 try {
                     // Firefox can have navigator.gpu but still throw when
@@ -292,8 +289,13 @@ export class AppMain extends LitElement {
                 // As of 2021-12-11, Firefox nightly does not support device.lost.
                 device.lost.then((e) => {
                     console.error("device lost", e);
-                    this.rebuildNeeded = "device lost";
+                    this.error = "device lost";
                 });
+
+                device.onuncapturederror = (ev) => {
+                    console.error("webgpu error", ev);
+                    this.error = "webgpu device error";
+                }
 
                 const context = canvas.getContext('webgpu');
                 if (!context) { throw new Error("no webgpu canvas context"); }
@@ -318,6 +320,9 @@ export class AppMain extends LitElement {
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight
                 });
+                if (this.error) {
+                    throw new Error("init failed");
+                }
 
                 // Render loop
                 let elapsedMs = 0;
@@ -336,6 +341,10 @@ export class AppMain extends LitElement {
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                     });
+
+                    if (this.error) {
+                        throw new Error("frame failed");
+                    }
                 }
                 await new Promise(resolve => setTimeout(resolve, 200));
             } catch (e) {
@@ -343,7 +352,7 @@ export class AppMain extends LitElement {
                 if (e instanceof Error) {
                     this.error = e.toString();
                 } else {
-                    this.error = "See Javascript console for error";
+                    this.error = "generic error";
                 }
 
                 // And now, wait for something to tell us to retry.
