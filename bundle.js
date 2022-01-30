@@ -83,7 +83,7 @@ class Engine extends engine.Engine {
 }
 exports.Engine = Engine;
 Engine.id = "conway";
-Engine.caption = "Conway game of life";
+Engine.caption = "A Conway game of life.";
 exports.demo = engine.asDemo(Engine);
 
 
@@ -102,7 +102,7 @@ exports.demo = void 0;
 const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
 exports.demo = {
     id: "conway2",
-    caption: "Conway 2",
+    caption: "A conway game of life with paletted blurring over time.",
     async init(params) {
         const computeWidth = params.renderWidth;
         const computeHeight = params.renderHeight;
@@ -467,7 +467,7 @@ class Engine extends engine.Engine {
     ;
 }
 Engine.id = "fade";
-Engine.caption = "Fading red component";
+Engine.caption = "Cycling the red component over time.";
 exports.demo = engine.asDemo(Engine);
 
 
@@ -525,7 +525,7 @@ class Engine extends engine.Engine {
     }
 }
 Engine.id = "falling";
-Engine.caption = "Falling random pixels";
+Engine.caption = "Minimal data manipulation in a compute shader.";
 exports.demo = engine.asDemo(Engine);
 
 
@@ -627,7 +627,7 @@ class Engine extends engine.Engine {
     }
 }
 Engine.id = "fire";
-Engine.caption = "Classic fire effect";
+Engine.caption = "The classic fire effect.";
 exports.demo = engine.asDemo(Engine);
 
 
@@ -646,7 +646,7 @@ exports.demo = void 0;
 const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
 exports.demo = {
     id: "minimal",
-    caption: "Minimal render pass",
+    caption: "Minimal setup without compute.",
     async init(params) {
         const pipeline = params.device.createRenderPipeline({
             layout: params.device.createPipelineLayout({
@@ -1140,10 +1140,11 @@ let AppMain = class AppMain extends lit_1.LitElement {
                         <label>Demo</label>
                         <select class="value" @change=${this.demoChange}>
                             ${exports.allDemos.map(d => (0, lit_1.html) `
-                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
+                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
                             `)}
                         </select>
                     </div>
+                    <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
                     <div class="labelvalue">
                         <label>Limit canvas</label>
