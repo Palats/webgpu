@@ -322,11 +322,13 @@ export class AppMain extends LitElement {
                 let timestampMs = 0;
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
-                    let deltaMs = null;
+                    let deltaMs = 0;
                     if (timestampMs) {
-                        deltaMs = ts - elapsedMs;
-                        elapsedMs += deltaMs;
+                        deltaMs = ts - timestampMs;
                     }
+                    timestampMs = ts;
+                    elapsedMs += deltaMs;
+
                     await renderer({
                         timestampMs: ts,
                         elapsedMs: elapsedMs,
