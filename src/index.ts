@@ -14,12 +14,12 @@ import * as minimal from './demos/minimal';
 import * as conway2 from './demos/conway2';
 
 export const allDemos: types.Demo[] = [
+    conway2.demo,
     fire.demo,
     conway.demo,
-    falling.demo,
     fade.demo,
+    falling.demo,
     minimal.demo,
-    conway2.demo,
 ];
 
 export function demoByID(id: string): types.Demo {
@@ -150,6 +150,7 @@ export class AppMain extends LitElement {
 
             <div id="overlay">
                 <div id="controls">
+                    ${this.showControls ? html`
                     <div class="labelvalue">
                         <label>Demo</label>
                         <select class="value" @change=${this.demoChange}>
@@ -158,7 +159,6 @@ export class AppMain extends LitElement {
                             `)}
                         </select>
                     </div>
-                    ${this.showControls ? html`
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
                     <div class="labelvalue">
                         <label>Limit canvas</label>
@@ -174,6 +174,7 @@ export class AppMain extends LitElement {
                         </button>
                     </div>
                 </div>
+                ${(!this.webGPUpresent || this.error) ? html`
                 <div id="errors">
                     ${this.webGPUpresent ? '' : html`
                         <div>
@@ -187,6 +188,7 @@ export class AppMain extends LitElement {
                         </div>
                     `: ``}
                 </div>
+                `: ``}
             </div>
         `;
     }
@@ -215,7 +217,7 @@ export class AppMain extends LitElement {
 
     constructor() {
         super();
-        this.showControls = this.getBoolParam("c", false);
+        this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", allDemos[0].id)
     }
