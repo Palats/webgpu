@@ -3,7 +3,7 @@ import * as engine from '../engine';
 // Falling random pixels
 class Engine extends engine.Engine {
     static id = "falling";
-    static caption = "Falling random pixels";
+    static caption = "Minimal data manipulation in a compute shader.";
     computeWidth = 320;
     computeHeight = 200;
 

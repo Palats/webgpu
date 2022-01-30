@@ -154,10 +154,11 @@ export class AppMain extends LitElement {
                         <label>Demo</label>
                         <select class="value" @change=${this.demoChange}>
                             ${allDemos.map(d => html`
-                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.caption}</option>
+                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
                             `)}
                         </select>
                     </div>
+                    <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
                     <div class="labelvalue">
                         <label>Limit canvas</label>

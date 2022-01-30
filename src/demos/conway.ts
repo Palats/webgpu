@@ -3,7 +3,7 @@ import * as engine from '../engine';
 // A basic game of life.
 export class Engine extends engine.Engine {
     static id = "conway";
-    static caption = "Conway game of life";
+    static caption = "A Conway game of life.";
 
     initCompute(buffer: ArrayBuffer) {
         const a = new Uint8Array(buffer);

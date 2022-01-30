@@ -3,7 +3,7 @@ import * as engine from '../engine';
 // Just fiddling with red component a bit.
 class Engine extends engine.Engine {
     static id = "fade";
-    static caption = "Fading red component";
+    static caption = "Cycling the red component over time.";
 
     initCompute(buffer: ArrayBuffer) {
         const a = new Uint8Array(buffer);

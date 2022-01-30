@@ -3,7 +3,7 @@ import * as engine from '../engine';
 // A classic fire effect.
 class Engine extends engine.Engine {
     static id = "fire";
-    static caption = "Classic fire effect";
+    static caption = "The classic fire effect.";
 
     computeWidth = 160;
     computeHeight = 100;

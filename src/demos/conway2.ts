@@ -6,7 +6,7 @@ import * as engine from '../engine';
 
 export const demo = {
     id: "conway2",
-    caption: "Conway 2",
+    caption: "A conway game of life with paletted blurring over time.",
 
     async init(params: types.InitParams) {
         const computeWidth = params.renderWidth;

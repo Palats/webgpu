@@ -6,7 +6,7 @@ import * as engine from '../engine';
 
 export const demo = {
     id: "minimal",
-    caption: "Minimal render pass",
+    caption: "Minimal setup without compute.",
 
     async init(params: types.InitParams) {
         const pipeline = params.device.createRenderPipeline({

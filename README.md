@@ -23,13 +23,23 @@ As of Jan. 2022, WebGPU is not available by default in browsers, and thus requir
   ```
 - Firefox: run the nightly, go in "about:config" and activate feature "dom.webgpu.enabled". You might need to restart Firefox.
 
+## Related links
+ - [WebGPU API](https://gpuweb.github.io/gpuweb/) ; [API quick reference](https://webgpu.rocks/)
+ - [WebGPU shader language (GLSL)](https://gpuweb.github.io/gpuweb/wgsl)
+
 ## Dev
-To run a dev version of this code, from a checkout of the code:
+
+### Running locally
+To run a dev version of this code, from a checkout of the code, assuming `npm` being available:
 ```
 npm install
 npm run dev
 ```
 
-## Related links
- - [WebGPU API](https://gpuweb.github.io/gpuweb/) ; [API quick reference](https://webgpu.rocks/)
- - [WebGPU shader language (GLSL)](https://gpuweb.github.io/gpuweb/wgsl)
+### Updating live version
+```
+npm run build
+git checkout pages
+cp -f dist/* .
+git commit -a -m "Updating live version"
+```
