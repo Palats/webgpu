@@ -4,6 +4,7 @@
 
 WebGPU is an API to drive compute & rendering on GPUs from browsers (and others). This is to WebGL what Vulkan is to OpenGL. This repository implements some effects using both compute & rendering WebGPU APIs:
  - `fire`: A classic demoscene style fire effect.
+ - `cube`: A rotating cube. All is done on the GPU, even the rotation / projection matrix calculation.
  - `conway`: A binary Conway [game of life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
  - `conway2`: Another game of life, but with more fancy rendering.
  - `fade`: Trivial example modifying the red channel.

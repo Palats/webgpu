@@ -1,29 +1,36 @@
-// A rotating cube.
-// No compute, and vertex are hard coded in the vertex shader.
+// A rotating cube, with rotation on GPU.
+//
+// Rotation, translation and project are calculated within a compute shader. For
+// a single matrix like that, it is probably over the top - though it shows it
+// can be done purely on the GPU, while javascript just need to update the time.
+//
 // Lots of inspiration from
 // https://github.com/austinEng/webgpu-samples/blob/main/src/sample/rotatingCube/main.ts
 
 /// <reference types="@webgpu/types" />
 import * as types from '../types';
-import { mat4, vec3 } from 'gl-matrix';
 
 export const demo = {
     id: "cube",
     caption: "The good old rotating cube.",
 
     async init(params: types.InitParams) {
-        // Compute pipeline.
+        // -- Compute pipeline. It takes care of calculating the cube vertices
+        // transformion (and projection) matrix.
         const computePipeline = params.device.createComputePipeline({
+            label: "Compute pipeline for projection matrix",
             layout: params.device.createPipelineLayout({
+                label: "compute pipeline layouts",
                 bindGroupLayouts: [params.device.createBindGroupLayout({
+                    label: "compute pipeline main layout",
                     entries: [
-                        // Input buffer, from JS
+                        // Input buffer, which will be coming from JS.
                         {
                             binding: 0,
                             visibility: GPUShaderStage.COMPUTE,
                             buffer: { type: "uniform" },
                         },
-                        // Output buffer, for render
+                        // Output buffer, to feed the vertex shader.
                         {
                             binding: 1,
                             visibility: GPUShaderStage.COMPUTE,
@@ -36,11 +43,15 @@ export const demo = {
             compute: {
                 entryPoint: "main",
                 module: params.device.createShaderModule({
+                    label: "Rendering matrix compute",
+                    // Project & rotations from https://github.com/toji/gl-matrix
                     code: `
-                        struct Input {
+                        struct Uniforms {
                             elapsedMs: f32;
+                            renderWidth: f32;
+                            renderHeight: f32;
                         };
-                        @group(0) @binding(0) var<uniform> inp : Input;
+                        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
                         struct Output {
                             // ModelViewProjection
@@ -49,15 +60,16 @@ export const demo = {
                         @group(0) @binding(1) var<storage, write> outp : Output;
 
                         fn perspective() -> mat4x4<f32> {
-                            //  mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, aspect, 1, 100.0);
-                            // From https://github.com/toji/gl-matrix
-                            let fovy = 2.0 * 3.14159 / 5.0;
-                            let aspect = 1.275;
+                            // Hard coded projection parameters - for more flexibility,
+                            // we could imagine getting them from the uniforms.
+                            let fovy = 2.0 * 3.14159 / 5.0; // Vertical field of view (rads)
                             let near = 1.0;
                             let far = 100.0;
 
                             let f = 1.0 / tan(fovy / 2.0);
                             let nf = 1.0 / (near - far);
+
+                            let aspect = uniforms.renderWidth / uniforms.renderHeight;
 
                             return mat4x4<f32>(
                                 f / aspect, 0.0, 0.0, 0.0,
@@ -112,7 +124,7 @@ export const demo = {
                         @stage(compute) @workgroup_size(1)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
                             let TAU = 6.283185;
-                            let c = (inp.elapsedMs / 1000.0) % TAU;
+                            let c = (uniforms.elapsedMs / 1000.0) % TAU;
                             let r = vec3<f32>(c, c, c);
                             outp.mvp = perspective() * translate(vec3<f32>(0.0, 0.0, -4.0)) * rotateZ(r.z) * rotateY(r.y) * rotateX(r.x);
                         }
@@ -121,40 +133,44 @@ export const demo = {
             }
         });
 
-        const inputBuffer = params.device.createBuffer({
-            size: 1 * Float32Array.BYTES_PER_ELEMENT,
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: 3 * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-        const outputBuffer = params.device.createBuffer({
+        const computeResult = params.device.createBuffer({
+            label: "Compute output for vertex shaders",
             size: 4 * 4 * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
 
         const computeBindGroup = params.device.createBindGroup({
+            label: "Bind group for the projection matrix compute",
             layout: computePipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
-                resource: { buffer: inputBuffer }
+                resource: { buffer: uniformsBuffer }
             }, {
                 binding: 1,
-                resource: { buffer: outputBuffer }
+                resource: { buffer: computeResult }
             }]
         });
 
-        // Render pipeline
+        // -- Render pipeline.
+        // It takes the projection matrix from the compute output
+        // and create a cube from hard coded vertex coordinates.
         const renderPipeline = params.device.createRenderPipeline({
+            label: "Cube rendering pipeline",
             layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
                 bindGroupLayouts: [
                     params.device.createBindGroupLayout({
+                        label: "render pipeline layout for compute data",
                         entries: [
+                            // Matrix info coming from compute shader.
                             {
                                 binding: 0,
-                                visibility: GPUShaderStage.VERTEX,
-                                buffer: {},
-                            },
-                            {
-                                binding: 1,
                                 visibility: GPUShaderStage.VERTEX,
                                 buffer: {
                                     type: 'read-only-storage',
@@ -167,27 +183,21 @@ export const demo = {
             vertex: {
                 entryPoint: 'main',
                 module: params.device.createShaderModule({
+                    label: "cube vertex shader",
                     // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
                     code: `
-                        struct Uniforms {
-                            mvp : mat4x4<f32>;
-                        };
-                        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
-
                         struct Output {
                             // ModelViewProjection
                             mvp: mat4x4<f32>;
                         };
-                        @group(0) @binding(1) var<storage> outp : Output;
+                        @group(0) @binding(0) var<storage> outp : Output;
 
-                        struct VSOut {
+                        struct Out {
                             @builtin(position) pos: vec4<f32>;
                             @location(0) coord: vec2<f32>;
                         };
 
-                        let pi = 3.14159;
-
-                        // The cube mesh.
+                        // The cube mesh, as triangle strip.
                         let mesh = array<vec3<f32>, 14>(
                             vec3<f32>(1.f, 1.f, 1.f),     // Front-top-left
                             vec3<f32>(-1.f, 1.f, 1.f),      // Front-top-right
@@ -206,11 +216,9 @@ export const demo = {
                         );
 
                         @stage(vertex)
-                        fn main(@builtin(vertex_index) idx : u32) -> VSOut {
+                        fn main(@builtin(vertex_index) idx : u32) -> Out {
                             let pos = mesh[idx];
-
-                            var out : VSOut;
-                            //out.pos = uniforms.mvp * vec4<f32>(pos, 1.0);
+                            var out : Out;
                             out.pos = outp.mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
                             out.coord.x = (pos.x + 1.0) / 2.0;
                             out.coord.y = (1.0 - pos.y) / 2.0;
@@ -231,6 +239,7 @@ export const demo = {
             fragment: {
                 entryPoint: 'main',
                 module: params.device.createShaderModule({
+                    label: "trivial fragment shader",
                     code: `
                         @stage(fragment)
                         fn main(@location(0) coord: vec2<f32>) -> @location(0) vec4<f32> {
@@ -244,78 +253,54 @@ export const demo = {
             },
         });
 
-        const depthTextureView = params.device.createTexture({
-            size: [params.renderWidth, params.renderHeight],
-            format: 'depth24plus',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-        }).createView();
-
-        const projectionMatrixBuffer = params.device.createBuffer({
-            size: 4 * 4 * Float32Array.BYTES_PER_ELEMENT,
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-
         const renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
             layout: renderPipeline.getBindGroupLayout(0),
             entries: [
                 {
                     binding: 0,
                     resource: {
-                        buffer: projectionMatrixBuffer,
-                        size: 16 * Float32Array.BYTES_PER_ELEMENT,
-                    }
-                },
-                {
-                    binding: 1,
-                    resource: {
-                        buffer: outputBuffer,
+                        buffer: computeResult,
                         size: 16 * Float32Array.BYTES_PER_ELEMENT,
                     }
                 },
             ]
         });
 
-        const aspect = params.renderWidth / params.renderHeight;
-        const projectionMatrix = mat4.create();
-        mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, aspect, 1, 100.0);
+        const depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: 'depth24plus',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
 
-        // Single frame rendering.
+        // -- Single frame rendering.
         return async (info: types.FrameInfo) => {
-            // Calculate projection.
-            const viewMatrix = mat4.create();
-            mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -4));
-            const now = info.elapsedMs / 1000;
-            mat4.rotate(
-                viewMatrix,
-                viewMatrix,
-                1,
-                vec3.fromValues(Math.sin(now), Math.cos(now), 0)
-            );
-            const modelViewProjectionMatrix = mat4.create();
-            mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
-
-            // Upload the matrix to the GPU.
-            params.device.queue.writeBuffer(projectionMatrixBuffer, 0, modelViewProjectionMatrix as Float32Array);
+            // Fill up the uniforms to feed the compute shaders.
+            // Rotation of the cube is just a function of current time,
+            // calculated in the compute shader.
+            const data = new Float32Array(3);
+            data[0] = info.elapsedMs;
+            data[1] = params.renderWidth;
+            data[2] = params.renderHeight;
+            params.device.queue.writeBuffer(uniformsBuffer, 0, data);
 
             // -- Do compute pass, to create projection matrices.
             const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+
+            commandEncoder.pushDebugGroup('Compute projection');
             const computeEncoder = commandEncoder.beginComputePass();
-
-            // Send the current paramaters to the GPU.
-            const data = new Float32Array(1);
-            data[0] = info.elapsedMs;
-            params.device.queue.writeBuffer(inputBuffer, 0, data);
-
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, computeBindGroup);
+            // The compute has only a single matrix to compute. More typical compute shaders
+            // would dispatch on NxM elements.
             computeEncoder.dispatch(1);
             computeEncoder.endPass();
-
-            // Copy compute output to buffer for vertex shader.
-            // It seems that a buffer cannot be
-            // XXX commandEncoder.copyBufferToBuffer(outputBuffer, 0, projectionMatrixBuffer, 0, 4 * 4 * Float32Array.BYTES_PER_ELEMENT);
+            commandEncoder.popDebugGroup();
 
             // -- And do the frame rendering.
+            commandEncoder.pushDebugGroup('Render cube');
             const renderEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                     view: params.context.getCurrentTexture().createView(),
@@ -332,8 +317,13 @@ export const demo = {
             });
             renderEncoder.setPipeline(renderPipeline);
             renderEncoder.setBindGroup(0, renderBindGroup);
+            // Cube mesh as a triangle-strip uses 14 vertices.
             renderEncoder.draw(14, 1, 0, 0);
             renderEncoder.endPass();
+            commandEncoder.popDebugGroup();
+
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
             params.device.queue.submit([commandEncoder.finish()]);
         };
     }
