@@ -194,7 +194,7 @@ export const demo = {
 
                         struct Out {
                             @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @location(0) coord: vec3<f32>;
                         };
 
                         // The cube mesh, as triangle strip.
@@ -221,7 +221,8 @@ export const demo = {
                             var out : Out;
                             out.pos = outp.mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
                             out.coord.x = (pos.x + 1.0) / 2.0;
-                            out.coord.y = (1.0 - pos.y) / 2.0;
+                            out.coord.y = (pos.y + 1.0) / 2.0;
+                            out.coord.z = (pos.z + 1.0) / 2.0;
                             return out;
                         }
                     `,
@@ -242,8 +243,8 @@ export const demo = {
                     label: "trivial fragment shader",
                     code: `
                         @stage(fragment)
-                        fn main(@location(0) coord: vec2<f32>) -> @location(0) vec4<f32> {
-                            return vec4<f32>(coord.x, coord.y, 0.5, 1.0);
+                        fn main(@location(0) coord: vec3<f32>) -> @location(0) vec4<f32> {
+                            return vec4<f32>(coord.x, coord.y, coord.z, 1.0);
                         }
                     `,
                 }),
