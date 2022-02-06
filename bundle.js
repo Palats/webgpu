@@ -554,13 +554,15 @@ exports.demo = {
                 }),
             }
         });
+        const uniformsBufferSize = 3 * 4;
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
-            size: 3 * Float32Array.BYTES_PER_ELEMENT,
+            size: uniformsBufferSize,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         const computeResult = params.device.createBuffer({
             label: "Compute output for vertex shaders",
+            // Size for one mat4x4<f32>.
             size: 4 * 4 * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
@@ -612,7 +614,7 @@ exports.demo = {
 
                         struct Out {
                             @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @location(0) coord: vec3<f32>;
                         };
 
                         // The cube mesh, as triangle strip.
@@ -639,7 +641,8 @@ exports.demo = {
                             var out : Out;
                             out.pos = outp.mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
                             out.coord.x = (pos.x + 1.0) / 2.0;
-                            out.coord.y = (1.0 - pos.y) / 2.0;
+                            out.coord.y = (pos.y + 1.0) / 2.0;
+                            out.coord.z = (pos.z + 1.0) / 2.0;
                             return out;
                         }
                     `,
@@ -660,8 +663,8 @@ exports.demo = {
                     label: "trivial fragment shader",
                     code: `
                         @stage(fragment)
-                        fn main(@location(0) coord: vec2<f32>) -> @location(0) vec4<f32> {
-                            return vec4<f32>(coord.x, coord.y, 0.5, 1.0);
+                        fn main(@location(0) coord: vec3<f32>) -> @location(0) vec4<f32> {
+                            return vec4<f32>(coord.x, coord.y, coord.z, 1.0);
                         }
                     `,
                 }),
@@ -678,7 +681,6 @@ exports.demo = {
                     binding: 0,
                     resource: {
                         buffer: computeResult,
-                        size: 16 * Float32Array.BYTES_PER_ELEMENT,
                     }
                 },
             ]
@@ -694,10 +696,10 @@ exports.demo = {
             // Fill up the uniforms to feed the compute shaders.
             // Rotation of the cube is just a function of current time,
             // calculated in the compute shader.
-            const data = new Float32Array(3);
-            data[0] = info.elapsedMs;
-            data[1] = params.renderWidth;
-            data[2] = params.renderHeight;
+            const data = new DataView(new ArrayBuffer(uniformsBufferSize));
+            data.setFloat32(0, info.elapsedMs, true);
+            data.setFloat32(4, params.renderWidth, true);
+            data.setFloat32(8, params.renderHeight, true);
             params.device.queue.writeBuffer(uniformsBuffer, 0, data);
             // -- Do compute pass, to create projection matrices.
             const commandEncoder = params.device.createCommandEncoder();
