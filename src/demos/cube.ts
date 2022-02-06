@@ -133,14 +133,16 @@ export const demo = {
             }
         });
 
+        const uniformsBufferSize = 3 * 4;
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
-            size: 3 * Float32Array.BYTES_PER_ELEMENT,
+            size: uniformsBufferSize,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
         const computeResult = params.device.createBuffer({
             label: "Compute output for vertex shaders",
+            // Size for one mat4x4<f32>.
             size: 4 * 4 * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
@@ -262,7 +264,6 @@ export const demo = {
                     binding: 0,
                     resource: {
                         buffer: computeResult,
-                        size: 16 * Float32Array.BYTES_PER_ELEMENT,
                     }
                 },
             ]
@@ -280,7 +281,7 @@ export const demo = {
             // Fill up the uniforms to feed the compute shaders.
             // Rotation of the cube is just a function of current time,
             // calculated in the compute shader.
-            const data = new DataView(new ArrayBuffer(3 * Float32Array.BYTES_PER_ELEMENT));
+            const data = new DataView(new ArrayBuffer(uniformsBufferSize));
             data.setFloat32(0, info.elapsedMs, true);
             data.setFloat32(4, params.renderWidth, true);
             data.setFloat32(8, params.renderHeight, true);
