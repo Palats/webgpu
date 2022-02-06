@@ -280,10 +280,10 @@ export const demo = {
             // Fill up the uniforms to feed the compute shaders.
             // Rotation of the cube is just a function of current time,
             // calculated in the compute shader.
-            const data = new Float32Array(3);
-            data[0] = info.elapsedMs;
-            data[1] = params.renderWidth;
-            data[2] = params.renderHeight;
+            const data = new DataView(new ArrayBuffer(3 * Float32Array.BYTES_PER_ELEMENT));
+            data.setFloat32(0, info.elapsedMs, true);
+            data.setFloat32(4, params.renderWidth, true);
+            data.setFloat32(8, params.renderHeight, true);
             params.device.queue.writeBuffer(uniformsBuffer, 0, data);
 
             // -- Do compute pass, to create projection matrices.
