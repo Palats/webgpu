@@ -115,7 +115,7 @@ export class Descriptor<T extends DescriptorInfo> {
     }
 
     // Create an array containing the serialized value from each field.
-    writeArray(values: DescInfoJSClass<T>): ArrayBuffer {
+    createArray(values: DescInfoJSClass<T>): ArrayBuffer {
         const a = new ArrayBuffer(this.byteSize());
         this.writeTo(values, new DataView(a));
         return a;
@@ -146,7 +146,7 @@ const uniformsDesc = new Descriptor({
 // type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
 
 console.log("byteSize", uniformsDesc.byteSize);
-console.log("content", uniformsDesc.writeArray({
+console.log("content", uniformsDesc.createArray({
     elapsedMs: 10,
     renderWidth: 320,
     renderHeight: 200,
