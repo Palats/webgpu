@@ -3,12 +3,13 @@
 /// <reference types="@webgpu/types" />
 import * as types from '../types';
 
-import * as bufferdesc from '../wg';
+import * as wg from '../wg';
+import * as shaderlib from '../shaderlib';
 
-const uniformsDesc = new bufferdesc.Descriptor({
-    elapsedMs: bufferdesc.Field(bufferdesc.F32, 0),
-    renderWidth: bufferdesc.Field(bufferdesc.F32, 1),
-    renderHeight: bufferdesc.Field(bufferdesc.F32, 2),
+const uniformsDesc = new wg.Descriptor({
+    elapsedMs: wg.Field(wg.F32, 0),
+    renderWidth: wg.Field(wg.F32, 1),
+    renderHeight: wg.Field(wg.F32, 2),
 })
 
 export const demo = {
@@ -41,10 +42,10 @@ export const demo = {
 
             compute: {
                 entryPoint: "main",
-                module: params.device.createShaderModule({
+                module: params.device.createShaderModule(new wg.WGSLModule({
                     label: "Rendering matrix compute",
                     // Project & rotations from https://github.com/toji/gl-matrix
-                    code: `
+                    code: wg.wgsl`
                         struct Uniforms {
                             elapsedMs: f32;
                             renderWidth: f32;
@@ -58,77 +59,20 @@ export const demo = {
                         };
                         @group(0) @binding(1) var<storage, write> outp : Output;
 
-                        fn perspective() -> mat4x4<f32> {
-                            // Hard coded projection parameters - for more flexibility,
-                            // we could imagine getting them from the uniforms.
-                            let fovy = 2.0 * 3.14159 / 5.0; // Vertical field of view (rads)
-                            let near = 1.0;
-                            let far = 100.0;
-
-                            let f = 1.0 / tan(fovy / 2.0);
-                            let nf = 1.0 / (near - far);
-
-                            let aspect = uniforms.renderWidth / uniforms.renderHeight;
-
-                            return mat4x4<f32>(
-                                f / aspect, 0.0, 0.0, 0.0,
-                                0.0, f, 0.0, 0.0,
-                                0.0, 0.0, (far + near) * nf, -1.0,
-                                0.0, 0.0, 2.0 * far * near * nf, 0.0,
-                            );
-                        }
-
-                        fn translate(tr : vec3<f32>) -> mat4x4<f32> {
-                            return mat4x4<f32>(
-                                1.0, 0.0, 0.0, 0.0,
-                                0.0, 1.0, 0.0, 0.0,
-                                0.0, 0.0, 1.0, 0.0,
-                                tr.x, tr.y, tr.z, 1.0,
-                            );
-                        }
-
-                        fn rotateX(rad: f32) -> mat4x4<f32> {
-                            let s = sin(rad);
-                            let c = cos(rad);
-                            return mat4x4<f32>(
-                                1.0, 0.0, 0.0, 0.0,
-                                0.0, c, s, 0.0,
-                                0.0, -s, c, 0.0,
-                                0.0, 0.0, 0.0, 1.0,
-                            );
-                        }
-
-                        fn rotateY(rad: f32) -> mat4x4<f32> {
-                            let s = sin(rad);
-                            let c = cos(rad);
-                            return mat4x4<f32>(
-                                c, 0.0, -s, 0.0,
-                                0.0, 1.0, 0.0, 0.0,
-                                s, 0.0, c, 0.0,
-                                0.0, 0.0, 0.0, 1.0,
-                            );
-                        }
-
-                        fn rotateZ(rad: f32) -> mat4x4<f32> {
-                            let s = sin(rad);
-                            let c = cos(rad);
-                            return mat4x4<f32>(
-                                c, s, 0.0, 0.0,
-                                -s, c, 0.0, 0.0,
-                                0.0, 0.0, 1.0, 0.0,
-                                0.0, 0.0, 0.0, 1.0,
-                            );
-                        }
-
                         @stage(compute) @workgroup_size(1)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
                             let r = vec3<f32>(c, c, c);
-                            outp.mvp = perspective() * translate(vec3<f32>(0.0, 0.0, -4.0)) * rotateZ(r.z) * rotateY(r.y) * rotateX(r.x);
+                            outp.mvp =
+                                ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
+                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
+                                * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                                * ${shaderlib.tr.ref("rotateY")}(r.y)
+                                * ${shaderlib.tr.ref("rotateX")}(r.x);
                         }
                     `,
-                }),
+                }).toDesc()),
             }
         });
 
@@ -140,7 +84,7 @@ export const demo = {
 
         const computeResult = params.device.createBuffer({
             label: "Compute output for vertex shaders",
-            size: bufferdesc.Mat4x4F32.byteSize(),
+            size: wg.Mat4x4F32.byteSize(),
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
 
@@ -181,10 +125,10 @@ export const demo = {
             }),
             vertex: {
                 entryPoint: 'main',
-                module: params.device.createShaderModule({
+                module: params.device.createShaderModule(new wg.WGSLModule({
                     label: "cube vertex shader",
                     // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
-                    code: `
+                    code: wg.wgsl`
                         struct Output {
                             // ModelViewProjection
                             mvp: mat4x4<f32>;
@@ -196,27 +140,9 @@ export const demo = {
                             @location(0) coord: vec3<f32>;
                         };
 
-                        // The cube mesh, as triangle strip.
-                        let mesh = array<vec3<f32>, 14>(
-                            vec3<f32>(1.f, 1.f, 1.f),     // Front-top-left
-                            vec3<f32>(-1.f, 1.f, 1.f),      // Front-top-right
-                            vec3<f32>(1.f, -1.f, 1.f),    // Front-bottom-left
-                            vec3<f32>(-1.f, -1.f, 1.f),     // Front-bottom-right
-                            vec3<f32>(-1.f, -1.f, -1.f),    // Back-bottom-right
-                            vec3<f32>(-1.f, 1.f, 1.f),      // Front-top-right
-                            vec3<f32>(-1.f, 1.f, -1.f),     // Back-top-right
-                            vec3<f32>(1.f, 1.f, 1.f),     // Front-top-left
-                            vec3<f32>(1.f, 1.f, -1.f),    // Back-top-left
-                            vec3<f32>(1.f, -1.f, 1.f),    // Front-bottom-left
-                            vec3<f32>(1.f, -1.f, -1.f),   // Back-bottom-left
-                            vec3<f32>(-1.f, -1.f, -1.f),    // Back-bottom-right
-                            vec3<f32>(1.f, 1.f, -1.f),    // Back-top-left
-                            vec3<f32>(-1.f, 1.f, -1.f),      // Back-top-right
-                        );
-
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> Out {
-                            let pos = mesh[idx];
+                            let pos = ${shaderlib.cubeMeshStrip.ref("mesh")}[idx];
                             var out : Out;
                             out.pos = outp.mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
                             out.coord.x = (pos.x + 1.0) / 2.0;
@@ -225,7 +151,8 @@ export const demo = {
                             return out;
                         }
                     `,
-                }),
+                }).toDesc(),
+                )
             },
             primitive: {
                 topology: 'triangle-strip',
