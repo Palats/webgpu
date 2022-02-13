@@ -1,3 +1,8 @@
+// A WebGPU helper libraries. For now, providers:
+//   - WSGLModule: A way to import / manage a library of reusable WSGL code.
+//   - A way to manage mapping between Javascript types and WSGL types, for
+//     simple buffer translation.
+
 /// <reference types="@webgpu/types" />
 
 // The following providing a kind of WSGL import system.

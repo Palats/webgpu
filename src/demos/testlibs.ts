@@ -3,7 +3,7 @@
 /// <reference types="@webgpu/types" />
 import * as types from '../types';
 
-import * as bufferdesc from '../bufferdesc';
+import * as bufferdesc from '../wg';
 
 const uniformsDesc = new bufferdesc.Descriptor({
     elapsedMs: bufferdesc.Field(bufferdesc.F32, 0),
