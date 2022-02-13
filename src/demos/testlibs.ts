@@ -140,8 +140,7 @@ export const demo = {
 
         const computeResult = params.device.createBuffer({
             label: "Compute output for vertex shaders",
-            // Size for one mat4x4<f32>.
-            size: 4 * 4 * Float32Array.BYTES_PER_ELEMENT,
+            size: bufferdesc.Mat4x4F32.byteSize(),
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
 

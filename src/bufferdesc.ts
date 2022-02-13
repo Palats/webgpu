@@ -1,4 +1,198 @@
-// This file contains an attempt at making it easier to manipulate basic
+/// <reference types="@webgpu/types" />
+
+// The following providing a kind of WSGL import system.
+
+type WSGLModuleConfig = {
+    label?: string;
+    imports?: WSGLModule[];
+}
+
+class WSGLModule {
+    readonly label: string;
+    private imports: WSGLModule[] = [];
+    private code: WSGLCode;
+    symbols = new Set<string>();
+
+    constructor(cfg: WSGLModuleConfig, code: WSGLCode) {
+        if (cfg.imports) {
+            this.imports.push(...cfg.imports);
+        }
+        this.label = cfg.label ?? "<unnamed>";
+        this.code = code;
+
+        for (const token of this.code.tokens) {
+            if (token instanceof WSGLName) {
+                if (this.symbols.has(token.name)) {
+                    throw new Error("duplicate symbol");
+                }
+                this.symbols.add(token.name);
+            }
+            if (token instanceof WSGLRef) {
+                if (!token.mod.symbols.has(token.name)) {
+                    throw new Error("missing symbol");
+                }
+                this.imports.push(token.mod);
+            }
+        }
+    }
+
+    // Create a reference to a symbol this module "exports".
+    ref(name: string) {
+        return new WSGLRef(this, name);
+    }
+
+    private importOrder(): WSGLModule[] {
+        const ordered: WSGLModule[] = [];
+        const imported = new Set<WSGLModule>();
+        const next = (mod: WSGLModule, seen: Set<WSGLModule>) => {
+            seen.add(mod);
+            for (const imp of mod.imports) {
+                if (seen.has(imp)) { throw new Error("import cycle"); }
+                if (!imported.has(imp)) {
+                    next(imp, seen);
+                }
+            }
+            imported.add(mod);
+            ordered.push(mod);
+            seen.delete(mod);
+        }
+
+        next(this, new Set());
+        return ordered;
+    }
+
+    // Create a text representation of the code of this module only.
+    private render(imports: Map<WSGLModule, string>): string {
+        const prefix = imports.get(this);
+        if (prefix === undefined) {
+            throw new Error("something went wrong");
+        }
+        let s = `\n// -------- Module: ${this.label} --------\n`;
+        for (const token of this.code.tokens) {
+            if (token instanceof WSGLName) {
+                s += prefix + token.name;
+            } else if (token instanceof WSGLRef) {
+                const refPrefix = imports.get(token.mod);
+                if (refPrefix === undefined) {
+                    throw new Error("module not found");
+                }
+                s += refPrefix + token.name;
+            } else {
+                s += token;
+            }
+        }
+        return s;
+    }
+
+    // Render the code of this module with all its dependencies.
+    private generate(): string {
+        const mods = this.importOrder();
+        const imports = new Map<WSGLModule, string>();
+        for (const [idx, mod] of mods.entries()) {
+            imports.set(mod, `m${idx}_`);
+        }
+
+        const textMods = [];
+        for (const mod of mods) {
+            textMods.push(mod.render(imports));
+        }
+        return textMods.join("\n");
+    }
+
+    toDesc(): GPUShaderModuleDescriptorWGSL {
+        return {
+            label: this.label,
+            code: this.generate(),
+            // sourceMap
+            // hint
+        }
+    }
+}
+
+class WSGLName {
+    name: string;
+    constructor(name: string) {
+        this.name = name;
+    }
+}
+
+class WSGLRef {
+    mod: WSGLModule;
+    name: string;
+    constructor(mod: WSGLModule, name: string) {
+        this.mod = mod;
+        this.name = name;
+    }
+}
+
+type WSGLToken = string | WSGLName | WSGLRef;
+
+// https://gpuweb.github.io/gpuweb/wgsl/#identifiers
+const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
+
+class WSGLCode {
+    readonly tokens: WSGLToken[];
+    constructor(strings: TemplateStringsArray, keys: WSGLToken[]) {
+        this.tokens = [...wsglSplit(strings[0])];
+        for (let i = 1; i < strings.length; i++) {
+            this.tokens.push(keys[i - 1]);
+            this.tokens.push(...wsglSplit(strings[i]));
+        }
+    }
+
+    toString(): string {
+        let s = '';
+        for (const token of this.tokens) {
+            s += token;
+        }
+        return s;
+    }
+}
+
+function wsglSplit(s: string): WSGLToken[] {
+    const tokens: WSGLToken[] = [];
+    let prevIndex = 0;
+    for (const m of s.matchAll(markersRE)) {
+        if (m.index === undefined) { throw new Error("oops") }
+        if (m.index > prevIndex) {
+            tokens.push(s.slice(prevIndex, m.index));
+        }
+        prevIndex = m.index + m[0].length;
+        tokens.push(new WSGLName(m[1]));
+    }
+    if (prevIndex < s.length) {
+        tokens.push(s.slice(prevIndex, s.length));
+    }
+    return tokens;
+}
+
+export function wsgl(strings: TemplateStringsArray, ...keys: WSGLToken[]) {
+    return new WSGLCode(strings, keys);
+}
+
+function testWSGL() {
+    console.group("testWSGL");
+    console.log("tagged template 1", wsgl``);
+    console.log("tagged template 2", wsgl`a`);
+    console.log("tagged template 3", wsgl`${"plop"}`);
+    console.log("tagged template 4", wsgl`foo @@bar plop`);
+
+    const testModule1 = new WSGLModule({ label: "test1" }, wsgl`
+        foo
+        coin @@bar plop
+    `);
+
+    const testModule2 = new WSGLModule({ label: "test2" }, wsgl`
+        foo ${testModule1.ref("bar")}
+    `);
+
+    console.log("render1", testModule2.toDesc().code);
+    console.groupEnd();
+}
+
+
+// ----------------------------------------------------------------------
+// The following contains an attempt at making it easier to manipulate basic
 // uniforms - i.e., maintaing a buffer content with structured data from
 // Javascript.
 // It is a bit overcomplicated in order to keep typing work.
@@ -24,9 +218,19 @@ class F32Type extends WSGLType<number> {
         dv.setFloat32(offset, v, true);
     }
 }
-
-// Specify that a field stores a WSGL `f32`.
 export const F32 = new F32Type();
+
+// mat4x4<f32> WSGL type.
+class Mat4x4F32Type extends WSGLType<number[]> {
+    byteSize() { return 16 * F32.byteSize(); }
+    dataViewSet(dv: DataView, offset: number, v: number[]) {
+        for (let i = 0; i < 16; i++) {
+            dv.setFloat32(offset, v[i], true);
+        }
+    }
+}
+export const Mat4x4F32 = new Mat4x4F32Type();
+
 
 // Description of a given field in a WSGL struct.
 class FieldType<T> {
@@ -137,17 +341,19 @@ type DescriptorJSClass<Desc> = DescInfoJSClass<DescriptorInfoType<Desc>>;
 //-----------------------------------------------
 // Basic test
 
-const uniformsDesc = new Descriptor({
-    elapsedMs: Field(F32, 0),
-    renderWidth: Field(F32, 1),
-    renderHeight: Field(F32, 2),
-})
+function testBuffer() {
+    const uniformsDesc = new Descriptor({
+        elapsedMs: Field(F32, 0),
+        renderWidth: Field(F32, 1),
+        renderHeight: Field(F32, 2),
+    })
 
-// type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
+    // type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
 
-console.log("byteSize", uniformsDesc.byteSize);
-console.log("content", uniformsDesc.createArray({
-    elapsedMs: 10,
-    renderWidth: 320,
-    renderHeight: 200,
-}));
+    console.log("byteSize", uniformsDesc.byteSize);
+    console.log("content", uniformsDesc.createArray({
+        elapsedMs: 10,
+        renderWidth: 320,
+        renderHeight: 200,
+    }));
+}
