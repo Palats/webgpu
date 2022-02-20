@@ -46,12 +46,7 @@ export const demo = {
                     label: "Rendering matrix compute",
                     // Project & rotations from https://github.com/toji/gl-matrix
                     code: wg.wgsl`
-                        struct Uniforms {
-                            elapsedMs: f32;
-                            renderWidth: f32;
-                            renderHeight: f32;
-                        };
-                        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
+                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
 
                         struct Output {
                             // ModelViewProjection

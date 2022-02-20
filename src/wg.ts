@@ -32,10 +32,9 @@ export class WGSLModule {
                     throw new Error("duplicate symbol");
                 }
                 this.symbols.add(token.name);
-            }
-            if (token instanceof WGSLRef) {
+            } else if (token instanceof WGSLRef) {
                 if (!token.mod.symbols.has(token.name)) {
-                    throw new Error("missing symbol");
+                    throw new Error(`reference to unknown symbol "${token.name}" in module "${token.mod.label}" from module "${this.label}"`);
                 }
                 this.imports.push(token.mod);
             }
@@ -71,7 +70,7 @@ export class WGSLModule {
     private render(imports: Map<WGSLModule, string>): string {
         const prefix = imports.get(this);
         if (prefix === undefined) {
-            throw new Error("something went wrong");
+            throw new Error(`internal: module "${this.label}" is imported but has no prefix`);
         }
         let s = `\n// -------- Module: ${this.label} --------\n`;
         for (const token of this.code.tokens) {
@@ -102,6 +101,10 @@ export class WGSLModule {
         for (const mod of mods) {
             textMods.push(mod.render(imports));
         }
+        const s = textMods.join("\n");
+        console.groupCollapsed(`Generated shader code "${this.label}"`);
+        console.log(s);
+        console.groupEnd();
         return textMods.join("\n");
     }
 
@@ -136,23 +139,37 @@ type WGSLToken = string | WGSLName | WGSLRef;
 // https://gpuweb.github.io/gpuweb/wgsl/#identifiers
 const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
 
+// WGSLCode holds a snippet of code, without parsing.
+// This is used to allow mixing actual text representation of WGSL but also
+// Javascript references to other module - that are interpretated differently
+// when "rendering" the WGSL code.
 class WGSLCode {
     readonly tokens: WGSLToken[];
-    constructor(strings: TemplateStringsArray, keys: WGSLToken[]) {
-        this.tokens = [...wgslSplit(strings[0])];
-        for (let i = 1; i < strings.length; i++) {
-            this.tokens.push(keys[i - 1]);
-            this.tokens.push(...wgslSplit(strings[i]));
+    constructor(tokens: WGSLToken[]) {
+        this.tokens = [...tokens];
+    }
+}
+
+// Declare WGSLCode using template strings.
+export function wgsl(strings: TemplateStringsArray, ...keys: (WGSLToken | WGSLCode | WGSLCode[])[]) {
+    const tokens = [...wgslSplit(strings[0])];
+    for (let i = 1; i < strings.length; i++) {
+        const token = keys[i - 1];
+        if (Array.isArray(token)) {
+            for (const subtoken of token) {
+                tokens.push(...subtoken.tokens);
+            }
+        } else if (token instanceof WGSLCode) {
+            tokens.push(...token.tokens);
+        } else if (typeof token === "string") {
+            tokens.push(...wgslSplit(token));
+        } else {
+            tokens.push(token);
         }
+        tokens.push(...wgslSplit(strings[i]));
     }
 
-    toString(): string {
-        let s = '';
-        for (const token of this.tokens) {
-            s += token;
-        }
-        return s;
-    }
+    return new WGSLCode(tokens);
 }
 
 function wgslSplit(s: string): WGSLToken[] {
@@ -172,9 +189,6 @@ function wgslSplit(s: string): WGSLToken[] {
     return tokens;
 }
 
-export function wgsl(strings: TemplateStringsArray, ...keys: WGSLToken[]) {
-    return new WGSLCode(strings, keys);
-}
 
 function testWGSLModules() {
     console.group("testWGSL");
@@ -221,6 +235,9 @@ abstract class WGSLType<T> {
 
     // Write a value from javascript to a data view.
     abstract dataViewSet(dv: DataView, offset: number, v: T): void;
+
+    // What to use in WGSL to refer to that type.
+    abstract typename(): WGSLToken;
 }
 
 // Info about WGSL `f32` type.
@@ -228,6 +245,10 @@ class F32Type extends WGSLType<number> {
     byteSize() { return 4; }
     dataViewSet(dv: DataView, offset: number, v: number) {
         dv.setFloat32(offset, v, true);
+    }
+
+    typename(): WGSLToken {
+        return "f32";
     }
 }
 export const F32 = new F32Type();
@@ -239,6 +260,10 @@ class Mat4x4F32Type extends WGSLType<number[]> {
         for (let i = 0; i < 16; i++) {
             dv.setFloat32(offset, v[i], true);
         }
+    }
+
+    typename(): WGSLToken {
+        return "mat4x4<f32>";
     }
 }
 export const Mat4x4F32 = new Mat4x4F32Type();
@@ -286,6 +311,7 @@ export class Descriptor<T extends DescriptorInfo> {
 
     private byIndex: FullField[];
     private _byteSize: number;
+    private mod?: WGSLModule;
 
     constructor(fields: T) {
         this.fields = fields;
@@ -336,6 +362,26 @@ export class Descriptor<T extends DescriptorInfo> {
         this.writeTo(values, new DataView(a));
         return a;
     }
+
+    // Refer to that structure type in a WGSL fragment. It will take care of
+    // creating a name and inserting the struct declaration as needed.
+    typename(): WGSLRef {
+        if (!this.mod) {
+            const lines = [wgsl`struct @@structname {\n`];
+
+            for (const ffield of this.byIndex) {
+                lines.push(wgsl`  ${ffield.name}: ${ffield.field.type.typename()};\n`);
+            }
+
+            lines.push(wgsl`};\n`);
+            this.mod = new WGSLModule({
+                label: "buffer struct declaration",
+                code: wgsl`${lines}`,
+            });
+        }
+
+        return new WGSLRef(this.mod, "structname");
+    }
 }
 
 // Extract the descriptor info ( == map of fields info) for the given
@@ -354,6 +400,7 @@ type DescriptorJSClass<Desc> = DescInfoJSClass<DescriptorInfoType<Desc>>;
 // Basic test
 
 function testBuffer() {
+    console.group("testBuffer");
     const uniformsDesc = new Descriptor({
         elapsedMs: Field(F32, 0),
         renderWidth: Field(F32, 1),
@@ -368,4 +415,8 @@ function testBuffer() {
         renderWidth: 320,
         renderHeight: 200,
     }));
+
+    console.log("decl", uniformsDesc.typename().mod);
+    console.groupEnd();
 }
+// testBuffer();
