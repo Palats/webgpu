@@ -215,12 +215,17 @@ export const demo = {
                 module: params.device.createShaderModule(new wg.WGSLModule({
                     label: "simple copy from compute",
                     code: wg.wgsl`
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+
                         @group(0) @binding(0) var computeTexture : texture_2d<f32>;
                         @group(0) @binding(1) var dstSampler : sampler;
 
                         @stage(fragment)
-                        fn main(@location(0) coord: vec2<f32>) -> @location(0) vec4<f32> {
-                            return textureSample(computeTexture, dstSampler, coord);
+                        fn main(inp: VSOut) -> @location(0) vec4<f32> {
+                            return textureSample(computeTexture, dstSampler, inp.coord);
                         }
                     `,
                 }).toDesc()),
