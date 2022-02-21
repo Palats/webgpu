@@ -257,7 +257,7 @@ export const F32 = new F32Type();
 class U32Type extends WGSLType<number> {
     byteSize() { return 4; }
     dataViewSet(dv: DataView, offset: number, v: number) {
-        dv.setFloat32(offset, v, true);
+        dv.setInt32(offset, v, true);
     }
 
     typename(): WGSLToken {
