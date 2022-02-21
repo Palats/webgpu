@@ -11,6 +11,7 @@ import * as fade from './demos/fade';
 import * as minimal from './demos/minimal';
 import * as conway2 from './demos/conway2';
 import * as cube from './demos/cube';
+import * as multicubes from './demos/multicubes';
 import * as testlibs from './demos/testlibs';
 
 export const allDemos: types.Demo[] = [
@@ -21,6 +22,7 @@ export const allDemos: types.Demo[] = [
     minimal.demo,
     cube.demo,
     testlibs.demo,
+    multicubes.demo,
 ];
 
 export function demoByID(id: string): types.Demo {
