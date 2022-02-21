@@ -7,7 +7,6 @@ import * as types from './types';
 
 import * as conway from './demos/conway';
 import * as fire from './demos/fire';
-import * as falling from './demos/falling';
 import * as fade from './demos/fade';
 import * as minimal from './demos/minimal';
 import * as conway2 from './demos/conway2';
@@ -19,7 +18,6 @@ export const allDemos: types.Demo[] = [
     fire.demo,
     conway.demo,
     fade.demo,
-    falling.demo,
     minimal.demo,
     cube.demo,
     testlibs.demo,
