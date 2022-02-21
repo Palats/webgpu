@@ -233,6 +233,10 @@ abstract class WGSLType<T> {
     // Size in byte of that value in WGSL (e.g., 4 for f32).
     abstract byteSize(): number;
 
+    // Alignement of that value in WGSL
+    // https://gpuweb.github.io/gpuweb/wgsl/#alignment
+    abstract alignOf(): number;
+
     // Write a value from javascript to a data view.
     abstract dataViewSet(dv: DataView, offset: number, v: T): void;
 
@@ -243,6 +247,8 @@ abstract class WGSLType<T> {
 // Info about WGSL `f32` type.
 class F32Type extends WGSLType<number> {
     byteSize() { return 4; }
+    alignOf() { return 4; }
+
     dataViewSet(dv: DataView, offset: number, v: number) {
         dv.setFloat32(offset, v, true);
     }
@@ -256,6 +262,8 @@ export const F32 = new F32Type();
 // Info about WGSL `u32` type.
 class U32Type extends WGSLType<number> {
     byteSize() { return 4; }
+    alignOf() { return 4; }
+
     dataViewSet(dv: DataView, offset: number, v: number) {
         dv.setInt32(offset, v, true);
     }
@@ -266,12 +274,32 @@ class U32Type extends WGSLType<number> {
 }
 export const U32 = new U32Type();
 
+// Info about WGSL `vec3<f32>` type.
+class Vec3f32Type extends WGSLType<number[]> {
+    byteSize() { return 12; }
+    alignOf() { return 16; }
+
+    dataViewSet(dv: DataView, offset: number, v: number[]) {
+        dv.setFloat32(offset, v[0], true);
+        dv.setFloat32(offset + F32.byteSize(), v[1], true);
+        dv.setFloat32(offset + 2 * F32.byteSize(), v[2], true);
+    }
+
+    typename(): WGSLToken {
+        return "vec3<f32>";
+    }
+}
+export const Vec32f32 = new Vec3f32Type();
+
 // mat4x4<f32> WGSL type.
 class Mat4x4F32Type extends WGSLType<number[]> {
-    byteSize() { return 16 * F32.byteSize(); }
+    byteSize() { return 64; }
+    alignOf() { return 16; }
+
     dataViewSet(dv: DataView, offset: number, v: number[]) {
         for (let i = 0; i < 16; i++) {
             dv.setFloat32(offset, v[i], true);
+            offset += F32.byteSize();
         }
     }
 
@@ -281,6 +309,39 @@ class Mat4x4F32Type extends WGSLType<number[]> {
 }
 export const Mat4x4F32 = new Mat4x4F32Type();
 
+
+export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
+    readonly count: number;
+    readonly etype: T;
+
+    private mod: WGSLModule;
+    private stride: number;
+
+    constructor(etype: T, count: number) {
+        super();
+        this.etype = etype;
+        this.count = count;
+        this.stride = this.etype.alignOf() * Math.ceil(this.etype.byteSize() / this.etype.alignOf());
+        this.mod = new WGSLModule({
+            label: "Array",
+            code: wgsl`type @@name = array<${this.etype.typename()}, ${this.count.toString()}>;`,
+        });
+    }
+
+    byteSize() { return this.count * this.stride; }
+    alignOf() { return this.etype.alignOf(); }
+
+    dataViewSet(dv: DataView, offset: number, v: A[]) {
+        for (let i = 0; i < this.count; i++) {
+            this.etype.dataViewSet(dv, offset, v[i]);
+            offset += this.stride;
+        }
+    }
+
+    typename(): WGSLToken {
+        return this.mod.ref("name");
+    }
+}
 
 // Description of a given field in a WGSL struct.
 class FieldType<T> {

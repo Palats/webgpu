@@ -8,18 +8,50 @@ import * as types from '../types';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
+const instances = 10;
+
+// Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.Descriptor({
     elapsedMs: wg.Field(wg.F32, 0),
     renderWidth: wg.Field(wg.F32, 1),
     renderHeight: wg.Field(wg.F32, 2),
 })
 
+// Parameters from Javascript to the computer shader
+// for each instance.
+const instanceParamsDesc = new wg.FixedArray(
+    wg.Vec32f32,
+    instances
+);
+
 export const demo = {
     id: "multicubes",
     caption: "Multiple independent rotating cubes.",
 
     async init(params: types.InitParams) {
-        const instances = 3;
+        // Setup some initial positions for the cubes.
+        const positions = [];
+        if (instances as any == 1) {
+            positions.push([0, 0, 0]);
+        } else {
+            for (let i = 0; i < instances; i++) {
+                positions.push([
+                    -1 + i * (2 / (instances - 1)),
+                    0,
+                    0,
+                ]);
+            }
+        }
+
+        const instanceParamsBuffer = params.device.createBuffer({
+            label: "Instance parameters",
+            size: instanceParamsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        const a = new ArrayBuffer(instanceParamsDesc.byteSize());
+        const dv = new DataView(a);
+        instanceParamsDesc.dataViewSet(dv, 0, positions);
+        params.device.queue.writeBuffer(instanceParamsBuffer, 0, a);
 
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
@@ -42,15 +74,21 @@ export const demo = {
                 bindGroupLayouts: [params.device.createBindGroupLayout({
                     label: "compute pipeline main layout",
                     entries: [
-                        // Input buffer, which will be coming from JS.
+                        // Uniforms, from JS
                         {
                             binding: 0,
                             visibility: GPUShaderStage.COMPUTE,
                             buffer: { type: "uniform" },
                         },
-                        // Output buffer, to feed the vertex shader.
+                        // Instances parameters, from JS
                         {
                             binding: 1,
+                            visibility: GPUShaderStage.COMPUTE,
+                            buffer: { type: "uniform" },
+                        },
+                        // Output buffer, to feed the vertex shader.
+                        {
+                            binding: 2,
                             visibility: GPUShaderStage.COMPUTE,
                             buffer: { type: "storage" },
                         },
@@ -64,21 +102,25 @@ export const demo = {
                     label: "Rendering matrix compute",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
+                        @group(0) @binding(1) var<uniform> params : ${instanceParamsDesc.typename()};
 
                         struct InstanceState {
                             // ModelViewProjection
                             mvp: mat4x4<f32>;
                         };
-                        @group(0) @binding(1) var<storage, write> outp : array<InstanceState, ${instances.toString()}>;
+                        @group(0) @binding(2) var<storage, write> outp : array<InstanceState, ${instances.toString()}>;
 
                         @stage(compute) @workgroup_size(1)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                            let pos = params[global_id.x];
+
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
                             let r = vec3<f32>(c, c, c);
                             outp[global_id.x].mvp =
                                 ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
                                 * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
+                                * ${shaderlib.tr.ref("translate")}(pos)
                                 * ${shaderlib.tr.ref("rotateZ")}(r.z)
                                 * ${shaderlib.tr.ref("rotateY")}(r.y)
                                 * ${shaderlib.tr.ref("rotateX")}(r.x);
@@ -96,6 +138,9 @@ export const demo = {
                 resource: { buffer: uniformsBuffer }
             }, {
                 binding: 1,
+                resource: { buffer: instanceParamsBuffer }
+            }, {
+                binding: 2,
                 resource: { buffer: computeResult }
             }]
         });
@@ -146,7 +191,7 @@ export const demo = {
 
                             var out : Out;
                             out.pos = states[instance].mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
-                            out.pos.x = out.pos.x + f32(instance);
+                            out.pos.x = out.pos.x;
                             out.coord.x = (pos.x + 1.0) / 2.0;
                             out.coord.y = (pos.y + 1.0) / 2.0;
                             out.coord.z = (pos.z + 1.0) / 2.0;
