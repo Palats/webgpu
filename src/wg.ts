@@ -253,6 +253,19 @@ class F32Type extends WGSLType<number> {
 }
 export const F32 = new F32Type();
 
+// Info about WGSL `u32` type.
+class U32Type extends WGSLType<number> {
+    byteSize() { return 4; }
+    dataViewSet(dv: DataView, offset: number, v: number) {
+        dv.setFloat32(offset, v, true);
+    }
+
+    typename(): WGSLToken {
+        return "u32";
+    }
+}
+export const U32 = new U32Type();
+
 // mat4x4<f32> WGSL type.
 class Mat4x4F32Type extends WGSLType<number[]> {
     byteSize() { return 16 * F32.byteSize(); }
