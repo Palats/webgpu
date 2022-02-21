@@ -9,82 +9,314 @@
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = exports.Engine = void 0;
-const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
 // A basic game of life.
-class Engine extends engine.Engine {
-    constructor() {
-        super(...arguments);
-        this.computeCode = `
-        [[block]] struct Uniforms {
-            computeWidth: u32;
-            computeHeight: u32;
-            renderWidth: u32;
-            renderHeight: u32;
-            elapsedMs: f32;
-        };
-
-        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
-        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
-
-        fn isOn(x: i32, y: i32) -> i32 {
-            let v = textureLoad(srcTexture, vec2<i32>(x, y), 0);
-            if (v.r < 0.5) { return 0;}
-            return 1;
-        }
-
-        [[stage(compute), workgroup_size(8, 8)]]
-        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
-                return;
-            }
-
-            let x = i32(global_id.x);
-            let y = i32(global_id.y);
-            let current = isOn(x, y);
-            let neighbors =
-                  isOn(x - 1, y - 1)
-                + isOn(x, y - 1)
-                + isOn(x + 1, y - 1)
-                + isOn(x - 1, y)
-                + isOn(x + 1, y)
-                + isOn(x - 1, y + 1)
-                + isOn(x, y + 1)
-                + isOn(x + 1, y + 1);
-
-            var s = 0.0;
-            if (current != 0 && (neighbors == 2 || neighbors == 3)) {
-                s = 1.0;
-            }
-            if (current == 0 && neighbors == 3) {
-                s = 1.0;
-            }
-            textureStore(dstTexture, vec2<i32>(x, y), vec4<f32>(s, s, s, 1.0));
-        }
-    `;
-    }
-    initCompute(buffer) {
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const uniformsDesc = new wg.Descriptor({
+    computeWidth: wg.Field(wg.U32, 0),
+    computeHeight: wg.Field(wg.U32, 1),
+});
+const computeTexFormat = "rgba8unorm";
+exports.demo = {
+    id: "conway",
+    caption: "A Conway game of life.",
+    async init(params) {
+        const computeWidth = params.renderWidth;
+        const computeHeight = params.renderHeight;
+        // Creates the various buffers & textures.
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // Textures, used for compute part swapchain.
+        const tex1 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        const texView1 = tex1.createView({
+            format: computeTexFormat,
+        });
+        const tex2 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const texView2 = tex2.createView({
+            format: computeTexFormat,
+        });
+        // Need a sampler to pick from the texture and write to the screen.
+        const sampler = params.device.createSampler({
+            label: "sampler",
+            magFilter: "linear",
+        });
+        // Setup the initial texture1, with some initial data.
+        const buffer = new ArrayBuffer(computeWidth * computeHeight * 4);
         const a = new Uint8Array(buffer);
-        for (let y = 0; y < this.uniforms.computeHeight; y++) {
-            for (let x = 0; x < this.uniforms.computeWidth; x++) {
+        for (let y = 0; y < computeHeight; y++) {
+            for (let x = 0; x < computeWidth; x++) {
                 const hasLife = Math.random() > 0.8;
                 const v = hasLife ? 255 : 0;
-                a[4 * (x + y * this.uniforms.computeWidth) + 0] = v;
-                a[4 * (x + y * this.uniforms.computeWidth) + 1] = v;
-                a[4 * (x + y * this.uniforms.computeWidth) + 2] = v;
-                a[4 * (x + y * this.uniforms.computeWidth) + 3] = 255;
+                a[4 * (x + y * computeWidth) + 0] = v;
+                a[4 * (x + y * computeWidth) + 1] = v;
+                a[4 * (x + y * computeWidth) + 2] = v;
+                a[4 * (x + y * computeWidth) + 3] = 255;
             }
         }
+        await params.device.queue.writeTexture({ texture: tex1 }, buffer, { bytesPerRow: computeWidth * 4 }, { width: computeWidth, height: computeHeight });
+        // Compute pipeline.
+        const computePipeline = params.device.createComputePipeline({
+            label: "Effect pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "compute pipeline layouts",
+                bindGroupLayouts: [params.device.createBindGroupLayout({
+                        label: "compute pipeline main layout",
+                        entries: [
+                            // Uniforms.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "uniform" },
+                            },
+                            // Input compute buffer as texture
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.COMPUTE,
+                                texture: { multisampled: false }
+                            },
+                            // Output compute buffer as texture
+                            {
+                                binding: 2,
+                                visibility: GPUShaderStage.COMPUTE,
+                                storageTexture: {
+                                    access: 'write-only',
+                                    format: computeTexFormat,
+                                }
+                            },
+                        ]
+                    })],
+            }),
+            compute: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "Game of life step",
+                    code: wg.wgsl `
+                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
+                        @group(0) @binding(1) var srcTexture : texture_2d<f32>;
+                        @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
+
+                        fn isOn(x: i32, y: i32) -> i32 {
+                            let v = textureLoad(srcTexture, vec2<i32>(x, y), 0);
+                            if (v.r < 0.5) { return 0;}
+                            return 1;
+                        }
+
+                        @stage(compute) @workgroup_size(8, 8)
+                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                            // Guard against out-of-bounds work group sizes
+                            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
+                                return;
+                            }
+
+                            let x = i32(global_id.x);
+                            let y = i32(global_id.y);
+                            let current = isOn(x, y);
+                            let neighbors =
+                                  isOn(x - 1, y - 1)
+                                + isOn(x, y - 1)
+                                + isOn(x + 1, y - 1)
+                                + isOn(x - 1, y)
+                                + isOn(x + 1, y)
+                                + isOn(x - 1, y + 1)
+                                + isOn(x, y + 1)
+                                + isOn(x + 1, y + 1);
+
+                            var s = 0.0;
+                            if (current != 0 && (neighbors == 2 || neighbors == 3)) {
+                                s = 1.0;
+                            }
+                            if (current == 0 && neighbors == 3) {
+                                s = 1.0;
+                            }
+                            textureStore(dstTexture, vec2<i32>(x, y), vec4<f32>(s, s, s, 1.0));
+                        }
+
+                    `,
+                }).toDesc()),
+            }
+        });
+        // Create 2 bind group for the compute pipeline, depending on what is
+        // the current src & dst texture.
+        const computeBindGroup1 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: texView1,
+                }, {
+                    binding: 2,
+                    resource: texView2,
+                }]
+        });
+        const computeBindGroup2 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: texView2,
+                }, {
+                    binding: 2,
+                    resource: texView1,
+                }]
+        });
+        // Create rendering pipeline.
+        const renderPipeline = params.device.createRenderPipeline({
+            layout: params.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        entries: [
+                            // Current compute texture updated by the compute shader.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                texture: { multisampled: false },
+                            },
+                            // Sampler for  the texture.
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                sampler: { type: "filtering" },
+                            },
+                        ]
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "full screen vertices",
+                    code: wg.wgsl `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32) -> VSOut {
+                            var data = array<vec2<f32>, 6>(
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(1.0, -1.0),
+                                vec2<f32>(1.0, 1.0),
+
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(-1.0, 1.0),
+                                vec2<f32>(1.0, 1.0),
+                            );
+
+                            let pos = data[idx];
+
+                            var out : VSOut;
+                            out.pos = vec4<f32>(pos, 0.0, 1.0);
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (1.0 - pos.y) / 2.0;
+
+                            return out;
+                        }
+                    `,
+                }).toDesc()),
+            },
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "simple copy from compute",
+                    code: wg.wgsl `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+
+                        @group(0) @binding(0) var computeTexture : texture_2d<f32>;
+                        @group(0) @binding(1) var dstSampler : sampler;
+
+                        @stage(fragment)
+                        fn main(inp: VSOut) -> @location(0) vec4<f32> {
+                            return textureSample(computeTexture, dstSampler, inp.coord);
+                        }
+                    `,
+                }).toDesc()),
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+            primitive: {
+                topology: 'triangle-list',
+            },
+        });
+        const renderBindGroup1 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: texView2,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                }]
+        });
+        const renderBindGroup2 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: texView1,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                }]
+        });
+        let isForward = true;
+        // -- Single frame rendering.
+        return async (info) => {
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                computeWidth: computeWidth,
+                computeHeight: computeHeight,
+            }));
+            // -- Do compute pass, where the actual effect is.
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup(`Time ${info.elapsedMs}`);
+            commandEncoder.pushDebugGroup('Compute');
+            const computeEncoder = commandEncoder.beginComputePass();
+            computeEncoder.setPipeline(computePipeline);
+            computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
+            computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
+            computeEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // -- And do the frame rendering.
+            commandEncoder.pushDebugGroup('Render cube');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+            });
+            renderEncoder.setPipeline(renderPipeline);
+            renderEncoder.setBindGroup(0, isForward ? renderBindGroup1 : renderBindGroup2);
+            // Double-triangle for fullscreen has 6 vertices.
+            renderEncoder.draw(6, 1, 0, 0);
+            renderEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+            // Switch for next frame.
+            isForward = !isForward;
+        };
     }
-    ;
-}
-exports.Engine = Engine;
-Engine.id = "conway";
-Engine.caption = "A Conway game of life.";
-exports.demo = engine.asDemo(Engine);
+};
 
 
 /***/ }),
@@ -93,13 +325,12 @@ exports.demo = engine.asDemo(Engine);
 /*!******************************!*\
   !*** ./src/demos/conway2.ts ***!
   \******************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 
 // A conway game of life with indirect rendering.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
-const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
 exports.demo = {
     id: "conway2",
     caption: "A conway game of life with paletted blurring over time.",
@@ -320,7 +551,39 @@ exports.demo = {
                 ]
             }),
             // Create triangles to cover the screen.
-            vertex: engine.vertexFullScreen(params),
+            vertex: {
+                entryPoint: "main",
+                module: params.device.createShaderModule({
+                    label: "full screen vertices",
+                    code: `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32) -> VSOut {
+                            var data = array<vec2<f32>, 6>(
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(1.0, -1.0),
+                                vec2<f32>(1.0, 1.0),
+
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(-1.0, 1.0),
+                                vec2<f32>(1.0, 1.0),
+                            );
+
+                            let pos = data[idx];
+
+                            var out : VSOut;
+                            out.pos = vec4<f32>(pos, 0.0, 1.0);
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (1.0 - pos.y) / 2.0;
+
+                            return out;
+                        }
+                    `,
+                }),
+            },
             primitive: {
                 topology: 'triangle-list',
             },
@@ -752,109 +1015,281 @@ exports.demo = {
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
+// A minimal effect which works on a buffer and make it evolve over time.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
-const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
-// Just fiddling with red component a bit.
-class Engine extends engine.Engine {
-    constructor() {
-        super(...arguments);
-        this.computeCode = `
-        [[block]] struct Uniforms {
-            computeWidth: u32;
-            computeHeight: u32;
-            renderWidth: u32;
-            renderHeight: u32;
-            elapsedMs: f32;
-        };
-
-        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
-        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
-
-        [[stage(compute), workgroup_size(8, 8)]]
-        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            let xy = vec2<i32>(global_id.xy);
-            var v = textureLoad(srcTexture, xy, 0);
-            v.r = (sin(modf(uniforms.elapsedMs / 1000.0 / 3.0).fract * 2.0 * 3.1415) + 1.0) / 2.0;
-            textureStore(dstTexture, xy, v);
-        }
-    `;
-    }
-    initCompute(buffer) {
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const uniformsDesc = new wg.Descriptor({
+    elapsedMs: wg.Field(wg.F32, 0),
+});
+const computeTexFormat = "rgba8unorm";
+exports.demo = {
+    id: "fade",
+    caption: "Cycling the red component over time.",
+    async init(params) {
+        const computeWidth = params.renderWidth;
+        const computeHeight = params.renderHeight;
+        // Creates the various buffers & textures.
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // Textures, used for compute part swapchain.
+        const tex1 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        const texView1 = tex1.createView({
+            format: computeTexFormat,
+        });
+        const tex2 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const texView2 = tex2.createView({
+            format: computeTexFormat,
+        });
+        // Need a sampler to pick from the texture and write to the screen.
+        const sampler = params.device.createSampler({
+            label: "sampler",
+            magFilter: "linear",
+        });
+        // Setup the initial texture1, with some initial data.
+        const buffer = new ArrayBuffer(computeWidth * computeHeight * 4);
         const a = new Uint8Array(buffer);
-        for (let y = 0; y < this.uniforms.computeHeight; y++) {
-            for (let x = 0; x < this.uniforms.computeWidth; x++) {
-                a[4 * (x + y * this.uniforms.computeWidth) + 0] = 0;
-                a[4 * (x + y * this.uniforms.computeWidth) + 1] = Math.floor(x * 256 / this.uniforms.computeWidth);
-                a[4 * (x + y * this.uniforms.computeWidth) + 2] = Math.floor(y * 256 / this.uniforms.computeWidth);
-                a[4 * (x + y * this.uniforms.computeWidth) + 3] = 255;
+        for (let y = 0; y < computeHeight; y++) {
+            for (let x = 0; x < computeWidth; x++) {
+                a[4 * (x + y * computeWidth) + 0] = 0;
+                a[4 * (x + y * computeWidth) + 1] = Math.floor(x * 256 / computeWidth);
+                a[4 * (x + y * computeWidth) + 2] = Math.floor(y * 256 / computeWidth);
+                a[4 * (x + y * computeWidth) + 3] = 255;
             }
         }
-    }
-    ;
-}
-Engine.id = "fade";
-Engine.caption = "Cycling the red component over time.";
-exports.demo = engine.asDemo(Engine);
+        await params.device.queue.writeTexture({ texture: tex1 }, buffer, { bytesPerRow: computeWidth * 4 }, { width: computeWidth, height: computeHeight });
+        // Compute pipeline.
+        const computePipeline = params.device.createComputePipeline({
+            label: "Effect pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "compute pipeline layouts",
+                bindGroupLayouts: [params.device.createBindGroupLayout({
+                        label: "compute pipeline main layout",
+                        entries: [
+                            // Uniforms.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "uniform" },
+                            },
+                            // Input compute buffer as texture
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.COMPUTE,
+                                texture: { multisampled: false }
+                            },
+                            // Output compute buffer as texture
+                            {
+                                binding: 2,
+                                visibility: GPUShaderStage.COMPUTE,
+                                storageTexture: {
+                                    access: 'write-only',
+                                    format: computeTexFormat,
+                                }
+                            },
+                        ]
+                    })],
+            }),
+            compute: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "Changing the red channel from previous buffer",
+                    code: wg.wgsl `
+                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
+                        @group(0) @binding(1) var srcTexture : texture_2d<f32>;
+                        @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
 
-
-/***/ }),
-
-/***/ "./src/demos/falling.ts":
-/*!******************************!*\
-  !*** ./src/demos/falling.ts ***!
-  \******************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
-// Falling random pixels
-class Engine extends engine.Engine {
-    constructor() {
-        super(...arguments);
-        this.computeWidth = 320;
-        this.computeHeight = 200;
-        this.computeCode = `
-        [[block]] struct Uniforms {
-            computeWidth: u32;
-            computeHeight: u32;
-            renderWidth: u32;
-            renderHeight: u32;
-            elapsedMs: f32;
-        };
-
-        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
-        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
-
-        let vect = vec2<i32>(0, -1);
-
-        [[stage(compute), workgroup_size(8, 8)]]
-        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            let xy = vec2<i32>(global_id.xy);
-            let v = textureLoad(srcTexture, xy + vect, 0);
-            textureStore(dstTexture, xy, v);
-        }
-    `;
-    }
-    initCompute(buffer) {
-        const a = new Uint8Array(buffer);
-        for (let y = 0; y < this.uniforms.computeHeight; y++) {
-            for (let x = 0; x < this.uniforms.computeWidth; x++) {
-                a[4 * (x + y * this.uniforms.computeWidth) + 0] = Math.random() * 255;
-                a[4 * (x + y * this.uniforms.computeWidth) + 1] = Math.random() * 255;
-                a[4 * (x + y * this.uniforms.computeWidth) + 2] = Math.random() * 255;
-                a[4 * (x + y * this.uniforms.computeWidth) + 3] = 255;
+                        @stage(compute) @workgroup_size(8, 8)
+                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                            let xy = vec2<i32>(global_id.xy);
+                            var v = textureLoad(srcTexture, xy, 0);
+                            v.r = (sin(modf(uniforms.elapsedMs / 1000.0 / 3.0).fract * 2.0 * 3.1415) + 1.0) / 2.0;
+                            textureStore(dstTexture, xy, v);
+                        }
+                    `,
+                }).toDesc()),
             }
-        }
+        });
+        // Create 2 bind group for the compute pipeline, depending on what is
+        // the current src & dst texture.
+        const computeBindGroup1 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: texView1,
+                }, {
+                    binding: 2,
+                    resource: texView2,
+                }]
+        });
+        const computeBindGroup2 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: texView2,
+                }, {
+                    binding: 2,
+                    resource: texView1,
+                }]
+        });
+        // Create rendering pipeline.
+        const renderPipeline = params.device.createRenderPipeline({
+            layout: params.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        entries: [
+                            // Current compute texture updated by the compute shader.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                texture: { multisampled: false },
+                            },
+                            // Sampler for  the texture.
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                sampler: { type: "filtering" },
+                            },
+                        ]
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "full screen vertices",
+                    code: wg.wgsl `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32) -> VSOut {
+                            var data = array<vec2<f32>, 6>(
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(1.0, -1.0),
+                                vec2<f32>(1.0, 1.0),
+
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(-1.0, 1.0),
+                                vec2<f32>(1.0, 1.0),
+                            );
+
+                            let pos = data[idx];
+
+                            var out : VSOut;
+                            out.pos = vec4<f32>(pos, 0.0, 1.0);
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (1.0 - pos.y) / 2.0;
+
+                            return out;
+                        }
+                    `,
+                }).toDesc()),
+            },
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "simple copy from compute",
+                    code: wg.wgsl `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+
+                        @group(0) @binding(0) var computeTexture : texture_2d<f32>;
+                        @group(0) @binding(1) var dstSampler : sampler;
+
+                        @stage(fragment)
+                        fn main(inp: VSOut) -> @location(0) vec4<f32> {
+                            return textureSample(computeTexture, dstSampler, inp.coord);
+                        }
+                    `,
+                }).toDesc()),
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+            primitive: {
+                topology: 'triangle-list',
+            },
+        });
+        const renderBindGroup1 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: texView2,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                }]
+        });
+        const renderBindGroup2 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: texView1,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                }]
+        });
+        let isForward = true;
+        // -- Single frame rendering.
+        return async (info) => {
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                elapsedMs: info.elapsedMs,
+            }));
+            // -- Do compute pass, where the actual effect is.
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup(`Time ${info.elapsedMs}`);
+            commandEncoder.pushDebugGroup('Compute');
+            const computeEncoder = commandEncoder.beginComputePass();
+            computeEncoder.setPipeline(computePipeline);
+            computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
+            computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
+            computeEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // -- And do the frame rendering.
+            commandEncoder.pushDebugGroup('Render cube');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+            });
+            renderEncoder.setPipeline(renderPipeline);
+            renderEncoder.setBindGroup(0, isForward ? renderBindGroup1 : renderBindGroup2);
+            // Double-triangle for fullscreen has 6 vertices.
+            renderEncoder.draw(6, 1, 0, 0);
+            renderEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+            // Switch for next frame.
+            isForward = !isForward;
+        };
     }
-}
-Engine.id = "falling";
-Engine.caption = "Minimal data manipulation in a compute shader.";
-exports.demo = engine.asDemo(Engine);
+};
 
 
 /***/ }),
@@ -866,97 +1301,311 @@ exports.demo = engine.asDemo(Engine);
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
+// A classic fire effect.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
-const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
-// A classic fire effect.
-class Engine extends engine.Engine {
-    constructor() {
-        super(...arguments);
-        this.computeWidth = 160;
-        this.computeHeight = 100;
-        this.computeTexFormat = "rgba8unorm";
-        this.fps = 60;
-        this.computeCode = `
-        [[block]] struct Uniforms {
-            computeWidth: u32;
-            computeHeight: u32;
-            renderWidth: u32;
-            renderHeight: u32;
-            elapsedMs: f32;
-            rngSeed: f32;
-        };
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const uniformsDesc = new wg.Descriptor({
+    computeWidth: wg.Field(wg.U32, 0),
+    computeHeight: wg.Field(wg.U32, 1),
+    rngSeed: wg.Field(wg.F32, 2),
+});
+const computeTexFormat = "rgba8unorm";
+exports.demo = {
+    id: "fire",
+    caption: "The classic fire effect.",
+    async init(params) {
+        const computeWidth = 160;
+        const computeHeight = 100;
+        // Creates the various buffers & textures.
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // Textures, used for compute part swapchain.
+        const tex1 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        const texView1 = tex1.createView({
+            format: computeTexFormat,
+        });
+        const tex2 = params.device.createTexture({
+            size: { width: computeWidth, height: computeHeight },
+            format: computeTexFormat,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        });
+        const texView2 = tex2.createView({
+            format: computeTexFormat,
+        });
+        // Need a sampler to pick from the texture and write to the screen.
+        const sampler = params.device.createSampler({
+            label: "sampler",
+            magFilter: "linear",
+        });
+        // Compute pipeline.
+        const computePipeline = params.device.createComputePipeline({
+            label: "Effect pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "compute pipeline layouts",
+                bindGroupLayouts: [params.device.createBindGroupLayout({
+                        label: "compute pipeline main layout",
+                        entries: [
+                            // Uniforms.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "uniform" },
+                            },
+                            // Input compute buffer as texture
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.COMPUTE,
+                                texture: { multisampled: false }
+                            },
+                            // Output compute buffer as texture
+                            {
+                                binding: 2,
+                                visibility: GPUShaderStage.COMPUTE,
+                                storageTexture: {
+                                    access: 'write-only',
+                                    format: computeTexFormat,
+                                }
+                            },
+                        ]
+                    })],
+            }),
+            compute: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "Game of life step",
+                    code: wg.wgsl `
+                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
+                        @group(0) @binding(1) var srcTexture : texture_2d<f32>;
+                        @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
 
-        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var srcTexture : texture_2d<f32>;
-        [[group(0), binding(2)]] var dstTexture : texture_storage_2d<rgba8unorm, write>;
+                        fn rand(v: f32) -> f32 {
+                            return fract(sin(dot(vec2<f32>(uniforms.rngSeed, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
+                        }
 
-        fn rand(v: f32) -> f32 {
-            return fract(sin(dot(vec2<f32>(uniforms.rngSeed, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
-        }
+                        fn at(x: i32, y: i32) -> vec4<f32> {
+                            return textureLoad(srcTexture, vec2<i32>(x, y), 0);
+                        }
 
-        fn at(x: i32, y: i32) -> vec4<f32> {
-            return textureLoad(srcTexture, vec2<i32>(x, y), 0);
-        }
+                        @stage(compute) @workgroup_size(8, 8)
+                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                            // Guard against out-of-bounds work group sizes
+                            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
+                                return;
+                            }
 
-        [[stage(compute), workgroup_size(8, 8)]]
-        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
-            // Guard against out-of-bounds work group sizes
-            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
-                return;
+                            let x = i32(global_id.x);
+                            let y = i32(global_id.y);
+
+                            var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+                            if (y == (i32(uniforms.computeHeight) - 1)) {
+                            //if (y >= (i32(uniforms.computeHeight) - 2000000000)) {
+                                if (rand(f32(x)) < 0.2) {
+                                    v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+                                } else {
+                                    v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+                                }
+                            } else {
+                                let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
+                                v = (sum / 4.0) - 0.005;
+                            }
+                            textureStore(dstTexture, vec2<i32>(x, y), v);
+                        }
+
+
+                    `,
+                }).toDesc()),
             }
+        });
+        // Create 2 bind group for the compute pipeline, depending on what is
+        // the current src & dst texture.
+        const computeBindGroup1 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: texView1,
+                }, {
+                    binding: 2,
+                    resource: texView2,
+                }]
+        });
+        const computeBindGroup2 = params.device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: texView2,
+                }, {
+                    binding: 2,
+                    resource: texView1,
+                }]
+        });
+        // Create rendering pipeline.
+        const renderPipeline = params.device.createRenderPipeline({
+            layout: params.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        entries: [
+                            // Current compute texture updated by the compute shader.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                texture: { multisampled: false },
+                            },
+                            // Sampler for  the texture.
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                sampler: { type: "filtering" },
+                            },
+                        ]
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "full screen vertices",
+                    code: wg.wgsl `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32) -> VSOut {
+                            var data = array<vec2<f32>, 6>(
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(1.0, -1.0),
+                                vec2<f32>(1.0, 1.0),
 
-            let x = i32(global_id.x);
-            let y = i32(global_id.y);
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(-1.0, 1.0),
+                                vec2<f32>(1.0, 1.0),
+                            );
 
-            var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-            if (y == (i32(uniforms.computeHeight) - 1)) {
-                if (rand(f32(x)) < 0.2) {
-                    v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
-                } else {
-                    v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-                }
-            } else {
-                let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
-                v = (sum / 4.0) - 0.005;
-            }
-            textureStore(dstTexture, vec2<i32>(x, y), v);
-        }
-    `;
-        this.fragmentCode = `
-        [[block]] struct Uniforms {
-            computeWidth: u32;
-            computeHeight: u32;
-            renderWidth: u32;
-            renderHeight: u32;
-            elapsedMs: f32;
-            rngSeed: f32;
+                            let pos = data[idx];
+
+                            var out : VSOut;
+                            out.pos = vec4<f32>(pos, 0.0, 1.0);
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (1.0 - pos.y) / 2.0;
+
+                            return out;
+                        }
+                    `,
+                }).toDesc()),
+            },
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "simple copy from compute",
+                    code: wg.wgsl `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+
+                        @group(0) @binding(0) var computeTexture : texture_2d<f32>;
+                        @group(0) @binding(1) var dstSampler : sampler;
+
+                        @stage(fragment)
+                        fn main(inp: VSOut) -> @location(0) vec4<f32> {
+                            let v = textureSample(computeTexture, dstSampler, inp.coord);
+
+                            let key = v.r * 8.0;
+                            let c = (v.r * 256.0) % 32.0;
+                            if (key < 1.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 256.0, 1.0); }
+                            if (key < 2.0) { return vec4<f32>(c * 8.0 / 256.0, 0.0, (64.0 - c * 2.0) / 256.0, 1.0); }
+                            if (key < 3.0) { return vec4<f32>(1.0, c * 8.0 / 256.0, 0.0, 1.0); }
+                            if (key < 4.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 256.0, 1.0); }
+                            if (key < 5.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 256.0, 1.0); }
+                            if (key < 6.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 256.0, 1.0); }
+                            if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
+                            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
+                        }
+                    `,
+                }).toDesc()),
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+            primitive: {
+                topology: 'triangle-list',
+            },
+        });
+        const renderBindGroup1 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: texView2,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                }]
+        });
+        const renderBindGroup2 = params.device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: texView1,
+                }, {
+                    binding: 1,
+                    resource: sampler,
+                }]
+        });
+        let isForward = true;
+        // -- Single frame rendering.
+        return async (info) => {
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                computeWidth: computeWidth,
+                computeHeight: computeHeight,
+                rngSeed: Math.random(),
+            }));
+            // -- Do compute pass, where the actual effect is.
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup(`Time ${info.elapsedMs}`);
+            commandEncoder.pushDebugGroup('Compute');
+            const computeEncoder = commandEncoder.beginComputePass();
+            computeEncoder.setPipeline(computePipeline);
+            computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
+            computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
+            computeEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // -- And do the frame rendering.
+            commandEncoder.pushDebugGroup('Render cube');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+            });
+            renderEncoder.setPipeline(renderPipeline);
+            renderEncoder.setBindGroup(0, isForward ? renderBindGroup1 : renderBindGroup2);
+            // Double-triangle for fullscreen has 6 vertices.
+            renderEncoder.draw(6, 1, 0, 0);
+            renderEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+            // Switch for next frame.
+            isForward = !isForward;
         };
-        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var computeTexture : texture_2d<f32>;
-        [[group(0), binding(2)]] var dstSampler : sampler;
-
-        [[stage(fragment)]]
-        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-            let v = textureSample(computeTexture, dstSampler, coord);
-
-            let key = v.r * 8.0;
-            let c = (v.r * 256.0) % 32.0;
-            if (key < 1.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 256.0, 1.0); }
-            if (key < 2.0) { return vec4<f32>(c * 8.0 / 256.0, 0.0, (64.0 - c * 2.0) / 256.0, 1.0); }
-            if (key < 3.0) { return vec4<f32>(1.0, c * 8.0 / 256.0, 0.0, 1.0); }
-            if (key < 4.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 256.0, 1.0); }
-            if (key < 5.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 256.0, 1.0); }
-            if (key < 6.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 256.0, 1.0); }
-            if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
-            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
-        }
-    `;
     }
-}
-Engine.id = "fire";
-Engine.caption = "The classic fire effect.";
-exports.demo = engine.asDemo(Engine);
+};
 
 
 /***/ }),
@@ -965,13 +1614,12 @@ exports.demo = engine.asDemo(Engine);
 /*!******************************!*\
   !*** ./src/demos/minimal.ts ***!
   \******************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 
 // Minimal effect, with only a basic render pass.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
-const engine = __webpack_require__(/*! ../engine */ "./src/engine.ts");
 exports.demo = {
     id: "minimal",
     caption: "Minimal setup without compute.",
@@ -988,7 +1636,39 @@ exports.demo = {
                 ]
             }),
             // Create triangles to cover the screen.
-            vertex: engine.vertexFullScreen(params),
+            vertex: {
+                entryPoint: "main",
+                module: params.device.createShaderModule({
+                    label: "full screen vertices",
+                    code: `
+                        struct VSOut {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec2<f32>;
+                        };
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32) -> VSOut {
+                            var data = array<vec2<f32>, 6>(
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(1.0, -1.0),
+                                vec2<f32>(1.0, 1.0),
+
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>(-1.0, 1.0),
+                                vec2<f32>(1.0, 1.0),
+                            );
+
+                            let pos = data[idx];
+
+                            var out : VSOut;
+                            out.pos = vec4<f32>(pos, 0.0, 1.0);
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (1.0 - pos.y) / 2.0;
+
+                            return out;
+                        }
+                    `,
+                }),
+            },
             primitive: {
                 topology: 'triangle-list',
             },
@@ -1035,370 +1715,246 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/engine.ts":
-/*!***********************!*\
-  !*** ./src/engine.ts ***!
-  \***********************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ "./src/demos/testlibs.ts":
+/*!*******************************!*\
+  !*** ./src/demos/testlibs.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-/// <reference types="@webgpu/types" />
+// Testing ground for the various helper libraries.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.asDemo = exports.Engine = exports.Uniforms = exports.vertexFullScreen = void 0;
-// A vertex shader creating full screen rendering using 2 triangles.
-// It sets:
-//   - builtin position: the position of the vertex.
-//   - location(0): screen coordinates, normalized to [0..1].
-// The render should:
-//   - Set `primitive: { topology: 'triangle-list' }`
-//   - Use `passEncoder.draw(6, 1, 0, 0)` on the render pass encoder, with no vertex buffer.
-function vertexFullScreen(params) {
-    return {
-        // Create full screen pair of triangles.
-        entryPoint: 'main',
-        module: params.device.createShaderModule({
-            code: `
-            struct VSOut {
-                [[builtin(position)]] pos: vec4<f32>;
-                [[location(0)]] coord: vec2<f32>;
-            };
-            [[stage(vertex)]]
-            fn main([[builtin(vertex_index)]] idx : u32) -> VSOut {
-                var data = array<vec2<f32>, 6>(
-                    vec2<f32>(-1.0, -1.0),
-                    vec2<f32>(1.0, -1.0),
-                    vec2<f32>(1.0, 1.0),
+exports.demo = void 0;
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+const uniformsDesc = new wg.Descriptor({
+    elapsedMs: wg.Field(wg.F32, 0),
+    renderWidth: wg.Field(wg.F32, 1),
+    renderHeight: wg.Field(wg.F32, 2),
+});
+exports.demo = {
+    id: "testlibs",
+    caption: "Testing the helper libs",
+    async init(params) {
+        const computePipeline = params.device.createComputePipeline({
+            label: "Compute pipeline for projection matrix",
+            layout: params.device.createPipelineLayout({
+                label: "compute pipeline layouts",
+                bindGroupLayouts: [params.device.createBindGroupLayout({
+                        label: "compute pipeline main layout",
+                        entries: [
+                            // Input buffer, which will be coming from JS.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "uniform" },
+                            },
+                            // Output buffer, to feed the vertex shader.
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "storage" },
+                            },
+                        ]
+                    })],
+            }),
+            compute: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "Rendering matrix compute",
+                    // Project & rotations from https://github.com/toji/gl-matrix
+                    code: wg.wgsl `
+                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
 
-                    vec2<f32>(-1.0, -1.0),
-                    vec2<f32>(-1.0, 1.0),
-                    vec2<f32>(1.0, 1.0),
-                );
+                        struct Output {
+                            // ModelViewProjection
+                            mvp: mat4x4<f32>;
+                        };
+                        @group(0) @binding(1) var<storage, write> outp : Output;
 
-                let pos = data[idx];
-
-                var out : VSOut;
-                out.pos = vec4<f32>(pos, 0.0, 1.0);
-                out.coord.x = (pos.x + 1.0) / 2.0;
-                out.coord.y = (1.0 - pos.y) / 2.0;
-
-                return out;
+                        @stage(compute) @workgroup_size(1)
+                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                            let TAU = 6.283185;
+                            let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                            let r = vec3<f32>(c, c, c);
+                            outp.mvp =
+                                ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
+                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
+                                * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                                * ${shaderlib.tr.ref("rotateY")}(r.y)
+                                * ${shaderlib.tr.ref("rotateX")}(r.x);
+                        }
+                    `,
+                }).toDesc()),
             }
-        `,
-        }),
-    };
-}
-exports.vertexFullScreen = vertexFullScreen;
-class Uniforms {
-    constructor(device) {
-        this.computeWidth = 320;
-        this.computeHeight = 200;
-        this.renderWidth = 320;
-        this.renderHeight = 200;
-        this.elapsedMs = 0;
-        // Total size of all the fields to write in uniforms.
-        this.bytes = 6 * 4;
-        this.mappedBuffer = device.createBuffer({
-            mappedAtCreation: true,
-            size: this.bytes * Uint32Array.BYTES_PER_ELEMENT,
-            usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
         });
-        this.buffer = device.createBuffer({
-            size: this.bytes,
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
-    }
-    startMap() {
-        this.mapPromise = this.mappedBuffer.mapAsync(GPUMapMode.WRITE);
-    }
-    async awaitMap() {
-        if (this.mapPromise) {
-            await this.mapPromise;
-        }
-        this.mapPromise = undefined;
-    }
-    copy(commandEncoder) {
-        const d = new DataView(this.mappedBuffer.getMappedRange());
-        d.setUint32(0, this.computeWidth, true);
-        d.setUint32(4, this.computeHeight, true);
-        d.setUint32(8, this.renderWidth, true);
-        d.setUint32(12, this.renderHeight, true);
-        d.setFloat32(16, this.elapsedMs, true);
-        d.setFloat32(20, Math.random(), true);
-        this.mappedBuffer.unmap();
-        commandEncoder.copyBufferToBuffer(this.mappedBuffer, 0, this.buffer, 0, this.bytes);
-    }
-}
-exports.Uniforms = Uniforms;
-class Engine {
-    constructor() {
-        this.fps = 60;
-        this.computeCode = "";
-        this.computeTexFormat = "rgba8unorm";
-        // State
-        this.previousTimestampMs = 0;
-        this.previousStepMs = 0;
-        this.isForward = true; // if false, goes 2->1
-        // Default logic to take the compute buffer and display it on the canvas.
-        // It just rescales whatever is in the compute buffer to the screen.
-        this.fragmentCode = `
-        [[block]] struct Uniforms {
-            computeWidth: u32;
-            computeHeight: u32;
-            renderWidth: u32;
-            renderHeight: u32;
-            elapsedMs: f32;
-        };
-        [[group(0), binding(0)]] var<uniform> uniforms : Uniforms;
-        [[group(0), binding(1)]] var computeTexture : texture_2d<f32>;
-        [[group(0), binding(2)]] var dstSampler : sampler;
-
-        [[stage(fragment)]]
-        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
-            return textureSample(computeTexture, dstSampler, coord);
-        }
-    `;
-    }
-    initCompute(buffer) { }
-    async init(params) {
-        this.context = params.context;
-        this.device = params.device;
-        // Uniforms setup.
-        this.uniforms = new Uniforms(this.device);
-        this.uniforms.computeWidth = this.computeWidth ?? params.renderWidth;
-        this.uniforms.computeHeight = this.computeHeight ?? params.renderHeight;
-        this.uniforms.renderWidth = params.renderWidth;
-        this.uniforms.renderHeight = params.renderHeight;
-        console.log("compute size", this.uniforms.computeWidth, this.uniforms.computeHeight, "render size", this.uniforms.renderWidth, this.uniforms.renderHeight);
-        // Textures, used for compute part swapchain.
-        const tex1 = this.device.createTexture({
-            size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
-            format: this.computeTexFormat,
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
+        const computeResult = params.device.createBuffer({
+            label: "Compute output for vertex shaders",
+            size: wg.Mat4x4F32.byteSize(),
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
-        const texView1 = tex1.createView({
-            format: this.computeTexFormat,
-        });
-        const tex2 = this.device.createTexture({
-            size: { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight },
-            format: this.computeTexFormat,
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
-        });
-        const texView2 = tex2.createView({
-            format: this.computeTexFormat,
-        });
-        // Setup the initial texture1, to allow for initial data.
-        // A bit useless when no init is needed, but that's a one time thing.
-        const buffer = new ArrayBuffer(this.uniforms.computeWidth * this.uniforms.computeHeight * 4);
-        this.initCompute(buffer);
-        await this.device.queue.writeTexture({ texture: tex1 }, buffer, { bytesPerRow: this.uniforms.computeWidth * 4 }, { width: this.uniforms.computeWidth, height: this.uniforms.computeHeight });
-        // Create compute pipeline.
-        const computeBindGroupLayout = this.device.createPipelineLayout({
-            bindGroupLayouts: [
-                this.device.createBindGroupLayout({
-                    entries: [
-                        // Uniforms
-                        {
-                            binding: 0,
-                            visibility: GPUShaderStage.COMPUTE,
-                            buffer: {
-                                type: "uniform",
-                            }
-                        },
-                        // Input compute buffer as texture
-                        {
-                            binding: 1,
-                            visibility: GPUShaderStage.COMPUTE,
-                            texture: {
-                                multisampled: false,
-                            }
-                        },
-                        // Output compute buffer as texture
-                        {
-                            binding: 2,
-                            visibility: GPUShaderStage.COMPUTE,
-                            storageTexture: {
-                                access: 'write-only',
-                                format: this.computeTexFormat,
-                            }
-                        },
-                    ]
-                }),
-            ]
-        });
-        this.computePipeline = this.device.createComputePipeline({
-            layout: computeBindGroupLayout,
-            compute: {
-                module: this.device.createShaderModule({ code: this.computeCode }),
-                entryPoint: "main"
-            }
-        });
-        this.computeBindGroup1 = this.device.createBindGroup({
-            layout: this.computePipeline.getBindGroupLayout(0),
+        const computeBindGroup = params.device.createBindGroup({
+            label: "Bind group for the projection matrix compute",
+            layout: computePipeline.getBindGroupLayout(0),
             entries: [{
                     binding: 0,
-                    resource: { buffer: this.uniforms.buffer, }
+                    resource: { buffer: uniformsBuffer }
                 }, {
                     binding: 1,
-                    resource: texView1,
-                }, {
-                    binding: 2,
-                    resource: texView2,
+                    resource: { buffer: computeResult }
                 }]
         });
-        this.computeBindGroup2 = this.device.createBindGroup({
-            layout: this.computePipeline.getBindGroupLayout(0),
-            entries: [{
-                    binding: 0,
-                    resource: { buffer: this.uniforms.buffer, }
-                }, {
-                    binding: 1,
-                    resource: texView2,
-                }, {
-                    binding: 2,
-                    resource: texView1,
-                }]
-        });
-        // Create rendering pipeline.
-        const renderBindGroupLayout = this.device.createPipelineLayout({
-            bindGroupLayouts: [
-                this.device.createBindGroupLayout({
-                    entries: [
-                        // Uniforms
-                        {
-                            binding: 0,
-                            visibility: GPUShaderStage.FRAGMENT,
-                            buffer: {
-                                type: "uniform",
-                            }
-                        },
-                        // Output compute texture
-                        {
-                            binding: 1,
-                            visibility: GPUShaderStage.FRAGMENT,
-                            texture: {
-                                multisampled: false,
-                            }
-                        },
-                        // Sampler for  the texture
-                        {
-                            binding: 2,
-                            visibility: GPUShaderStage.FRAGMENT,
-                            sampler: {
-                                type: "filtering",
-                            }
-                        },
-                    ]
-                }),
-            ]
-        });
-        this.renderPipeline = this.device.createRenderPipeline({
-            layout: renderBindGroupLayout,
-            vertex: vertexFullScreen(params),
-            fragment: {
-                module: this.device.createShaderModule({
-                    code: this.fragmentCode,
-                }),
+        // -- Render pipeline.
+        // It takes the projection matrix from the compute output
+        // and create a cube from hard coded vertex coordinates.
+        const renderPipeline = params.device.createRenderPipeline({
+            label: "Cube rendering pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        label: "render pipeline layout for compute data",
+                        entries: [
+                            // Matrix info coming from compute shader.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.VERTEX,
+                                buffer: {
+                                    type: 'read-only-storage',
+                                },
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            vertex: {
                 entryPoint: 'main',
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "cube vertex shader",
+                    // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
+                    code: wg.wgsl `
+                        struct Output {
+                            // ModelViewProjection
+                            mvp: mat4x4<f32>;
+                        };
+                        @group(0) @binding(0) var<storage> outp : Output;
+
+                        struct Out {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec3<f32>;
+                        };
+
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32) -> Out {
+                            let pos = ${shaderlib.cubeMeshStrip.ref("mesh")}[idx];
+                            var out : Out;
+                            out.pos = outp.mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (pos.y + 1.0) / 2.0;
+                            out.coord.z = (pos.z + 1.0) / 2.0;
+                            return out;
+                        }
+                    `,
+                }).toDesc())
+            },
+            primitive: {
+                topology: 'triangle-strip',
+                cullMode: 'back',
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: 'depth24plus',
+            },
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule({
+                    label: "trivial fragment shader",
+                    code: `
+                        @stage(fragment)
+                        fn main(@location(0) coord: vec3<f32>) -> @location(0) vec4<f32> {
+                            return vec4<f32>(coord.x, coord.y, coord.z, 1.0);
+                        }
+                    `,
+                }),
                 targets: [{
                         format: params.renderFormat,
                     }],
             },
-            primitive: {
-                topology: 'triangle-list',
-            },
         });
-        const sampler = this.device.createSampler({
-            label: "sampler",
-            magFilter: "linear",
-        });
-        this.renderBindGroup1 = this.device.createBindGroup({
-            layout: this.renderPipeline.getBindGroupLayout(0),
-            entries: [{
-                    binding: 0,
-                    resource: { buffer: this.uniforms.buffer, }
-                }, {
-                    binding: 1,
-                    resource: texView2,
-                }, {
-                    binding: 2,
-                    resource: sampler,
-                }]
-        });
-        this.renderBindGroup2 = this.device.createBindGroup({
-            layout: this.renderPipeline.getBindGroupLayout(0),
-            entries: [{
-                    binding: 0,
-                    resource: { buffer: this.uniforms.buffer, }
-                }, {
-                    binding: 1,
-                    resource: texView1,
-                }, {
-                    binding: 2,
-                    resource: sampler,
-                }]
-        });
-    }
-    async frame(info) {
-        this.uniforms.elapsedMs = info.elapsedMs;
-        // Allow to run compute at a lower FPS than rendering.
-        let simulDelta = info.timestampMs - this.previousStepMs;
-        const runStep = simulDelta > (1000 / this.fps);
-        this.previousTimestampMs = info.timestampMs;
-        if (runStep) {
-            this.previousStepMs = info.timestampMs;
-        }
-        // Map uniforms
-        await this.uniforms.awaitMap();
-        //-- Build frame commands
-        const commandEncoder = this.device.createCommandEncoder();
-        // Add uniforms, always.
-        this.uniforms.copy(commandEncoder);
-        // Run compute when needed.
-        if (runStep) {
-            const bindGroup = this.isForward ? this.computeBindGroup1 : this.computeBindGroup2;
-            const passEncoder = commandEncoder.beginComputePass();
-            passEncoder.setPipeline(this.computePipeline);
-            passEncoder.setBindGroup(0, bindGroup);
-            passEncoder.dispatch(Math.ceil(this.uniforms.computeWidth / 8), Math.ceil(this.uniforms.computeHeight / 8));
-            passEncoder.endPass();
-            this.isForward = !this.isForward;
-        }
-        // Rendering.
-        const renderPassDescriptor = {
-            colorAttachments: [
+        const renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
                 {
-                    view: this.context.getCurrentTexture().createView(),
-                    loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                    storeOp: 'store',
+                    binding: 0,
+                    resource: {
+                        buffer: computeResult,
+                    }
                 },
-            ],
+            ]
+        });
+        const depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: 'depth24plus',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+        // -- Single frame rendering.
+        return async (info) => {
+            // Fill up the uniforms to feed the compute shaders.
+            // Rotation of the cube is just a function of current time,
+            // calculated in the compute shader.
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                elapsedMs: info.elapsedMs,
+                renderWidth: params.renderWidth,
+                renderHeight: params.renderHeight,
+            }));
+            // -- Do compute pass, to create projection matrices.
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+            commandEncoder.pushDebugGroup('Compute projection');
+            const computeEncoder = commandEncoder.beginComputePass();
+            computeEncoder.setPipeline(computePipeline);
+            computeEncoder.setBindGroup(0, computeBindGroup);
+            // The compute has only a single matrix to compute. More typical compute shaders
+            // would dispatch on NxM elements.
+            computeEncoder.dispatch(1);
+            computeEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // -- And do the frame rendering.
+            commandEncoder.pushDebugGroup('Render cube');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+                depthStencilAttachment: {
+                    view: depthTextureView,
+                    depthLoadValue: 1.0,
+                    depthStoreOp: 'store',
+                    stencilLoadValue: 0,
+                    stencilStoreOp: 'store',
+                },
+            });
+            renderEncoder.setPipeline(renderPipeline);
+            renderEncoder.setBindGroup(0, renderBindGroup);
+            // Cube mesh as a triangle-strip uses 14 vertices.
+            renderEncoder.draw(14, 1, 0, 0);
+            renderEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
         };
-        const renderBindGroup = this.isForward ? this.renderBindGroup1 : this.renderBindGroup2;
-        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        passEncoder.setPipeline(this.renderPipeline);
-        passEncoder.setBindGroup(0, renderBindGroup);
-        passEncoder.draw(6, 1, 0, 0);
-        passEncoder.endPass();
-        // And submit the work.
-        this.device.queue.submit([commandEncoder.finish()]);
-        this.uniforms.startMap();
     }
-}
-exports.Engine = Engine;
-// Takes a class deriving from Engine and create something suitable
-// for the UI to run.
-const asDemo = (t) => {
-    return {
-        id: t.id,
-        caption: t.caption,
-        async init(params) {
-            const d = new t();
-            await d.init(params);
-            return (nfo) => { return d.frame(nfo); };
-        }
-    };
 };
-exports.asDemo = asDemo;
 
 
 /***/ }),
@@ -1423,19 +1979,19 @@ const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
 const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
 const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts");
 const fire = __webpack_require__(/*! ./demos/fire */ "./src/demos/fire.ts");
-const falling = __webpack_require__(/*! ./demos/falling */ "./src/demos/falling.ts");
 const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
 const minimal = __webpack_require__(/*! ./demos/minimal */ "./src/demos/minimal.ts");
 const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.ts");
 const cube = __webpack_require__(/*! ./demos/cube */ "./src/demos/cube.ts");
+const testlibs = __webpack_require__(/*! ./demos/testlibs */ "./src/demos/testlibs.ts");
 exports.allDemos = [
     conway2.demo,
     fire.demo,
     conway.demo,
     fade.demo,
-    falling.demo,
     minimal.demo,
     cube.demo,
+    testlibs.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -1829,6 +2385,457 @@ document.body.style.height = '100%';
 document.body.style.margin = '0';
 document.body.style.backgroundColor = '#888800';
 document.body.appendChild(document.createElement("app-main"));
+
+
+/***/ }),
+
+/***/ "./src/shaderlib.ts":
+/*!**************************!*\
+  !*** ./src/shaderlib.ts ***!
+  \**************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
+const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
+// Functions to calculate projection matrices.
+exports.projection = new wg.WGSLModule({
+    label: "projection matrices",
+    code: wg.wgsl `
+        fn @@perspective(aspect: f32) -> mat4x4<f32> {
+            // Hard coded projection parameters - for more flexibility,
+            // we could imagine getting them from the uniforms.
+            let fovy = 2.0 * 3.14159 / 5.0; // Vertical field of view (rads)
+            let near = 1.0;
+            let far = 100.0;
+
+            let f = 1.0 / tan(fovy / 2.0);
+            let nf = 1.0 / (near - far);
+
+            return mat4x4<f32>(
+                f / aspect, 0.0, 0.0, 0.0,
+                0.0, f, 0.0, 0.0,
+                0.0, 0.0, (far + near) * nf, -1.0,
+                0.0, 0.0, 2.0 * far * near * nf, 0.0,
+            );
+        }`,
+});
+// Functions for common transformations - translation, rotation.
+exports.tr = new wg.WGSLModule({
+    label: "transform matrices",
+    code: wg.wgsl `
+        fn @@translate(tr : vec3<f32>) -> mat4x4<f32> {
+            return mat4x4<f32>(
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                tr.x, tr.y, tr.z, 1.0,
+            );
+        }
+
+        fn @@rotateX(rad: f32) -> mat4x4<f32> {
+            let s = sin(rad);
+            let c = cos(rad);
+            return mat4x4<f32>(
+                1.0, 0.0, 0.0, 0.0,
+                0.0, c, s, 0.0,
+                0.0, -s, c, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            );
+        }
+
+        fn @@rotateY(rad: f32) -> mat4x4<f32> {
+            let s = sin(rad);
+            let c = cos(rad);
+            return mat4x4<f32>(
+                c, 0.0, -s, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                s, 0.0, c, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            );
+        }
+
+        fn @@rotateZ(rad: f32) -> mat4x4<f32> {
+            let s = sin(rad);
+            let c = cos(rad);
+            return mat4x4<f32>(
+                c, s, 0.0, 0.0,
+                -s, c, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            );
+        }
+        `,
+});
+// An hard coded list of vertex for a cube declared as triangle strip.
+// Cube is between -1 and +1.
+// https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
+exports.cubeMeshStrip = new wg.WGSLModule({
+    label: "mesh for a cube triangle strip",
+    code: wg.wgsl `
+        let @@mesh = array<vec3<f32>, 14>(
+            vec3<f32>(1.f, 1.f, 1.f),     // Front-top-left
+            vec3<f32>(-1.f, 1.f, 1.f),      // Front-top-right
+            vec3<f32>(1.f, -1.f, 1.f),    // Front-bottom-left
+            vec3<f32>(-1.f, -1.f, 1.f),     // Front-bottom-right
+            vec3<f32>(-1.f, -1.f, -1.f),    // Back-bottom-right
+            vec3<f32>(-1.f, 1.f, 1.f),      // Front-top-right
+            vec3<f32>(-1.f, 1.f, -1.f),     // Back-top-right
+            vec3<f32>(1.f, 1.f, 1.f),     // Front-top-left
+            vec3<f32>(1.f, 1.f, -1.f),    // Back-top-left
+            vec3<f32>(1.f, -1.f, 1.f),    // Front-bottom-left
+            vec3<f32>(1.f, -1.f, -1.f),   // Back-bottom-left
+            vec3<f32>(-1.f, -1.f, -1.f),    // Back-bottom-right
+            vec3<f32>(1.f, 1.f, -1.f),    // Back-top-left
+            vec3<f32>(-1.f, 1.f, -1.f),      // Back-top-right
+        );
+    `,
+});
+
+
+/***/ }),
+
+/***/ "./src/wg.ts":
+/*!*******************!*\
+  !*** ./src/wg.ts ***!
+  \*******************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+// A WebGPU helper libraries. For now, providers:
+//   - WGSLModule: A way to import / manage a library of reusable WGSL code.
+//   - A way to manage mapping between Javascript types and WGSL types, for
+//     simple buffer translation.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Descriptor = exports.Field = exports.Mat4x4F32 = exports.U32 = exports.F32 = exports.wgsl = exports.WGSLModule = void 0;
+/// <reference types="@webgpu/types" />
+class WGSLModule {
+    constructor(cfg) {
+        this.imports = [];
+        this.symbols = new Set();
+        if (cfg.imports) {
+            this.imports.push(...cfg.imports);
+        }
+        this.label = cfg.label ?? "<unnamed>";
+        this.code = cfg.code;
+        for (const token of this.code.tokens) {
+            if (token instanceof WGSLName) {
+                if (this.symbols.has(token.name)) {
+                    throw new Error("duplicate symbol");
+                }
+                this.symbols.add(token.name);
+            }
+            else if (token instanceof WGSLRef) {
+                if (!token.mod.symbols.has(token.name)) {
+                    throw new Error(`reference to unknown symbol "${token.name}" in module "${token.mod.label}" from module "${this.label}"`);
+                }
+                this.imports.push(token.mod);
+            }
+        }
+    }
+    // Create a reference to a symbol this module "exports".
+    ref(name) {
+        return new WGSLRef(this, name);
+    }
+    importOrder() {
+        const ordered = [];
+        const imported = new Set();
+        const next = (mod, seen) => {
+            seen.add(mod);
+            for (const imp of mod.imports) {
+                if (seen.has(imp)) {
+                    throw new Error("import cycle");
+                }
+                if (!imported.has(imp)) {
+                    next(imp, seen);
+                }
+            }
+            imported.add(mod);
+            ordered.push(mod);
+            seen.delete(mod);
+        };
+        next(this, new Set());
+        return ordered;
+    }
+    // Create a text representation of the code of this module only.
+    render(imports) {
+        const prefix = imports.get(this);
+        if (prefix === undefined) {
+            throw new Error(`internal: module "${this.label}" is imported but has no prefix`);
+        }
+        let s = `\n// -------- Module: ${this.label} --------\n`;
+        for (const token of this.code.tokens) {
+            if (token instanceof WGSLName) {
+                s += prefix + token.name;
+            }
+            else if (token instanceof WGSLRef) {
+                const refPrefix = imports.get(token.mod);
+                if (refPrefix === undefined) {
+                    throw new Error("module not found");
+                }
+                s += refPrefix + token.name;
+            }
+            else {
+                s += token;
+            }
+        }
+        return s;
+    }
+    // Render the code of this module with all its dependencies.
+    generate() {
+        const mods = this.importOrder();
+        const imports = new Map();
+        for (const [idx, mod] of mods.entries()) {
+            imports.set(mod, `m${idx}_`);
+        }
+        const textMods = [];
+        for (const mod of mods) {
+            textMods.push(mod.render(imports));
+        }
+        const s = textMods.join("\n");
+        console.groupCollapsed(`Generated shader code "${this.label}"`);
+        console.log(s);
+        console.groupEnd();
+        return textMods.join("\n");
+    }
+    toDesc() {
+        return {
+            label: this.label,
+            code: this.generate(),
+            // sourceMap
+            // hint
+        };
+    }
+}
+exports.WGSLModule = WGSLModule;
+class WGSLName {
+    constructor(name) {
+        this.name = name;
+    }
+}
+class WGSLRef {
+    constructor(mod, name) {
+        this.mod = mod;
+        this.name = name;
+    }
+}
+// https://gpuweb.github.io/gpuweb/wgsl/#identifiers
+const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
+// WGSLCode holds a snippet of code, without parsing.
+// This is used to allow mixing actual text representation of WGSL but also
+// Javascript references to other module - that are interpretated differently
+// when "rendering" the WGSL code.
+class WGSLCode {
+    constructor(tokens) {
+        this.tokens = [...tokens];
+    }
+}
+// Declare WGSLCode using template strings.
+function wgsl(strings, ...keys) {
+    const tokens = [...wgslSplit(strings[0])];
+    for (let i = 1; i < strings.length; i++) {
+        const token = keys[i - 1];
+        if (Array.isArray(token)) {
+            for (const subtoken of token) {
+                tokens.push(...subtoken.tokens);
+            }
+        }
+        else if (token instanceof WGSLCode) {
+            tokens.push(...token.tokens);
+        }
+        else if (typeof token === "string") {
+            tokens.push(...wgslSplit(token));
+        }
+        else {
+            tokens.push(token);
+        }
+        tokens.push(...wgslSplit(strings[i]));
+    }
+    return new WGSLCode(tokens);
+}
+exports.wgsl = wgsl;
+function wgslSplit(s) {
+    const tokens = [];
+    let prevIndex = 0;
+    for (const m of s.matchAll(markersRE)) {
+        if (m.index === undefined) {
+            throw new Error("oops");
+        }
+        if (m.index > prevIndex) {
+            tokens.push(s.slice(prevIndex, m.index));
+        }
+        prevIndex = m.index + m[0].length;
+        tokens.push(new WGSLName(m[1]));
+    }
+    if (prevIndex < s.length) {
+        tokens.push(s.slice(prevIndex, s.length));
+    }
+    return tokens;
+}
+function testWGSLModules() {
+    console.group("testWGSL");
+    console.log("tagged template 1", wgsl ``);
+    console.log("tagged template 2", wgsl `a`);
+    console.log("tagged template 3", wgsl `${"plop"}`);
+    console.log("tagged template 4", wgsl `foo @@bar plop`);
+    const testModule1 = new WGSLModule({
+        label: "test1",
+        code: wgsl `
+            foo
+            coin @@bar plop
+        `,
+    });
+    const testModule2 = new WGSLModule({
+        label: "test2",
+        code: wgsl `
+            foo ${testModule1.ref("bar")}
+        `,
+    });
+    console.log("render1", testModule2.toDesc().code);
+    console.groupEnd();
+}
+// ----------------------------------------------------------------------
+// The following contains an attempt at making it easier to manipulate basic
+// uniforms - i.e., maintaing a buffer content with structured data from
+// Javascript.
+// It is a bit overcomplicated in order to keep typing work.
+// Basic class to represent info about a given WGSL type. The template parameter
+// is the type of the value it maps to in javascript.
+class WGSLType {
+}
+// Info about WGSL `f32` type.
+class F32Type extends WGSLType {
+    byteSize() { return 4; }
+    dataViewSet(dv, offset, v) {
+        dv.setFloat32(offset, v, true);
+    }
+    typename() {
+        return "f32";
+    }
+}
+exports.F32 = new F32Type();
+// Info about WGSL `u32` type.
+class U32Type extends WGSLType {
+    byteSize() { return 4; }
+    dataViewSet(dv, offset, v) {
+        dv.setInt32(offset, v, true);
+    }
+    typename() {
+        return "u32";
+    }
+}
+exports.U32 = new U32Type();
+// mat4x4<f32> WGSL type.
+class Mat4x4F32Type extends WGSLType {
+    byteSize() { return 16 * exports.F32.byteSize(); }
+    dataViewSet(dv, offset, v) {
+        for (let i = 0; i < 16; i++) {
+            dv.setFloat32(offset, v[i], true);
+        }
+    }
+    typename() {
+        return "mat4x4<f32>";
+    }
+}
+exports.Mat4x4F32 = new Mat4x4F32Type();
+// Description of a given field in a WGSL struct.
+class FieldType {
+    constructor(t, idx) {
+        this.idx = idx;
+        this.type = t;
+    }
+}
+// Declare a field of the given type, at the given position. Index of the field
+// in the struct is mandatory, to reduce renaming and moving mistakes.
+function Field(type, idx) {
+    return new FieldType(type, idx);
+}
+exports.Field = Field;
+// Description of a struct allowing mapping between javascript and WGSL.
+class Descriptor {
+    constructor(fields) {
+        this.fields = fields;
+        this.byIndex = [];
+        this._byteSize = 0;
+        for (const [name, field] of Object.entries(fields)) {
+            if (!(field instanceof FieldType)) {
+                continue;
+            }
+            if (this.byIndex[field.idx]) {
+                throw new Error(`field index ${field.idx} is duplicated`);
+            }
+            this.byIndex[field.idx] = {
+                field,
+                name,
+                offset: 0,
+            };
+            this._byteSize += field.type.byteSize();
+        }
+        let offset = 0;
+        for (const [idx, ffield] of this.byIndex.entries()) {
+            if (!ffield) {
+                throw new Error(`missing field index ${idx}`);
+            }
+            ffield.offset = offset;
+            offset += ffield.field.type.byteSize();
+        }
+    }
+    // Size of this structure.
+    byteSize() {
+        return this._byteSize;
+    }
+    // Take an object containg the value for each field, and write it
+    // in the provided data view.
+    writeTo(values, data) {
+        for (const ffield of this.byIndex) {
+            ffield.field.type.dataViewSet(data, ffield.offset, values[ffield.name]);
+        }
+    }
+    // Create an array containing the serialized value from each field.
+    createArray(values) {
+        const a = new ArrayBuffer(this.byteSize());
+        this.writeTo(values, new DataView(a));
+        return a;
+    }
+    // Refer to that structure type in a WGSL fragment. It will take care of
+    // creating a name and inserting the struct declaration as needed.
+    typename() {
+        if (!this.mod) {
+            const lines = [wgsl `struct @@structname {\n`];
+            for (const ffield of this.byIndex) {
+                lines.push(wgsl `  ${ffield.name}: ${ffield.field.type.typename()};\n`);
+            }
+            lines.push(wgsl `};\n`);
+            this.mod = new WGSLModule({
+                label: "buffer struct declaration",
+                code: wgsl `${lines}`,
+            });
+        }
+        return new WGSLRef(this.mod, "structname");
+    }
+}
+exports.Descriptor = Descriptor;
+//-----------------------------------------------
+// Basic test
+function testBuffer() {
+    console.group("testBuffer");
+    const uniformsDesc = new Descriptor({
+        elapsedMs: Field(exports.F32, 0),
+        renderWidth: Field(exports.F32, 1),
+        renderHeight: Field(exports.F32, 2),
+    });
+    // type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
+    console.log("byteSize", uniformsDesc.byteSize);
+    console.log("content", uniformsDesc.createArray({
+        elapsedMs: 10,
+        renderWidth: 320,
+        renderHeight: 200,
+    }));
+    console.log("decl", uniformsDesc.typename().mod);
+    console.groupEnd();
+}
+// testBuffer();
 
 
 /***/ }),
