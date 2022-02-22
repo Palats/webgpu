@@ -241,7 +241,7 @@ abstract class WGSLType<T> {
     abstract dataViewSet(dv: DataView, offset: number, v: T): void;
 
     // What to use in WGSL to refer to that type.
-    abstract typename(): WGSLToken;
+    abstract typename(): WGSLCode;
 }
 
 // Info about WGSL `f32` type.
@@ -253,8 +253,8 @@ class F32Type extends WGSLType<number> {
         dv.setFloat32(offset, v, true);
     }
 
-    typename(): WGSLToken {
-        return "f32";
+    typename(): WGSLCode {
+        return wgsl`f32`;
     }
 }
 export const F32 = new F32Type();
@@ -268,8 +268,8 @@ class U32Type extends WGSLType<number> {
         dv.setInt32(offset, v, true);
     }
 
-    typename(): WGSLToken {
-        return "u32";
+    typename(): WGSLCode {
+        return wgsl`u32`;
     }
 }
 export const U32 = new U32Type();
@@ -285,8 +285,8 @@ class Vec3f32Type extends WGSLType<number[]> {
         dv.setFloat32(offset + 2 * F32.byteSize(), v[2], true);
     }
 
-    typename(): WGSLToken {
-        return "vec3<f32>";
+    typename(): WGSLCode {
+        return wgsl`vec3<f32>`;
     }
 }
 export const Vec32f32 = new Vec3f32Type();
@@ -303,8 +303,8 @@ class Mat4x4F32Type extends WGSLType<number[]> {
         }
     }
 
-    typename(): WGSLToken {
-        return "mat4x4<f32>";
+    typename(): WGSLCode {
+        return wgsl`mat4x4<f32>`;
     }
 }
 export const Mat4x4F32 = new Mat4x4F32Type();
@@ -314,7 +314,6 @@ export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
     readonly count: number;
     readonly etype: T;
 
-    private mod: WGSLModule;
     private stride: number;
 
     constructor(etype: T, count: number) {
@@ -322,10 +321,6 @@ export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
         this.etype = etype;
         this.count = count;
         this.stride = this.etype.alignOf() * Math.ceil(this.etype.byteSize() / this.etype.alignOf());
-        this.mod = new WGSLModule({
-            label: "Array",
-            code: wgsl`type @@name = array<${this.etype.typename()}, ${this.count.toString()}>;`,
-        });
     }
 
     byteSize() { return this.count * this.stride; }
@@ -338,8 +333,8 @@ export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
         }
     }
 
-    typename(): WGSLToken {
-        return this.mod.ref("name");
+    typename(): WGSLCode {
+        return wgsl`array<${this.etype.typename()}, ${this.count.toString()}>`;
     }
 }
 
