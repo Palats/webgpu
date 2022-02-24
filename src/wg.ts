@@ -228,7 +228,7 @@ function testWGSLModules() {
 abstract class WGSLType<T> {
     // If a template parameter is not used, it means the template type not being resolved,
     // leading to unexpected results.
-    private v?: T;
+    private unused?: T;
 
     // Size in byte of that value in WGSL (e.g., 4 for f32).
     abstract byteSize(): number;
@@ -310,6 +310,7 @@ class Mat4x4F32Type extends WGSLType<number[]> {
 export const Mat4x4F32 = new Mat4x4F32Type();
 
 
+// A WGSL array containing type T.
 export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
     readonly count: number;
     readonly etype: T;
@@ -370,6 +371,8 @@ type DescriptorInfo = { [k: string]: any }
 type FullField = {
     field: FieldType<any>
     name: string
+    sizeOf: number
+    alignOf: number
     offset: number
 }
 
@@ -380,42 +383,57 @@ export class Descriptor<T extends DescriptorInfo> {
 
     private byIndex: FullField[];
     private _byteSize: number;
+    private _alignOf: number;
     private mod?: WGSLModule;
 
     constructor(fields: T) {
         this.fields = fields;
         this.byIndex = [];
-        this._byteSize = 0;
+
+        if (fields.length < 1) {
+            // Not sure if empty struct are valid in WGSL - in the mean time,
+            // reject.
+            throw new Error("struct must have at least one field");
+        }
 
         for (const [name, field] of Object.entries(fields)) {
-            if (!(field instanceof FieldType)) {
-                continue
-            }
+            if (!(field instanceof FieldType)) { continue }
             if (this.byIndex[field.idx]) {
                 throw new Error(`field index ${field.idx} is duplicated`);
             }
             this.byIndex[field.idx] = {
                 field,
                 name,
+                // No support for @size & @align attributes for now.
+                sizeOf: field.type.byteSize(),
+                alignOf: field.type.alignOf(),
+                // Calculated below
                 offset: 0,
             };
-            this._byteSize += field.type.byteSize();
         }
 
-        let offset = 0;
+        // Struct offsets, size and aligns are non-trivial - see
+        // https://gpuweb.github.io/gpuweb/wgsl/#structure-member-layout
+
+        this._byteSize = 0;
+        this._alignOf = 0;
         for (const [idx, ffield] of this.byIndex.entries()) {
             if (!ffield) {
                 throw new Error(`missing field index ${idx}`);
             }
-            ffield.offset = offset;
-            offset += ffield.field.type.byteSize();
+            if (idx > 0) {
+                const prev = this.byIndex[idx - 1];
+                ffield.offset = ffield.alignOf * Math.ceil((prev.offset + prev.sizeOf) / ffield.alignOf);
+            }
+            this._alignOf = Math.max(this._alignOf, ffield.alignOf);
         }
+
+        const last = this.byIndex[this.byIndex.length - 1];
+        this._byteSize = this._alignOf * Math.ceil((last.offset + last.sizeOf) / this._alignOf);
     }
 
-    // Size of this structure.
-    byteSize() {
-        return this._byteSize;
-    }
+    byteSize() { return this._byteSize; }
+    alignOf() { return this._alignOf; }
 
     // Take an object containg the value for each field, and write it
     // in the provided data view.
@@ -436,9 +454,13 @@ export class Descriptor<T extends DescriptorInfo> {
     // creating a name and inserting the struct declaration as needed.
     typename(): WGSLRef {
         if (!this.mod) {
-            const lines = [wgsl`struct @@structname {\n`];
+            const lines = [
+                wgsl`// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
+                wgsl`struct @@structname {\n`,
+            ];
 
             for (const ffield of this.byIndex) {
+                lines.push(wgsl`  // offset: ${ffield.offset.toString()} sizeOf: ${ffield.sizeOf.toString()} ; alignOf: ${ffield.alignOf.toString()}\n`,);
                 lines.push(wgsl`  ${ffield.name}: ${ffield.field.type.typename()};\n`);
             }
 
