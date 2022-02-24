@@ -437,16 +437,16 @@ export class Descriptor<T extends DescriptorInfo> {
 
     // Take an object containg the value for each field, and write it
     // in the provided data view.
-    writeTo(values: DescInfoJSClass<T>, data: DataView) {
+    dataViewSet(dv: DataView, offset: number, v: DescInfoJSClass<T>): void {
         for (const ffield of this.byIndex) {
-            ffield.field.type.dataViewSet(data, ffield.offset, values[ffield.name]);
+            ffield.field.type.dataViewSet(dv, offset + ffield.offset, v[ffield.name]);
         }
     }
 
     // Create an array containing the serialized value from each field.
     createArray(values: DescInfoJSClass<T>): ArrayBuffer {
         const a = new ArrayBuffer(this.byteSize());
-        this.writeTo(values, new DataView(a));
+        this.dataViewSet(new DataView(a), 0, values);
         return a;
     }
 
