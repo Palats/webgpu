@@ -72,7 +72,8 @@ export class WGSLModule {
         if (prefix === undefined) {
             throw new Error(`internal: module "${this.label}" is imported but has no prefix`);
         }
-        let s = `\n// -------- Module: ${this.label} --------\n`;
+
+        let s = '';
         for (const token of this.code.tokens) {
             if (token instanceof WGSLName) {
                 s += prefix + token.name;
@@ -86,6 +87,9 @@ export class WGSLModule {
                 s += token;
             }
         }
+
+        s = stripExtraIndent(s);
+        s = `\n// -------- Module: ${this.label} --------\n` + s;
         return s;
     }
 
@@ -189,6 +193,38 @@ function wgslSplit(s: string): WGSLToken[] {
     return tokens;
 }
 
+// Find if there is a common indentation on all lines (spaces, tabs) and remove
+// it.
+// Lines with only spaces and tabs are ignored.
+// Also removes trailing spaces.
+function stripExtraIndent(s: string): string {
+    const lines = s.split("\n");
+    let prefix: string | null = null;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trimEnd();
+        lines[i] = line;
+        if (line.length > 0) {
+            if (prefix === null) {
+                prefix = line.match(/^[ \t]*/)![0];
+            } else {
+                let idx = 0;
+                while (idx < prefix.length && idx < line.length && line[idx] == prefix[idx]) {
+                    idx++;
+                }
+                prefix = prefix.slice(0, idx);
+            }
+        }
+    }
+    if (prefix !== null) {
+        for (let i = 0; i < lines.length; i++) {
+            if (lines.length == 0) {
+                continue
+            }
+            lines[i] = lines[i].slice(prefix.length);
+        }
+    }
+    return lines.join("\n");
+}
 
 function testWGSLModules() {
     console.group("testWGSL");
