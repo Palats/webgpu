@@ -95,3 +95,12 @@ export const cubeMeshStrip = new wg.WGSLModule({
         );
     `,
 })
+
+export const rand = new wg.WGSLModule({
+    label: "random functions",
+    code: wg.wgsl`
+        fn @@meh(a: f32, b: f32) -> f32 {
+            return fract(sin(dot(vec2<f32>(a, b), vec2<f32>(12.9898,78.233)))*43758.5453123);
+        }
+    `,
+})

@@ -4,6 +4,7 @@
 import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
+import * as shaderlib from '../shaderlib';
 
 const uniformsDesc = new wg.StructType({
     computeWidth: wg.Member(wg.U32, 0),
@@ -89,15 +90,11 @@ export const demo = {
             compute: {
                 entryPoint: "main",
                 module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "Game of life step",
+                    label: "update fire state",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
-
-                        fn rand(v: f32) -> f32 {
-                            return fract(sin(dot(vec2<f32>(uniforms.rngSeed, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
-                        }
 
                         fn at(x: i32, y: i32) -> vec4<f32> {
                             return textureLoad(srcTexture, vec2<i32>(x, y), 0);
@@ -115,8 +112,7 @@ export const demo = {
 
                             var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
                             if (y == (i32(uniforms.computeHeight) - 1)) {
-                            //if (y >= (i32(uniforms.computeHeight) - 2000000000)) {
-                                if (rand(f32(x)) < 0.2) {
+                                if (${shaderlib.rand.ref("meh")}(uniforms.rngSeed, f32(x)) < 0.2) {
                                     v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
                                 } else {
                                     v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
