@@ -347,7 +347,7 @@ export const Mat4x4F32 = new Mat4x4F32Type();
 
 
 // A WGSL array containing type T.
-export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
+export class FixedArray<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]> {
     readonly count: number;
     readonly etype: T;
 
@@ -363,7 +363,7 @@ export class FixedArray<T extends WGSLType<A>, A> extends WGSLType<A[]> {
     byteSize() { return this.count * this.stride; }
     alignOf() { return this.etype.alignOf(); }
 
-    dataViewSet(dv: DataView, offset: number, v: A[]) {
+    dataViewSet(dv: DataView, offset: number, v: WGSLJSType<T>[]) {
         for (let i = 0; i < this.count; i++) {
             this.etype.dataViewSet(dv, offset, v[i]);
             offset += this.stride;
@@ -543,14 +543,15 @@ function testBuffer() {
         elapsedMs: 10,
         renderWidth: 320,
         renderHeight: 200,
-        plop: [1, 2],
+        plop: [1, 2, 3],
     }));
 
-    const foo = new FixedArray<typeof uniformsDesc, DescriptorJSClass<typeof uniformsDesc>>(uniformsDesc, 4);
+    // const foo = new FixedArray<typeof uniformsDesc, DescriptorJSClass<typeof uniformsDesc>>(uniformsDesc, 4);
+    const foo = new FixedArray(uniformsDesc, 4);
 
     const a = new ArrayBuffer(foo.byteSize());
     foo.dataViewSet(new DataView(a), 0, [
-        { elapsedMs: 10, renderWidth: 320, renderHeight: 200, plop: [0, 1] },
+        { elapsedMs: 10, renderWidth: 320, renderHeight: 200, plop: [0, 1, 3] },
     ]);
 
     console.groupEnd();
