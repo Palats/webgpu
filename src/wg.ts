@@ -397,7 +397,7 @@ export function Field<T>(type: T, idx: number): FieldType<T> {
 // Extract the WGSL type class of a field declaration.
 type FieldWGSLType<F> = F extends FieldType<infer T> ? T : never;
 // Extract the javascript type from a WGSL type (e.g., F32Type -> number).
-type WGSLJSType<F> = F extends WGSLType<infer T> ? T : string;
+type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
 
 
 type DescriptorInfo = { [k: string]: any }
@@ -413,7 +413,7 @@ type FullField = {
 }
 
 // Description of a struct allowing mapping between javascript and WGSL.
-export class Descriptor<T extends DescriptorInfo> {
+export class Descriptor<T extends DescriptorInfo> extends WGSLType<DescInfoJSClass<T>> {
     // The object listing the fields this struct contains.
     public fields: T;
 
@@ -423,6 +423,7 @@ export class Descriptor<T extends DescriptorInfo> {
     private mod?: WGSLModule;
 
     constructor(fields: T) {
+        super();
         this.fields = fields;
         this.byIndex = [];
 
@@ -488,7 +489,7 @@ export class Descriptor<T extends DescriptorInfo> {
 
     // Refer to that structure type in a WGSL fragment. It will take care of
     // creating a name and inserting the struct declaration as needed.
-    typename(): WGSLRef {
+    typename(): WGSLCode {
         if (!this.mod) {
             const lines = [
                 wgsl`// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
@@ -507,7 +508,7 @@ export class Descriptor<T extends DescriptorInfo> {
             });
         }
 
-        return new WGSLRef(this.mod, "structname");
+        return wgsl`${new WGSLRef(this.mod, "structname")}`;
     }
 }
 
@@ -532,6 +533,7 @@ function testBuffer() {
         elapsedMs: Field(F32, 0),
         renderWidth: Field(F32, 1),
         renderHeight: Field(F32, 2),
+        plop: Field(new FixedArray(F32, 4), 3),
     })
 
     // type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
@@ -541,9 +543,16 @@ function testBuffer() {
         elapsedMs: 10,
         renderWidth: 320,
         renderHeight: 200,
+        plop: [1, 2],
     }));
 
-    console.log("decl", uniformsDesc.typename().mod);
+    const foo = new FixedArray<typeof uniformsDesc, DescriptorJSClass<typeof uniformsDesc>>(uniformsDesc, 4);
+
+    const a = new ArrayBuffer(foo.byteSize());
+    foo.dataViewSet(new DataView(a), 0, [
+        { elapsedMs: 10, renderWidth: 320, renderHeight: 200, plop: [0, 1] },
+    ]);
+
     console.groupEnd();
 }
 // testBuffer();
