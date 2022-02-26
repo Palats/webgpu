@@ -3,7 +3,7 @@
 // Rotation, translation and projection are calculated within compute shaders.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
@@ -28,7 +28,7 @@ export const demo = {
     id: "multicubes",
     caption: "Multiple independent rotating cubes.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         // Setup some initial positions for the cubes.
         const positions = [];
         if (instances as any == 1) {
@@ -245,7 +245,7 @@ export const demo = {
         }).createView();
 
         // -- Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 renderWidth: params.renderWidth,

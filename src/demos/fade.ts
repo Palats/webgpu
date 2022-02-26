@@ -1,7 +1,7 @@
 // A minimal effect which works on a buffer and make it evolve over time.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
 
@@ -15,7 +15,7 @@ export const demo = {
     id: "fade",
     caption: "Cycling the red component over time.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         const computeWidth = params.renderWidth;
         const computeHeight = params.renderHeight;
 
@@ -262,7 +262,7 @@ export const demo = {
         let isForward = true;
 
         // -- Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
             }));

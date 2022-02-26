@@ -1,7 +1,7 @@
 // A basic game of life.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
 
@@ -16,7 +16,7 @@ export const demo = {
     id: "conway",
     caption: "A Conway game of life.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         const computeWidth = params.renderWidth;
         const computeHeight = params.renderHeight;
 
@@ -294,7 +294,7 @@ export const demo = {
         let isForward = true;
 
         // -- Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 computeWidth: computeWidth,
                 computeHeight: computeHeight,

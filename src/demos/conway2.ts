@@ -1,13 +1,13 @@
 // A conway game of life with indirect rendering.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 export const demo = {
     id: "conway2",
     caption: "A conway game of life with paletted blurring over time.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         const computeWidth = params.renderWidth;
         const computeHeight = params.renderHeight;
         const computeTexFormat = "rgba8unorm";
@@ -346,7 +346,7 @@ export const demo = {
         // Single frame rendering.
         let isForward = true;
 
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             const commandEncoder = params.device.createCommandEncoder();
 
             // Frame compute

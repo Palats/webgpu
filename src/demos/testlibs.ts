@@ -1,7 +1,7 @@
 // Testing ground for the various helper libraries.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
@@ -16,7 +16,7 @@ export const demo = {
     id: "testlibs",
     caption: "Testing the helper libs",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         const computePipeline = params.device.createComputePipeline({
             label: "Compute pipeline for projection matrix",
             layout: params.device.createPipelineLayout({
@@ -196,7 +196,7 @@ export const demo = {
         }).createView();
 
         // -- Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             // Fill up the uniforms to feed the compute shaders.
             // Rotation of the cube is just a function of current time,
             // calculated in the compute shader.

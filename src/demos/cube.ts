@@ -8,13 +8,13 @@
 // https://github.com/austinEng/webgpu-samples/blob/main/src/sample/rotatingCube/main.ts
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 export const demo = {
     id: "cube",
     caption: "The good old rotating cube.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         // -- Compute pipeline. It takes care of calculating the cube vertices
         // transformion (and projection) matrix.
         const computePipeline = params.device.createComputePipeline({
@@ -277,7 +277,7 @@ export const demo = {
         }).createView();
 
         // -- Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             // Fill up the uniforms to feed the compute shaders.
             // Rotation of the cube is just a function of current time,
             // calculated in the compute shader.

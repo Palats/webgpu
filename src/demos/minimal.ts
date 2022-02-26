@@ -1,13 +1,13 @@
 // Minimal effect, with only a basic render pass.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 export const demo = {
     id: "minimal",
     caption: "Minimal setup without compute.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         const pipeline = params.device.createRenderPipeline({
             layout: params.device.createPipelineLayout({
                 bindGroupLayouts: [
@@ -82,7 +82,7 @@ export const demo = {
         });
 
         // Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             const commandEncoder = params.device.createCommandEncoder();
             const passEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{

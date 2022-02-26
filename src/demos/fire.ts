@@ -1,7 +1,7 @@
 // A classic fire effect.
 
 /// <reference types="@webgpu/types" />
-import * as types from '../types';
+import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
 
@@ -17,7 +17,7 @@ export const demo = {
     id: "fire",
     caption: "The classic fire effect.",
 
-    async init(params: types.InitParams) {
+    async init(params: demotypes.InitParams) {
         const computeWidth = 160;
         const computeHeight = 100;
 
@@ -284,7 +284,7 @@ export const demo = {
         let isForward = true;
 
         // -- Single frame rendering.
-        return async (info: types.FrameInfo) => {
+        return async (info: demotypes.FrameInfo) => {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 computeWidth: computeWidth,
                 computeHeight: computeHeight,

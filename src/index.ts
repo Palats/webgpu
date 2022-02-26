@@ -2,7 +2,7 @@
 
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import * as types from './types';
+import * as demotypes from './demotypes';
 
 
 import * as conway from './demos/conway';
@@ -14,7 +14,7 @@ import * as cube from './demos/cube';
 import * as multicubes from './demos/multicubes';
 import * as testlibs from './demos/testlibs';
 
-export const allDemos: types.Demo[] = [
+export const allDemos: demotypes.Demo[] = [
     conway2.demo,
     fire.demo,
     conway.demo,
@@ -25,7 +25,7 @@ export const allDemos: types.Demo[] = [
     multicubes.demo,
 ];
 
-export function demoByID(id: string): types.Demo {
+export function demoByID(id: string): demotypes.Demo {
     for (const d of allDemos) {
         if (d.id === id) {
             return d;
