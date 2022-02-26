@@ -6,10 +6,10 @@ import * as types from '../types';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
-const uniformsDesc = new wg.Descriptor({
-    elapsedMs: wg.Field(wg.F32, 0),
-    renderWidth: wg.Field(wg.F32, 1),
-    renderHeight: wg.Field(wg.F32, 2),
+const uniformsDesc = new wg.StructType({
+    elapsedMs: wg.Member(wg.F32, 0),
+    renderWidth: wg.Member(wg.F32, 1),
+    renderHeight: wg.Member(wg.F32, 2),
 })
 
 export const demo = {

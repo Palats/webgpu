@@ -347,7 +347,7 @@ export const Mat4x4F32 = new Mat4x4F32Type();
 
 
 // A WGSL array containing type T.
-export class FixedArray<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]> {
+export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]> {
     readonly count: number;
     readonly etype: T;
 
@@ -375,8 +375,8 @@ export class FixedArray<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[
     }
 }
 
-// Description of a given field in a WGSL struct.
-class FieldType<T> {
+// Description of a given member of a WGSL struct.
+class MemberType<T> {
     // Index of that field in the struct.
     readonly idx: number;
     // Type of the content of that field.
@@ -390,60 +390,66 @@ class FieldType<T> {
 
 // Declare a field of the given type, at the given position. Index of the field
 // in the struct is mandatory, to reduce renaming and moving mistakes.
-export function Field<T>(type: T, idx: number): FieldType<T> {
-    return new FieldType(type, idx);
+export function Member<T>(type: T, idx: number): MemberType<T> {
+    return new MemberType(type, idx);
 }
 
 // Extract the WGSL type class of a field declaration.
-type FieldWGSLType<F> = F extends FieldType<infer T> ? T : never;
+type MemberWGSLType<F> = F extends MemberType<infer T> ? T : never;
 // Extract the javascript type from a WGSL type (e.g., F32Type -> number).
 type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
 
+// Description of the list of members of a struct, for StructType constructor.
+type MemberMap = { [k: string]: any }
 
-type DescriptorInfo = { [k: string]: any }
-
-// Internal state keeping of a descriptor, tracking
+// Internal state keeping of a struct, tracking
 // explicit offset of each field.
-type FullField = {
-    field: FieldType<any>
+type StructMember = {
+    member: MemberType<any>
     name: string
     sizeOf: number
     alignOf: number
     offset: number
 }
 
-// Description of a struct allowing mapping between javascript and WGSL.
-export class Descriptor<T extends DescriptorInfo> extends WGSLType<DescInfoJSClass<T>> {
+// Description of a WGSL struct allowing mapping between javascript and WGSL.
+// An instance of a StructType describes just the layout of the struct:
+//  - The MemberMap (aka MM) descripts the list of members - name, position in
+//    the struct.
+//  - StructJSType<StructType<MM>> describes javascript object, which member
+//    names are the same as the struct. The type of the value are the typescript
+//    types corresponding to the WGSL values - e.g., a `f32` is mapped to a number.
+export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<MM>> {
     // The object listing the fields this struct contains.
-    public fields: T;
+    public members: MM;
 
-    private byIndex: FullField[];
+    private byIndex: StructMember[];
     private _byteSize: number;
     private _alignOf: number;
     private mod?: WGSLModule;
 
-    constructor(fields: T) {
+    constructor(members: MM) {
         super();
-        this.fields = fields;
+        this.members = members;
         this.byIndex = [];
 
-        if (fields.length < 1) {
+        if (members.length < 1) {
             // Not sure if empty struct are valid in WGSL - in the mean time,
             // reject.
-            throw new Error("struct must have at least one field");
+            throw new Error("struct must have at least one member");
         }
 
-        for (const [name, field] of Object.entries(fields)) {
-            if (!(field instanceof FieldType)) { continue }
-            if (this.byIndex[field.idx]) {
-                throw new Error(`field index ${field.idx} is duplicated`);
+        for (const [name, member] of Object.entries(members)) {
+            if (!(member instanceof MemberType)) { continue }
+            if (this.byIndex[member.idx]) {
+                throw new Error(`member index ${member.idx} is duplicated`);
             }
-            this.byIndex[field.idx] = {
-                field,
+            this.byIndex[member.idx] = {
+                member: member,
                 name,
                 // No support for @size & @align attributes for now.
-                sizeOf: field.type.byteSize(),
-                alignOf: field.type.alignOf(),
+                sizeOf: member.type.byteSize(),
+                alignOf: member.type.alignOf(),
                 // Calculated below
                 offset: 0,
             };
@@ -454,15 +460,15 @@ export class Descriptor<T extends DescriptorInfo> extends WGSLType<DescInfoJSCla
 
         this._byteSize = 0;
         this._alignOf = 0;
-        for (const [idx, ffield] of this.byIndex.entries()) {
-            if (!ffield) {
-                throw new Error(`missing field index ${idx}`);
+        for (const [idx, smember] of this.byIndex.entries()) {
+            if (!smember) {
+                throw new Error(`missing member index ${idx}`);
             }
             if (idx > 0) {
                 const prev = this.byIndex[idx - 1];
-                ffield.offset = ffield.alignOf * Math.ceil((prev.offset + prev.sizeOf) / ffield.alignOf);
+                smember.offset = smember.alignOf * Math.ceil((prev.offset + prev.sizeOf) / smember.alignOf);
             }
-            this._alignOf = Math.max(this._alignOf, ffield.alignOf);
+            this._alignOf = Math.max(this._alignOf, smember.alignOf);
         }
 
         const last = this.byIndex[this.byIndex.length - 1];
@@ -472,16 +478,16 @@ export class Descriptor<T extends DescriptorInfo> extends WGSLType<DescInfoJSCla
     byteSize() { return this._byteSize; }
     alignOf() { return this._alignOf; }
 
-    // Take an object containg the value for each field, and write it
+    // Take an object containg the value for each member, and write it
     // in the provided data view.
-    dataViewSet(dv: DataView, offset: number, v: DescInfoJSClass<T>): void {
-        for (const ffield of this.byIndex) {
-            ffield.field.type.dataViewSet(dv, offset + ffield.offset, v[ffield.name]);
+    dataViewSet(dv: DataView, offset: number, v: MemberMapJSType<MM>): void {
+        for (const smember of this.byIndex) {
+            smember.member.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
         }
     }
 
-    // Create an array containing the serialized value from each field.
-    createArray(values: DescInfoJSClass<T>): ArrayBuffer {
+    // Create an array containing the serialized value from each member.
+    createArray(values: MemberMapJSType<MM>): ArrayBuffer {
         const a = new ArrayBuffer(this.byteSize());
         this.dataViewSet(new DataView(a), 0, values);
         return a;
@@ -496,9 +502,9 @@ export class Descriptor<T extends DescriptorInfo> extends WGSLType<DescInfoJSCla
                 wgsl`struct @@structname {\n`,
             ];
 
-            for (const ffield of this.byIndex) {
-                lines.push(wgsl`  // offset: ${ffield.offset.toString()} sizeOf: ${ffield.sizeOf.toString()} ; alignOf: ${ffield.alignOf.toString()}\n`,);
-                lines.push(wgsl`  ${ffield.name}: ${ffield.field.type.typename()};\n`);
+            for (const smember of this.byIndex) {
+                lines.push(wgsl`  // offset: ${smember.offset.toString()} sizeOf: ${smember.sizeOf.toString()} ; alignOf: ${smember.alignOf.toString()}\n`,);
+                lines.push(wgsl`  ${smember.name}: ${smember.member.type.typename()};\n`);
             }
 
             lines.push(wgsl`};\n`);
@@ -512,31 +518,29 @@ export class Descriptor<T extends DescriptorInfo> extends WGSLType<DescInfoJSCla
     }
 }
 
-// Extract the descriptor info ( == map of fields info) for the given
-// descriptor.
-export type DescriptorInfoType<Desc> = Desc extends Descriptor<infer DescInfo> ? DescInfo : never;
-
-export type DescInfoJSClass<DescInfo> = {
-    [k in keyof DescInfo]: WGSLJSType<FieldWGSLType<DescInfo[k]>>;
+// A structure representing in javascript the content of the provided MemberMap.
+export type MemberMapJSType<MM> = {
+    [k in keyof MM]: WGSLJSType<MemberWGSLType<MM[k]>>;
 }
 
-// Type definition for a mapping field name / javascript value, suitable to feed into
-// a descriptor value. I.e., the actual structure as javascript.
-type DescriptorJSClass<Desc> = DescInfoJSClass<DescriptorInfoType<Desc>>;
+// Extract the member map for the given struct type.
+export type StructMemberMap<ST> = ST extends StructType<infer MM> ? MM : never;
+
+// Type definition for a mapping member name / javascript value, suitable to
+// feed into a descriptor value. I.e., the actual structure as javascript.
+type StructJSType<ST> = MemberMapJSType<StructMemberMap<ST>>;
 
 //-----------------------------------------------
 // Basic test
 
 function testBuffer() {
     console.group("testBuffer");
-    const uniformsDesc = new Descriptor({
-        elapsedMs: Field(F32, 0),
-        renderWidth: Field(F32, 1),
-        renderHeight: Field(F32, 2),
-        plop: Field(new FixedArray(F32, 4), 3),
+    const uniformsDesc = new StructType({
+        elapsedMs: Member(F32, 0),
+        renderWidth: Member(F32, 1),
+        renderHeight: Member(F32, 2),
+        plop: Member(new ArrayType(F32, 4), 3),
     })
-
-    // type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
 
     console.log("byteSize", uniformsDesc.byteSize);
     console.log("content", uniformsDesc.createArray({
@@ -546,8 +550,7 @@ function testBuffer() {
         plop: [1, 2, 3],
     }));
 
-    // const foo = new FixedArray<typeof uniformsDesc, DescriptorJSClass<typeof uniformsDesc>>(uniformsDesc, 4);
-    const foo = new FixedArray(uniformsDesc, 4);
+    const foo = new ArrayType(uniformsDesc, 4);
 
     const a = new ArrayBuffer(foo.byteSize());
     foo.dataViewSet(new DataView(a), 0, [

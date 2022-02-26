@@ -5,10 +5,10 @@ import * as types from '../types';
 
 import * as wg from '../wg';
 
-const uniformsDesc = new wg.Descriptor({
-    computeWidth: wg.Field(wg.U32, 0),
-    computeHeight: wg.Field(wg.U32, 1),
-    rngSeed: wg.Field(wg.F32, 2),
+const uniformsDesc = new wg.StructType({
+    computeWidth: wg.Member(wg.U32, 0),
+    computeHeight: wg.Member(wg.U32, 1),
+    rngSeed: wg.Member(wg.F32, 2),
 })
 
 const computeTexFormat: GPUTextureFormat = "rgba8unorm";

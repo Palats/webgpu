@@ -11,15 +11,15 @@ import * as shaderlib from '../shaderlib';
 const instances = 10;
 
 // Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.Descriptor({
-    elapsedMs: wg.Field(wg.F32, 0),
-    renderWidth: wg.Field(wg.F32, 1),
-    renderHeight: wg.Field(wg.F32, 2),
+const uniformsDesc = new wg.StructType({
+    elapsedMs: wg.Member(wg.F32, 0),
+    renderWidth: wg.Member(wg.F32, 1),
+    renderHeight: wg.Member(wg.F32, 2),
 })
 
 // Parameters from Javascript to the computer shader
 // for each instance.
-const instanceParamsDesc = new wg.FixedArray(
+const instanceParamsDesc = new wg.ArrayType(
     wg.Vec32f32,
     instances
 );
