@@ -13,9 +13,9 @@
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const uniformsDesc = new wg.Descriptor({
-    computeWidth: wg.Field(wg.U32, 0),
-    computeHeight: wg.Field(wg.U32, 1),
+const uniformsDesc = new wg.StructType({
+    computeWidth: wg.Member(wg.U32, 0),
+    computeHeight: wg.Member(wg.U32, 1),
 });
 const computeTexFormat = "rgba8unorm";
 exports.demo = {
@@ -1019,8 +1019,8 @@ exports.demo = {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const uniformsDesc = new wg.Descriptor({
-    elapsedMs: wg.Field(wg.F32, 0),
+const uniformsDesc = new wg.StructType({
+    elapsedMs: wg.Member(wg.F32, 0),
 });
 const computeTexFormat = "rgba8unorm";
 exports.demo = {
@@ -1305,10 +1305,11 @@ exports.demo = {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const uniformsDesc = new wg.Descriptor({
-    computeWidth: wg.Field(wg.U32, 0),
-    computeHeight: wg.Field(wg.U32, 1),
-    rngSeed: wg.Field(wg.F32, 2),
+const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+const uniformsDesc = new wg.StructType({
+    computeWidth: wg.Member(wg.U32, 0),
+    computeHeight: wg.Member(wg.U32, 1),
+    rngSeed: wg.Member(wg.F32, 2),
 });
 const computeTexFormat = "rgba8unorm";
 exports.demo = {
@@ -1380,15 +1381,11 @@ exports.demo = {
             compute: {
                 entryPoint: "main",
                 module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "Game of life step",
+                    label: "update fire state",
                     code: wg.wgsl `
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
-
-                        fn rand(v: f32) -> f32 {
-                            return fract(sin(dot(vec2<f32>(uniforms.rngSeed, v), vec2<f32>(12.9898,78.233)))*43758.5453123);
-                        }
 
                         fn at(x: i32, y: i32) -> vec4<f32> {
                             return textureLoad(srcTexture, vec2<i32>(x, y), 0);
@@ -1406,8 +1403,7 @@ exports.demo = {
 
                             var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
                             if (y == (i32(uniforms.computeHeight) - 1)) {
-                            //if (y >= (i32(uniforms.computeHeight) - 2000000000)) {
-                                if (rand(f32(x)) < 0.2) {
+                                if (${shaderlib.rand.ref("meh")}(uniforms.rngSeed, f32(x)) < 0.2) {
                                     v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
                                 } else {
                                     v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
@@ -1715,6 +1711,336 @@ exports.demo = {
 
 /***/ }),
 
+/***/ "./src/demos/multicubes.ts":
+/*!*********************************!*\
+  !*** ./src/demos/multicubes.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+// Multiple rotating cubes.
+//
+// Rotation, translation and projection are calculated within compute shaders.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+// Number of instances.
+const workgroupWidth = 8;
+const workgroupHeight = 8;
+const instancesWidth = 1 * workgroupWidth;
+const instancesHeight = 1 * workgroupHeight;
+const instances = instancesWidth * instancesHeight;
+// Space parameters.
+const boxSize = 20;
+const zOffset = -25;
+const spaceLimit = boxSize / 2.0;
+console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
+// Basic parameters provided to all the shaders.
+const uniformsDesc = new wg.StructType({
+    elapsedMs: wg.Member(wg.F32, 0),
+    renderWidth: wg.Member(wg.F32, 1),
+    renderHeight: wg.Member(wg.F32, 2),
+    rngSeed: wg.Member(wg.F32, 3),
+});
+// Parameters from Javascript to the computer shader
+// for each instance.
+const instanceParamsDesc = new wg.StructType({
+    'pos': wg.Member(wg.Vec32f32, 0),
+    'rot': wg.Member(wg.Vec32f32, 1),
+    'move': wg.Member(wg.Vec32f32, 2),
+    'scale': wg.Member(wg.F32, 3),
+});
+const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);
+exports.demo = {
+    id: "multicubes",
+    caption: "Multiple independent rotating cubes.",
+    async init(params) {
+        // Setup some initial positions for the cubes.
+        const positions = [];
+        for (let y = 0; y < instancesHeight; y++) {
+            for (let x = 0; x < instancesWidth; x++) {
+                positions.push({
+                    pos: [
+                        boxSize * (0.5 - Math.random()),
+                        boxSize * (0.5 - Math.random()),
+                        boxSize * (0.5 - Math.random()),
+                    ],
+                    rot: [
+                        Math.random() * 2 * Math.PI,
+                        Math.random() * 2 * Math.PI,
+                        Math.random() * 2 * Math.PI,
+                    ],
+                    move: [
+                        0.4 * (0.5 - Math.random()),
+                        0.4 * (0.5 - Math.random()),
+                        0.4 * (0.5 - Math.random()),
+                    ],
+                    scale: 1.0 + 0.3 * (0.5 - Math.random()),
+                });
+            }
+        }
+        const instancesBuffer = params.device.createBuffer({
+            label: "Instance parameters",
+            size: instanceArrayDesc.byteSize(),
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+        const a = new ArrayBuffer(instanceArrayDesc.byteSize());
+        const dv = new DataView(a);
+        instanceArrayDesc.dataViewSet(dv, 0, positions);
+        params.device.queue.writeBuffer(instancesBuffer, 0, a);
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        const computeResult = params.device.createBuffer({
+            label: "Compute output for vertex shaders",
+            size: instances * wg.Mat4x4F32.byteSize(),
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
+        });
+        // -- Compute pipeline. It takes care of calculating the cube vertices
+        // transformation (and projection) matrices.
+        const computePipeline = params.device.createComputePipeline({
+            label: "Compute pipeline for projection matrix",
+            layout: params.device.createPipelineLayout({
+                label: "compute pipeline layouts",
+                bindGroupLayouts: [params.device.createBindGroupLayout({
+                        label: "compute pipeline main layout",
+                        entries: [
+                            // Uniforms, from JS
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "uniform" },
+                            },
+                            // Instances parameters, from JS
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "storage" },
+                            },
+                            // Output buffer, to feed the vertex shader.
+                            {
+                                binding: 2,
+                                visibility: GPUShaderStage.COMPUTE,
+                                buffer: { type: "storage" },
+                            },
+                        ]
+                    })],
+            }),
+            compute: {
+                entryPoint: "main",
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "Rendering matrix compute",
+                    code: wg.wgsl `
+                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
+                        @group(0) @binding(1) var<storage, read_write> params : ${instanceArrayDesc.typename()};
+
+                        struct InstanceState {
+                            // ModelViewProjection
+                            mvp: mat4x4<f32>;
+                        };
+                        @group(0) @binding(2) var<storage, write> outp : array<InstanceState, ${instances.toString()}>;
+
+                        @stage(compute) @workgroup_size(${workgroupWidth.toString()}u, ${workgroupHeight.toString()}u)
+                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                            let idx = global_id.y * ${instancesWidth.toString()}u + global_id.x;
+
+                            var pos = params[idx].pos;
+
+                            let nextpos = pos + params[idx].move;
+                            // This is probably horribly inefficient.
+                            if (nextpos.x < -${spaceLimit.toFixed(1)} || nextpos.x >= ${spaceLimit.toFixed(1)}) {
+                                params[idx].move.x = -params[idx].move.x;
+                            }
+                            if (nextpos.y < -${spaceLimit.toFixed(1)} || nextpos.y >= ${spaceLimit.toFixed(1)}) {
+                                params[idx].move.y = -params[idx].move.y;
+                            }
+                            if (nextpos.z < -${spaceLimit.toFixed(1)} || nextpos.z >= ${spaceLimit.toFixed(1)}) {
+                                params[idx].move.z = -params[idx].move.z;
+                            }
+                            pos = pos + params[idx].move;
+                            params[idx].pos = pos;
+
+                            let TAU = 6.283185;
+                            let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                            let r = params[idx].rot + vec3<f32>(c, c, c);
+
+                            outp[idx].mvp =
+                                ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
+                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, ${zOffset.toFixed(1)}))
+                                * ${shaderlib.tr.ref("translate")}(pos)
+                                * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                                * ${shaderlib.tr.ref("rotateY")}(r.y)
+                                * ${shaderlib.tr.ref("rotateX")}(r.x)
+                                * ${shaderlib.tr.ref("scale")}(params[idx].scale);
+                        }
+                    `,
+                }).toDesc()),
+            }
+        });
+        const computeBindGroup = params.device.createBindGroup({
+            label: "Bind group for the projection matrix compute",
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [{
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                }, {
+                    binding: 1,
+                    resource: { buffer: instancesBuffer }
+                }, {
+                    binding: 2,
+                    resource: { buffer: computeResult }
+                }]
+        });
+        // -- Render pipeline.
+        // It takes the projection matrix from the compute output
+        // and create a cube from hard coded vertex coordinates.
+        const renderPipeline = params.device.createRenderPipeline({
+            label: "Cube rendering pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        label: "render pipeline layout for compute data",
+                        entries: [
+                            // Matrix info coming from compute shader.
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.VERTEX,
+                                buffer: {
+                                    type: 'read-only-storage',
+                                },
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule(new wg.WGSLModule({
+                    label: "cube vertex shader",
+                    // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
+                    code: wg.wgsl `
+                        struct InstanceState {
+                            // ModelViewProjection
+                            mvp: mat4x4<f32>;
+                        };
+                        @group(0) @binding(0) var<storage> states : array<InstanceState, ${instances.toString()}>;
+
+                        struct Out {
+                            @builtin(position) pos: vec4<f32>;
+                            @location(0) coord: vec3<f32>;
+                        };
+
+                        @stage(vertex)
+                        fn main(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> Out {
+                            let pos = ${shaderlib.cubeMeshStrip.ref("mesh")}[idx];
+
+                            var out : Out;
+                            out.pos = states[instance].mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
+                            out.pos.x = out.pos.x;
+                            out.coord.x = (pos.x + 1.0) / 2.0;
+                            out.coord.y = (pos.y + 1.0) / 2.0;
+                            out.coord.z = (pos.z + 1.0) / 2.0;
+                            return out;
+                        }
+                    `,
+                }).toDesc())
+            },
+            primitive: {
+                topology: 'triangle-strip',
+                cullMode: 'back',
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: 'depth24plus',
+            },
+            fragment: {
+                entryPoint: 'main',
+                module: params.device.createShaderModule({
+                    label: "trivial fragment shader",
+                    code: `
+                        @stage(fragment)
+                        fn main(@location(0) coord: vec3<f32>) -> @location(0) vec4<f32> {
+                            return vec4<f32>(coord.x, coord.y, coord.z, 1.0);
+                        }
+                    `,
+                }),
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+        });
+        const renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: { buffer: computeResult }
+                },
+            ]
+        });
+        const depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: 'depth24plus',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+        // -- Single frame rendering.
+        return async (info) => {
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                elapsedMs: info.elapsedMs,
+                renderWidth: params.renderWidth,
+                renderHeight: params.renderHeight,
+                rngSeed: Math.random(),
+            }));
+            // -- Do compute pass, to create projection matrices.
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+            commandEncoder.pushDebugGroup('Compute projection');
+            const computeEncoder = commandEncoder.beginComputePass();
+            computeEncoder.setPipeline(computePipeline);
+            computeEncoder.setBindGroup(0, computeBindGroup);
+            // Calculate projection matrices for each instance.
+            computeEncoder.dispatch(workgroupWidth, workgroupHeight);
+            computeEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // -- And do the frame rendering.
+            commandEncoder.pushDebugGroup('Render cube');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        storeOp: 'store',
+                    }],
+                depthStencilAttachment: {
+                    view: depthTextureView,
+                    depthLoadValue: 1.0,
+                    depthStoreOp: 'store',
+                    stencilLoadValue: 0,
+                    stencilStoreOp: 'store',
+                },
+            });
+            renderEncoder.setPipeline(renderPipeline);
+            renderEncoder.setBindGroup(0, renderBindGroup);
+            // Cube mesh as a triangle-strip uses 14 vertices.
+            renderEncoder.draw(14, instances, 0, 0);
+            renderEncoder.endPass();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+        };
+    }
+};
+
+
+/***/ }),
+
 /***/ "./src/demos/testlibs.ts":
 /*!*******************************!*\
   !*** ./src/demos/testlibs.ts ***!
@@ -1727,10 +2053,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const uniformsDesc = new wg.Descriptor({
-    elapsedMs: wg.Field(wg.F32, 0),
-    renderWidth: wg.Field(wg.F32, 1),
-    renderHeight: wg.Field(wg.F32, 2),
+const uniformsDesc = new wg.StructType({
+    elapsedMs: wg.Member(wg.F32, 0),
+    renderWidth: wg.Member(wg.F32, 1),
+    renderHeight: wg.Member(wg.F32, 2),
 });
 exports.demo = {
     id: "testlibs",
@@ -1983,6 +2309,7 @@ const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
 const minimal = __webpack_require__(/*! ./demos/minimal */ "./src/demos/minimal.ts");
 const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.ts");
 const cube = __webpack_require__(/*! ./demos/cube */ "./src/demos/cube.ts");
+const multicubes = __webpack_require__(/*! ./demos/multicubes */ "./src/demos/multicubes.ts");
 const testlibs = __webpack_require__(/*! ./demos/testlibs */ "./src/demos/testlibs.ts");
 exports.allDemos = [
     conway2.demo,
@@ -1992,6 +2319,7 @@ exports.allDemos = [
     minimal.demo,
     cube.demo,
     testlibs.demo,
+    multicubes.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -2397,7 +2725,7 @@ document.body.appendChild(document.createElement("app-main"));
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
+exports.rand = exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
 const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
 // Functions to calculate projection matrices.
 exports.projection = new wg.WGSLModule({
@@ -2431,6 +2759,15 @@ exports.tr = new wg.WGSLModule({
                 0.0, 1.0, 0.0, 0.0,
                 0.0, 0.0, 1.0, 0.0,
                 tr.x, tr.y, tr.z, 1.0,
+            );
+        }
+
+        fn @@scale(ratio: f32) -> mat4x4<f32> {
+            return mat4x4<f32>(
+                ratio, 0.0, 0.0, 0.0,
+                0.0, ratio, 0.0, 0.0,
+                0.0, 0.0, ratio, 0.0,
+                0.0, 0.0, 0.0, 1.0,
             );
         }
 
@@ -2492,6 +2829,14 @@ exports.cubeMeshStrip = new wg.WGSLModule({
         );
     `,
 });
+exports.rand = new wg.WGSLModule({
+    label: "random functions",
+    code: wg.wgsl `
+        fn @@meh(a: f32, b: f32) -> f32 {
+            return fract(sin(dot(vec2<f32>(a, b), vec2<f32>(12.9898,78.233)))*43758.5453123);
+        }
+    `,
+});
 
 
 /***/ }),
@@ -2500,7 +2845,7 @@ exports.cubeMeshStrip = new wg.WGSLModule({
 /*!*******************!*\
   !*** ./src/wg.ts ***!
   \*******************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 // A WebGPU helper libraries. For now, providers:
@@ -2508,7 +2853,34 @@ exports.cubeMeshStrip = new wg.WGSLModule({
 //   - A way to manage mapping between Javascript types and WGSL types, for
 //     simple buffer translation.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Descriptor = exports.Field = exports.Mat4x4F32 = exports.U32 = exports.F32 = exports.wgsl = exports.WGSLModule = void 0;
+exports.Vec32f32 = exports.Mat4x4F32 = exports.ArrayType = exports.StructType = exports.F32 = exports.U32 = exports.Member = exports.wgsl = exports.WGSLModule = exports.lang = exports.types = void 0;
+exports.types = __webpack_require__(/*! ./wg/types */ "./src/wg/types.ts");
+exports.lang = __webpack_require__(/*! ./wg/lang */ "./src/wg/lang.ts");
+var lang_1 = __webpack_require__(/*! ./wg/lang */ "./src/wg/lang.ts");
+Object.defineProperty(exports, "WGSLModule", ({ enumerable: true, get: function () { return lang_1.WGSLModule; } }));
+Object.defineProperty(exports, "wgsl", ({ enumerable: true, get: function () { return lang_1.wgsl; } }));
+var types_1 = __webpack_require__(/*! ./wg/types */ "./src/wg/types.ts");
+Object.defineProperty(exports, "Member", ({ enumerable: true, get: function () { return types_1.Member; } }));
+Object.defineProperty(exports, "U32", ({ enumerable: true, get: function () { return types_1.U32; } }));
+Object.defineProperty(exports, "F32", ({ enumerable: true, get: function () { return types_1.F32; } }));
+Object.defineProperty(exports, "StructType", ({ enumerable: true, get: function () { return types_1.StructType; } }));
+Object.defineProperty(exports, "ArrayType", ({ enumerable: true, get: function () { return types_1.ArrayType; } }));
+Object.defineProperty(exports, "Mat4x4F32", ({ enumerable: true, get: function () { return types_1.Mat4x4F32; } }));
+Object.defineProperty(exports, "Vec32f32", ({ enumerable: true, get: function () { return types_1.Vec32f32; } }));
+
+
+/***/ }),
+
+/***/ "./src/wg/lang.ts":
+/*!************************!*\
+  !*** ./src/wg/lang.ts ***!
+  \************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+// The following providing a kind of WGSL import system.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.wgsl = exports.WGSLCode = exports.WGSLRef = exports.WGSLName = exports.WGSLModule = void 0;
 /// <reference types="@webgpu/types" />
 class WGSLModule {
     constructor(cfg) {
@@ -2564,7 +2936,7 @@ class WGSLModule {
         if (prefix === undefined) {
             throw new Error(`internal: module "${this.label}" is imported but has no prefix`);
         }
-        let s = `\n// -------- Module: ${this.label} --------\n`;
+        let s = '';
         for (const token of this.code.tokens) {
             if (token instanceof WGSLName) {
                 s += prefix + token.name;
@@ -2580,6 +2952,8 @@ class WGSLModule {
                 s += token;
             }
         }
+        s = stripExtraIndent(s);
+        s = `\n// -------- Module: ${this.label} --------\n` + s;
         return s;
     }
     // Render the code of this module with all its dependencies.
@@ -2614,12 +2988,14 @@ class WGSLName {
         this.name = name;
     }
 }
+exports.WGSLName = WGSLName;
 class WGSLRef {
     constructor(mod, name) {
         this.mod = mod;
         this.name = name;
     }
 }
+exports.WGSLRef = WGSLRef;
 // https://gpuweb.github.io/gpuweb/wgsl/#identifiers
 const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
 // WGSLCode holds a snippet of code, without parsing.
@@ -2631,6 +3007,7 @@ class WGSLCode {
         this.tokens = [...tokens];
     }
 }
+exports.WGSLCode = WGSLCode;
 // Declare WGSLCode using template strings.
 function wgsl(strings, ...keys) {
     const tokens = [...wgslSplit(strings[0])];
@@ -2673,6 +3050,39 @@ function wgslSplit(s) {
     }
     return tokens;
 }
+// Find if there is a common indentation on all lines (spaces, tabs) and remove
+// it.
+// Lines with only spaces and tabs are ignored.
+// Also removes trailing spaces.
+function stripExtraIndent(s) {
+    const lines = s.split("\n");
+    let prefix = null;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trimEnd();
+        lines[i] = line;
+        if (line.length > 0) {
+            if (prefix === null) {
+                prefix = line.match(/^[ \t]*/)[0];
+            }
+            else {
+                let idx = 0;
+                while (idx < prefix.length && idx < line.length && line[idx] == prefix[idx]) {
+                    idx++;
+                }
+                prefix = prefix.slice(0, idx);
+            }
+        }
+    }
+    if (prefix !== null) {
+        for (let i = 0; i < lines.length; i++) {
+            if (lines.length == 0) {
+                continue;
+            }
+            lines[i] = lines[i].slice(prefix.length);
+        }
+    }
+    return lines.join("\n");
+}
 function testWGSLModules() {
     console.group("testWGSL");
     console.log("tagged template 1", wgsl ``);
@@ -2695,11 +3105,25 @@ function testWGSLModules() {
     console.log("render1", testModule2.toDesc().code);
     console.groupEnd();
 }
-// ----------------------------------------------------------------------
+
+
+/***/ }),
+
+/***/ "./src/wg/types.ts":
+/*!*************************!*\
+  !*** ./src/wg/types.ts ***!
+  \*************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
 // The following contains an attempt at making it easier to manipulate basic
 // uniforms - i.e., maintaing a buffer content with structured data from
 // Javascript.
 // It is a bit overcomplicated in order to keep typing work.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.StructType = exports.Member = exports.ArrayType = exports.Mat4x4F32 = exports.Vec32f32 = exports.U32 = exports.F32 = void 0;
+const lang = __webpack_require__(/*! ./lang */ "./src/wg/lang.ts");
+const wgsl = lang.wgsl;
 // Basic class to represent info about a given WGSL type. The template parameter
 // is the type of the value it maps to in javascript.
 class WGSLType {
@@ -2707,40 +3131,79 @@ class WGSLType {
 // Info about WGSL `f32` type.
 class F32Type extends WGSLType {
     byteSize() { return 4; }
+    alignOf() { return 4; }
     dataViewSet(dv, offset, v) {
         dv.setFloat32(offset, v, true);
     }
     typename() {
-        return "f32";
+        return wgsl `f32`;
     }
 }
 exports.F32 = new F32Type();
 // Info about WGSL `u32` type.
 class U32Type extends WGSLType {
     byteSize() { return 4; }
+    alignOf() { return 4; }
     dataViewSet(dv, offset, v) {
         dv.setInt32(offset, v, true);
     }
     typename() {
-        return "u32";
+        return wgsl `u32`;
     }
 }
 exports.U32 = new U32Type();
+// Info about WGSL `vec3<f32>` type.
+class Vec3f32Type extends WGSLType {
+    byteSize() { return 12; }
+    alignOf() { return 16; }
+    dataViewSet(dv, offset, v) {
+        dv.setFloat32(offset, v[0], true);
+        dv.setFloat32(offset + exports.F32.byteSize(), v[1], true);
+        dv.setFloat32(offset + 2 * exports.F32.byteSize(), v[2], true);
+    }
+    typename() {
+        return wgsl `vec3<f32>`;
+    }
+}
+exports.Vec32f32 = new Vec3f32Type();
 // mat4x4<f32> WGSL type.
 class Mat4x4F32Type extends WGSLType {
-    byteSize() { return 16 * exports.F32.byteSize(); }
+    byteSize() { return 64; }
+    alignOf() { return 16; }
     dataViewSet(dv, offset, v) {
         for (let i = 0; i < 16; i++) {
             dv.setFloat32(offset, v[i], true);
+            offset += exports.F32.byteSize();
         }
     }
     typename() {
-        return "mat4x4<f32>";
+        return wgsl `mat4x4<f32>`;
     }
 }
 exports.Mat4x4F32 = new Mat4x4F32Type();
-// Description of a given field in a WGSL struct.
-class FieldType {
+// A WGSL array containing type T.
+class ArrayType extends WGSLType {
+    constructor(etype, count) {
+        super();
+        this.etype = etype;
+        this.count = count;
+        this.stride = this.etype.alignOf() * Math.ceil(this.etype.byteSize() / this.etype.alignOf());
+    }
+    byteSize() { return this.count * this.stride; }
+    alignOf() { return this.etype.alignOf(); }
+    dataViewSet(dv, offset, v) {
+        for (let i = 0; i < this.count; i++) {
+            this.etype.dataViewSet(dv, offset, v[i]);
+            offset += this.stride;
+        }
+    }
+    typename() {
+        return wgsl `array<${this.etype.typename()}, ${this.count.toString()}>`;
+    }
+}
+exports.ArrayType = ArrayType;
+// Description of a given member of a WGSL struct.
+class MemberType {
     constructor(t, idx) {
         this.idx = idx;
         this.type = t;
@@ -2748,91 +3211,120 @@ class FieldType {
 }
 // Declare a field of the given type, at the given position. Index of the field
 // in the struct is mandatory, to reduce renaming and moving mistakes.
-function Field(type, idx) {
-    return new FieldType(type, idx);
+function Member(type, idx) {
+    return new MemberType(type, idx);
 }
-exports.Field = Field;
-// Description of a struct allowing mapping between javascript and WGSL.
-class Descriptor {
-    constructor(fields) {
-        this.fields = fields;
+exports.Member = Member;
+// Description of a WGSL struct allowing mapping between javascript and WGSL.
+// An instance of a StructType describes just the layout of the struct:
+//  - The MemberMap (aka MM) descripts the list of members - name, position in
+//    the struct.
+//  - StructJSType<StructType<MM>> describes javascript object, which member
+//    names are the same as the struct. The type of the value are the typescript
+//    types corresponding to the WGSL values - e.g., a `f32` is mapped to a number.
+class StructType extends WGSLType {
+    constructor(members) {
+        super();
+        this.members = members;
         this.byIndex = [];
-        this._byteSize = 0;
-        for (const [name, field] of Object.entries(fields)) {
-            if (!(field instanceof FieldType)) {
+        if (members.length < 1) {
+            // Not sure if empty struct are valid in WGSL - in the mean time,
+            // reject.
+            throw new Error("struct must have at least one member");
+        }
+        for (const [name, member] of Object.entries(members)) {
+            if (!(member instanceof MemberType)) {
                 continue;
             }
-            if (this.byIndex[field.idx]) {
-                throw new Error(`field index ${field.idx} is duplicated`);
+            if (this.byIndex[member.idx]) {
+                throw new Error(`member index ${member.idx} is duplicated`);
             }
-            this.byIndex[field.idx] = {
-                field,
+            this.byIndex[member.idx] = {
+                member: member,
                 name,
+                // No support for @size & @align attributes for now.
+                sizeOf: member.type.byteSize(),
+                alignOf: member.type.alignOf(),
+                // Calculated below
                 offset: 0,
             };
-            this._byteSize += field.type.byteSize();
         }
-        let offset = 0;
-        for (const [idx, ffield] of this.byIndex.entries()) {
-            if (!ffield) {
-                throw new Error(`missing field index ${idx}`);
+        // Struct offsets, size and aligns are non-trivial - see
+        // https://gpuweb.github.io/gpuweb/wgsl/#structure-member-layout
+        this._byteSize = 0;
+        this._alignOf = 0;
+        for (const [idx, smember] of this.byIndex.entries()) {
+            if (!smember) {
+                throw new Error(`missing member index ${idx}`);
             }
-            ffield.offset = offset;
-            offset += ffield.field.type.byteSize();
+            if (idx > 0) {
+                const prev = this.byIndex[idx - 1];
+                smember.offset = smember.alignOf * Math.ceil((prev.offset + prev.sizeOf) / smember.alignOf);
+            }
+            this._alignOf = Math.max(this._alignOf, smember.alignOf);
         }
+        const last = this.byIndex[this.byIndex.length - 1];
+        this._byteSize = this._alignOf * Math.ceil((last.offset + last.sizeOf) / this._alignOf);
     }
-    // Size of this structure.
-    byteSize() {
-        return this._byteSize;
-    }
-    // Take an object containg the value for each field, and write it
+    byteSize() { return this._byteSize; }
+    alignOf() { return this._alignOf; }
+    // Take an object containg the value for each member, and write it
     // in the provided data view.
-    writeTo(values, data) {
-        for (const ffield of this.byIndex) {
-            ffield.field.type.dataViewSet(data, ffield.offset, values[ffield.name]);
+    dataViewSet(dv, offset, v) {
+        for (const smember of this.byIndex) {
+            smember.member.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
         }
     }
-    // Create an array containing the serialized value from each field.
+    // Create an array containing the serialized value from each member.
     createArray(values) {
         const a = new ArrayBuffer(this.byteSize());
-        this.writeTo(values, new DataView(a));
+        this.dataViewSet(new DataView(a), 0, values);
         return a;
     }
     // Refer to that structure type in a WGSL fragment. It will take care of
     // creating a name and inserting the struct declaration as needed.
     typename() {
         if (!this.mod) {
-            const lines = [wgsl `struct @@structname {\n`];
-            for (const ffield of this.byIndex) {
-                lines.push(wgsl `  ${ffield.name}: ${ffield.field.type.typename()};\n`);
+            const lines = [
+                wgsl `// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
+                wgsl `struct @@structname {\n`,
+            ];
+            for (const smember of this.byIndex) {
+                lines.push(wgsl `  // offset: ${smember.offset.toString()} sizeOf: ${smember.sizeOf.toString()} ; alignOf: ${smember.alignOf.toString()}\n`);
+                lines.push(wgsl `  ${smember.name}: ${smember.member.type.typename()};\n`);
             }
             lines.push(wgsl `};\n`);
-            this.mod = new WGSLModule({
+            this.mod = new lang.WGSLModule({
                 label: "buffer struct declaration",
                 code: wgsl `${lines}`,
             });
         }
-        return new WGSLRef(this.mod, "structname");
+        return wgsl `${new lang.WGSLRef(this.mod, "structname")}`;
     }
 }
-exports.Descriptor = Descriptor;
+exports.StructType = StructType;
 //-----------------------------------------------
 // Basic test
 function testBuffer() {
     console.group("testBuffer");
-    const uniformsDesc = new Descriptor({
-        elapsedMs: Field(exports.F32, 0),
-        renderWidth: Field(exports.F32, 1),
-        renderHeight: Field(exports.F32, 2),
+    const uniformsDesc = new StructType({
+        elapsedMs: Member(exports.F32, 0),
+        renderWidth: Member(exports.F32, 1),
+        renderHeight: Member(exports.F32, 2),
+        plop: Member(new ArrayType(exports.F32, 4), 3),
     });
-    // type Uniforms = DescriptorJSClass<typeof uniformsDesc>;
     console.log("byteSize", uniformsDesc.byteSize);
     console.log("content", uniformsDesc.createArray({
         elapsedMs: 10,
         renderWidth: 320,
         renderHeight: 200,
+        plop: [1, 2, 3],
     }));
-    console.log("decl", uniformsDesc.typename().mod);
+    const foo = new ArrayType(uniformsDesc, 4);
+    const a = new ArrayBuffer(foo.byteSize());
+    foo.dataViewSet(new DataView(a), 0, [
+        { elapsedMs: 10, renderWidth: 320, renderHeight: 200, plop: [0, 1, 3] },
+    ]);
     console.groupEnd();
 }
 // testBuffer();
