@@ -8,10 +8,10 @@ import * as demotypes from '../demotypes';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
-const workgroupWidth = 2;
-const workgroupHeight = 2;
-const instancesWidth = 2 * workgroupWidth;
-const instancesHeight = 2 * workgroupHeight;
+const workgroupWidth = 8;
+const workgroupHeight = 8;
+const instancesWidth = 1 * workgroupWidth;
+const instancesHeight = 1 * workgroupHeight;
 const instances = instancesWidth * instancesHeight
 
 console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
@@ -26,10 +26,12 @@ const uniformsDesc = new wg.StructType({
 
 // Parameters from Javascript to the computer shader
 // for each instance.
-const instanceParamsDesc = new wg.ArrayType(
-    wg.Vec32f32,
-    instances
-);
+
+const instanceParamsDesc = new wg.StructType({
+    'pos': wg.Member(wg.Vec32f32, 0),
+})
+
+const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);
 
 export const demo = {
     id: "multicubes",
@@ -40,26 +42,28 @@ export const demo = {
         const positions = [];
         for (let y = 0; y < instancesHeight; y++) {
             for (let x = 0; x < instancesWidth; x++) {
-                positions.push([
-                    /*10 * (0.5 - x / instancesWidth),
-                    10 * (0.5 - y / instancesHeight),
-                    -10,*/
-                    5 - 10 * Math.random(),
-                    5 - 10 * Math.random(),
-                    -15 + 10 * Math.random(),
-                ]);
+                positions.push({
+                    pos: [
+                        /*10 * (0.5 - x / instancesWidth),
+                        10 * (0.5 - y / instancesHeight),
+                        -10,*/
+                        5 - 10 * Math.random(),
+                        5 - 10 * Math.random(),
+                        -15 + 10 * Math.random(),
+                    ]
+                });
             }
         }
 
-        const instanceParamsBuffer = params.device.createBuffer({
+        const instancesBuffer = params.device.createBuffer({
             label: "Instance parameters",
-            size: instanceParamsDesc.byteSize(),
+            size: instanceArrayDesc.byteSize(),
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        const a = new ArrayBuffer(instanceParamsDesc.byteSize());
+        const a = new ArrayBuffer(instanceArrayDesc.byteSize());
         const dv = new DataView(a);
-        instanceParamsDesc.dataViewSet(dv, 0, positions);
-        params.device.queue.writeBuffer(instanceParamsBuffer, 0, a);
+        instanceArrayDesc.dataViewSet(dv, 0, positions);
+        params.device.queue.writeBuffer(instancesBuffer, 0, a);
 
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
@@ -110,7 +114,7 @@ export const demo = {
                     label: "Rendering matrix compute",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
-                        @group(0) @binding(1) var<storage> params : ${instanceParamsDesc.typename()};
+                        @group(0) @binding(1) var<storage> params : ${instanceArrayDesc.typename()};
 
                         struct InstanceState {
                             // ModelViewProjection
@@ -121,7 +125,7 @@ export const demo = {
                         @stage(compute) @workgroup_size(${workgroupWidth.toString()}u, ${workgroupHeight.toString()}u)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
                             let idx = global_id.y * ${instancesWidth.toString()}u + global_id.x;
-                            let pos = params[idx];
+                            let pos = params[idx].pos;
 
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
@@ -147,7 +151,7 @@ export const demo = {
                 resource: { buffer: uniformsBuffer }
             }, {
                 binding: 1,
-                resource: { buffer: instanceParamsBuffer }
+                resource: { buffer: instancesBuffer }
             }, {
                 binding: 2,
                 resource: { buffer: computeResult }
