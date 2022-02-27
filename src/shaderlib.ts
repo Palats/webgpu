@@ -36,6 +36,15 @@ export const tr = new wg.WGSLModule({
             );
         }
 
+        fn @@scale(ratio: f32) -> mat4x4<f32> {
+            return mat4x4<f32>(
+                ratio, 0.0, 0.0, 0.0,
+                0.0, ratio, 0.0, 0.0,
+                0.0, 0.0, ratio, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            );
+        }
+
         fn @@rotateX(rad: f32) -> mat4x4<f32> {
             let s = sin(rad);
             let c = cos(rad);

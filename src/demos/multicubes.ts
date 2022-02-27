@@ -29,6 +29,8 @@ const uniformsDesc = new wg.StructType({
 
 const instanceParamsDesc = new wg.StructType({
     'pos': wg.Member(wg.Vec32f32, 0),
+    'rot': wg.Member(wg.Vec32f32, 1),
+    'scale': wg.Member(wg.F32, 2),
 })
 
 const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);
@@ -47,10 +49,16 @@ export const demo = {
                         /*10 * (0.5 - x / instancesWidth),
                         10 * (0.5 - y / instancesHeight),
                         -10,*/
-                        5 - 10 * Math.random(),
-                        5 - 10 * Math.random(),
-                        -15 + 10 * Math.random(),
-                    ]
+                        20 * (0.5 - Math.random()),
+                        20 * (0.5 - Math.random()),
+                        -22 + 20 * (0.5 - Math.random()),
+                    ],
+                    rot: [
+                        Math.random() * 2 * Math.PI,
+                        Math.random() * 2 * Math.PI,
+                        Math.random() * 2 * Math.PI,
+                    ],
+                    scale: 1.0 + 0.3 * (0.5 - Math.random()),
                 });
             }
         }
@@ -129,14 +137,15 @@ export const demo = {
 
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
-                            let r = vec3<f32>(c, c, c);
+                            let r = params[idx].rot + vec3<f32>(c, c, c);
                             outp[idx].mvp =
                                 ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
                                 * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
                                 * ${shaderlib.tr.ref("translate")}(pos)
                                 * ${shaderlib.tr.ref("rotateZ")}(r.z)
                                 * ${shaderlib.tr.ref("rotateY")}(r.y)
-                                * ${shaderlib.tr.ref("rotateX")}(r.x);
+                                * ${shaderlib.tr.ref("rotateX")}(r.x)
+                                * ${shaderlib.tr.ref("scale")}(params[idx].scale);
                         }
                     `,
                 }).toDesc()),
