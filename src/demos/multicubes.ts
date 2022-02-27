@@ -8,11 +8,17 @@ import * as demotypes from '../demotypes';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
+// Number of instances.
 const workgroupWidth = 8;
 const workgroupHeight = 8;
 const instancesWidth = 1 * workgroupWidth;
 const instancesHeight = 1 * workgroupHeight;
 const instances = instancesWidth * instancesHeight
+
+// Space parameters.
+const boxSize = 20;
+const zOffset = -25;
+const spaceLimit = boxSize / 2.0;
 
 console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
 
@@ -30,7 +36,8 @@ const uniformsDesc = new wg.StructType({
 const instanceParamsDesc = new wg.StructType({
     'pos': wg.Member(wg.Vec32f32, 0),
     'rot': wg.Member(wg.Vec32f32, 1),
-    'scale': wg.Member(wg.F32, 2),
+    'move': wg.Member(wg.Vec32f32, 2),
+    'scale': wg.Member(wg.F32, 3),
 })
 
 const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);
@@ -46,17 +53,19 @@ export const demo = {
             for (let x = 0; x < instancesWidth; x++) {
                 positions.push({
                     pos: [
-                        /*10 * (0.5 - x / instancesWidth),
-                        10 * (0.5 - y / instancesHeight),
-                        -10,*/
-                        20 * (0.5 - Math.random()),
-                        20 * (0.5 - Math.random()),
-                        -22 + 20 * (0.5 - Math.random()),
+                        boxSize * (0.5 - Math.random()),
+                        boxSize * (0.5 - Math.random()),
+                        boxSize * (0.5 - Math.random()),
                     ],
                     rot: [
                         Math.random() * 2 * Math.PI,
                         Math.random() * 2 * Math.PI,
                         Math.random() * 2 * Math.PI,
+                    ],
+                    move: [
+                        0.4 * (0.5 - Math.random()),
+                        0.4 * (0.5 - Math.random()),
+                        0.4 * (0.5 - Math.random()),
                     ],
                     scale: 1.0 + 0.3 * (0.5 - Math.random()),
                 });
@@ -122,7 +131,7 @@ export const demo = {
                     label: "Rendering matrix compute",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
-                        @group(0) @binding(1) var<storage> params : ${instanceArrayDesc.typename()};
+                        @group(0) @binding(1) var<storage, read_write> params : ${instanceArrayDesc.typename()};
 
                         struct InstanceState {
                             // ModelViewProjection
@@ -133,14 +142,30 @@ export const demo = {
                         @stage(compute) @workgroup_size(${workgroupWidth.toString()}u, ${workgroupHeight.toString()}u)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
                             let idx = global_id.y * ${instancesWidth.toString()}u + global_id.x;
-                            let pos = params[idx].pos;
+
+                            var pos = params[idx].pos;
+
+                            let nextpos = pos + params[idx].move;
+                            // This is probably horribly inefficient.
+                            if (nextpos.x < -${spaceLimit.toFixed(1)} || nextpos.x >= ${spaceLimit.toFixed(1)}) {
+                                params[idx].move.x = -params[idx].move.x;
+                            }
+                            if (nextpos.y < -${spaceLimit.toFixed(1)} || nextpos.y >= ${spaceLimit.toFixed(1)}) {
+                                params[idx].move.y = -params[idx].move.y;
+                            }
+                            if (nextpos.z < -${spaceLimit.toFixed(1)} || nextpos.z >= ${spaceLimit.toFixed(1)}) {
+                                params[idx].move.z = -params[idx].move.z;
+                            }
+                            pos = pos + params[idx].move;
+                            params[idx].pos = pos;
 
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
                             let r = params[idx].rot + vec3<f32>(c, c, c);
+
                             outp[idx].mvp =
                                 ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
-                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
+                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, ${zOffset.toFixed(1)}))
                                 * ${shaderlib.tr.ref("translate")}(pos)
                                 * ${shaderlib.tr.ref("rotateZ")}(r.z)
                                 * ${shaderlib.tr.ref("rotateY")}(r.y)
