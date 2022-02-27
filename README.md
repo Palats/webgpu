@@ -3,6 +3,7 @@
 [> Live version <](https://palats.github.io/webgpu/)
 
 WebGPU is an API to drive compute & rendering on GPUs from browsers (and others). This is to WebGL what Vulkan is to OpenGL. This repository implements some effects using both compute & rendering WebGPU APIs:
+ - `multicubes`: A bunch of rotating cubes bouncing around.
  - `fire`: A classic demoscene style fire effect.
  - `cube`: A rotating cube. All is done on the GPU, even the rotation / projection matrix calculation.
  - `conway`: A binary Conway [game of life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
@@ -10,6 +11,14 @@ WebGPU is an API to drive compute & rendering on GPUs from browsers (and others)
  - `fade`: Trivial example modifying the red channel.
  - `falling`: Trivial compute example, moving data a bit around.
  - `minimal`: Minimalistic render pipeline with no compute.
+
+In the `wg` directory, there are experimental libs:
+ - `lang` helps writing WGSL. It allows for including snippets of WGSL & reuse,
+   with some namespacing to avoid conflict. It also does import deduplication -
+   i.e., this is not just textual includes.
+ - `types` helps mapping data (esp. uniforms) between Typescript & WGSL. Struct
+   can be described in one place and used in both languages with proper typing
+   and WGSL declarations.
 
 ## Activating WebGPU
 As of Jan. 2022, WebGPU is not available by default in browsers, and thus require experimental features to be available:
