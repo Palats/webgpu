@@ -218,11 +218,23 @@ export class AppMain extends LitElement {
     renderWidth: number = 0;
     renderHeight: number = 0;
 
+    private paused = false;
+    private step = false;
+
     constructor() {
         super();
         this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", allDemos[0].id)
+        document.addEventListener('keydown', e => {
+            if (e.key == ' ') {
+                this.paused = !this.paused;
+            }
+            if (e.key == '.') {
+                this.paused = true;
+                this.step = true;
+            }
+        });
     }
 
     override firstUpdated(_changedProperties: any) {
@@ -334,11 +346,21 @@ export class AppMain extends LitElement {
                 let timestampMs = 0;
                 while (!this.rebuildNeeded) {
                     const ts = await new Promise(window.requestAnimationFrame);
+
                     let deltaMs = 0;
                     if (timestampMs) {
                         deltaMs = ts - timestampMs;
                     }
                     timestampMs = ts;
+
+                    // Even when paused, continue updating timestampMs - this
+                    // way, when resuming, it will just count a delta of a
+                    // single frame instead of the full time since paused.
+                    if (this.paused && !this.step) {
+                        continue;
+                    }
+                    this.step = false;
+
                     elapsedMs += deltaMs;
 
                     await renderer({
