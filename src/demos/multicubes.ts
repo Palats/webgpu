@@ -8,13 +8,20 @@ import * as demotypes from '../demotypes';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
-const instances = 10;
+const workgroupWidth = 2;
+const workgroupHeight = 2;
+const instancesWidth = 2 * workgroupWidth;
+const instancesHeight = 2 * workgroupHeight;
+const instances = instancesWidth * instancesHeight
+
+console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
 
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
     elapsedMs: wg.Member(wg.F32, 0),
     renderWidth: wg.Member(wg.F32, 1),
     renderHeight: wg.Member(wg.F32, 2),
+    rngSeed: wg.Member(wg.F32, 3),
 })
 
 // Parameters from Javascript to the computer shader
@@ -31,14 +38,15 @@ export const demo = {
     async init(params: demotypes.InitParams) {
         // Setup some initial positions for the cubes.
         const positions = [];
-        if (instances as any == 1) {
-            positions.push([0, 0, 0]);
-        } else {
-            for (let i = 0; i < instances; i++) {
+        for (let y = 0; y < instancesHeight; y++) {
+            for (let x = 0; x < instancesWidth; x++) {
                 positions.push([
-                    -1 + i * (2 / (instances - 1)),
-                    0,
-                    0,
+                    /*10 * (0.5 - x / instancesWidth),
+                    10 * (0.5 - y / instancesHeight),
+                    -10,*/
+                    5 - 10 * Math.random(),
+                    5 - 10 * Math.random(),
+                    -15 + 10 * Math.random(),
                 ]);
             }
         }
@@ -46,7 +54,7 @@ export const demo = {
         const instanceParamsBuffer = params.device.createBuffer({
             label: "Instance parameters",
             size: instanceParamsDesc.byteSize(),
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
         const a = new ArrayBuffer(instanceParamsDesc.byteSize());
         const dv = new DataView(a);
@@ -84,7 +92,7 @@ export const demo = {
                         {
                             binding: 1,
                             visibility: GPUShaderStage.COMPUTE,
-                            buffer: { type: "uniform" },
+                            buffer: { type: "storage" },
                         },
                         // Output buffer, to feed the vertex shader.
                         {
@@ -102,7 +110,7 @@ export const demo = {
                     label: "Rendering matrix compute",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
-                        @group(0) @binding(1) var<uniform> params : ${instanceParamsDesc.typename()};
+                        @group(0) @binding(1) var<storage> params : ${instanceParamsDesc.typename()};
 
                         struct InstanceState {
                             // ModelViewProjection
@@ -110,14 +118,15 @@ export const demo = {
                         };
                         @group(0) @binding(2) var<storage, write> outp : array<InstanceState, ${instances.toString()}>;
 
-                        @stage(compute) @workgroup_size(1)
+                        @stage(compute) @workgroup_size(${workgroupWidth.toString()}u, ${workgroupHeight.toString()}u)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-                            let pos = params[global_id.x];
+                            let idx = global_id.y * ${instancesWidth.toString()}u + global_id.x;
+                            let pos = params[idx];
 
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
                             let r = vec3<f32>(c, c, c);
-                            outp[global_id.x].mvp =
+                            outp[idx].mvp =
                                 ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
                                 * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
                                 * ${shaderlib.tr.ref("translate")}(pos)
@@ -250,6 +259,7 @@ export const demo = {
                 elapsedMs: info.elapsedMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
+                rngSeed: Math.random(),
             }));
 
             // -- Do compute pass, to create projection matrices.
@@ -261,7 +271,7 @@ export const demo = {
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, computeBindGroup);
             // Calculate projection matrices for each instance.
-            computeEncoder.dispatch(instances);
+            computeEncoder.dispatch(workgroupWidth, workgroupHeight);
             computeEncoder.endPass();
             commandEncoder.popDebugGroup();
 
