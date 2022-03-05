@@ -63,8 +63,8 @@ export const demo = {
                 entryPoint: 'main',
                 module: params.device.createShaderModule({
                     code: `
-                        [[stage(fragment)]]
-                        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+                        @stage(fragment)
+                        fn main(@location(0) coord: vec2<f32>) -> @location(0) vec4<f32> {
                             return vec4<f32>(coord.x, coord.y, 0.5, 1.0);
                         }
                     `,
@@ -87,14 +87,15 @@ export const demo = {
             const passEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                     view: params.context.getCurrentTexture().createView(),
-                    loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
                     storeOp: 'store',
                 }],
             });
             passEncoder.setPipeline(pipeline);
             passEncoder.setBindGroup(0, bindgroup);
             passEncoder.draw(6, 1, 0, 0);
-            passEncoder.endPass();
+            passEncoder.end();
             params.device.queue.submit([commandEncoder.finish()]);
         };
     }

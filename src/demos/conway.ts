@@ -309,7 +309,7 @@ export const demo = {
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
             computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
-            computeEncoder.endPass();
+            computeEncoder.end();
             commandEncoder.popDebugGroup();
 
             // -- And do the frame rendering.
@@ -317,7 +317,8 @@ export const demo = {
             const renderEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                     view: params.context.getCurrentTexture().createView(),
-                    loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
                     storeOp: 'store',
                 }],
             });
@@ -325,7 +326,7 @@ export const demo = {
             renderEncoder.setBindGroup(0, isForward ? renderBindGroup1 : renderBindGroup2);
             // Double-triangle for fullscreen has 6 vertices.
             renderEncoder.draw(6, 1, 0, 0);
-            renderEncoder.endPass();
+            renderEncoder.end();
             commandEncoder.popDebugGroup();
 
             // Submit all the work.

@@ -298,7 +298,7 @@ export const demo = {
             // The compute has only a single matrix to compute. More typical compute shaders
             // would dispatch on NxM elements.
             computeEncoder.dispatch(1);
-            computeEncoder.endPass();
+            computeEncoder.end();
             commandEncoder.popDebugGroup();
 
             // -- And do the frame rendering.
@@ -306,14 +306,17 @@ export const demo = {
             const renderEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                     view: params.context.getCurrentTexture().createView(),
-                    loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
                     storeOp: 'store',
                 }],
                 depthStencilAttachment: {
                     view: depthTextureView,
-                    depthLoadValue: 1.0,
+                    depthClearValue: 1.0,
+                    depthLoadOp: 'clear',
                     depthStoreOp: 'store',
-                    stencilLoadValue: 0,
+                    stencilClearValue: 0,
+                    stencilLoadOp: 'clear',
                     stencilStoreOp: 'store',
                 },
             });
@@ -321,7 +324,7 @@ export const demo = {
             renderEncoder.setBindGroup(0, renderBindGroup);
             // Cube mesh as a triangle-strip uses 14 vertices.
             renderEncoder.draw(14, 1, 0, 0);
-            renderEncoder.endPass();
+            renderEncoder.end();
             commandEncoder.popDebugGroup();
 
             // Submit all the work.

@@ -115,10 +115,10 @@ export const demo = {
                 entryPoint: "main",
                 module: params.device.createShaderModule({
                     code: `
-                        [[group(0), binding(0)]] var cellsSrc : texture_2d<f32>;
-                        [[group(0), binding(1)]] var cellsDst : texture_storage_2d<rgba8unorm, write>;
-                        [[group(0), binding(2)]] var trailSrc : texture_2d<f32>;
-                        [[group(0), binding(3)]] var trailDst : texture_storage_2d<rgba8unorm, write>;
+                        @group(0) @binding(0) var cellsSrc : texture_2d<f32>;
+                        @group(0) @binding(1) var cellsDst : texture_storage_2d<rgba8unorm, write>;
+                        @group(0) @binding(2) var trailSrc : texture_2d<f32>;
+                        @group(0) @binding(3) var trailDst : texture_storage_2d<rgba8unorm, write>;
 
                         fn cellAt(x: i32, y: i32) -> i32 {
                             let v = textureLoad(cellsSrc, vec2<i32>(x, y), 0);
@@ -130,8 +130,8 @@ export const demo = {
                             return textureLoad(trailSrc, vec2<i32>(x, y), 0);
                         }
 
-                        [[stage(compute), workgroup_size(8, 8)]]
-                        fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+                        @stage(compute) @workgroup_size(8, 8)
+                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
                             let x = i32(global_id.x);
                             let y = i32(global_id.y);
                             let pos = vec2<i32>(x, y);
@@ -282,8 +282,8 @@ export const demo = {
                 entryPoint: 'main',
                 module: params.device.createShaderModule({
                     code: `
-                        [[group(0), binding(0)]] var tex : texture_2d<f32>;
-                        [[group(0), binding(1)]] var smplr : sampler;
+                        @group(0) @binding(0) var tex : texture_2d<f32>;
+                        @group(0) @binding(1) var smplr : sampler;
 
                         fn palette(v: f32) -> vec4<f32> {
                             let key = v * 8.0;
@@ -298,8 +298,8 @@ export const demo = {
                             return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
                         }
 
-                        [[stage(fragment)]]
-                        fn main([[location(0)]] coord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+                        @stage(fragment)
+                        fn main(@location(0) coord: vec2<f32>) -> @location(0) vec4<f32> {
                             return palette(textureSample(tex, smplr, coord).r);
                         }
                     `,
@@ -354,20 +354,21 @@ export const demo = {
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
             computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
-            computeEncoder.endPass();
+            computeEncoder.end();
 
             // Frame rendering.
             const renderEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                     view: params.context.getCurrentTexture().createView(),
-                    loadValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
                     storeOp: 'store',
                 }],
             });
             renderEncoder.setPipeline(renderPipeline);
             renderEncoder.setBindGroup(0, isForward ? renderBindGroup1 : renderBindGroup2);
             renderEncoder.draw(6, 1, 0, 0);
-            renderEncoder.endPass();
+            renderEncoder.end();
             params.device.queue.submit([commandEncoder.finish()]);
 
             isForward = !isForward;
