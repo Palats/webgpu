@@ -7,6 +7,7 @@ import * as demotypes from '../demotypes';
 
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
+import * as glmatrix from 'gl-matrix';
 
 // Number of instances.
 const workgroupWidth = 8;
@@ -28,6 +29,7 @@ const uniformsDesc = new wg.StructType({
     renderWidth: wg.Member(wg.F32, 1),
     renderHeight: wg.Member(wg.F32, 2),
     rngSeed: wg.Member(wg.F32, 3),
+    camera: wg.Member(wg.Mat4x4F32, 4),
 })
 
 // Parameters from Javascript to the computer shader
@@ -164,8 +166,7 @@ export const demo = {
                             let r = params[idx].rot + vec3<f32>(c, c, c);
 
                             outp[idx].mvp =
-                                ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
-                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, ${zOffset.toFixed(1)}))
+                                uniforms.camera
                                 * ${shaderlib.tr.ref("translate")}(pos)
                                 * ${shaderlib.tr.ref("rotateZ")}(r.z)
                                 * ${shaderlib.tr.ref("rotateY")}(r.y)
@@ -293,11 +294,26 @@ export const demo = {
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
+            const camera = glmatrix.mat4.create();
+            glmatrix.mat4.perspective(
+                camera,
+                2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+                params.renderWidth / params.renderHeight, // aspect
+                1.0, // near
+                100.0, // far
+            );
+            glmatrix.mat4.translate(
+                camera,
+                camera,
+                glmatrix.vec3.fromValues(0, 0, zOffset),
+            );
+
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
+                camera: Array.from(camera),
             }));
 
             // -- Do compute pass, to create projection matrices.
