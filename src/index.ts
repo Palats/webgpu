@@ -367,6 +367,7 @@ export class AppMain extends LitElement {
                         timestampMs: ts,
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
+                        rng: Math.random(),
                     });
 
                     if (this.error) {

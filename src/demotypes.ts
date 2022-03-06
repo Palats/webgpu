@@ -21,7 +21,14 @@ export interface InitParams {
 }
 
 export interface FrameInfo {
+    // An absolute timestamp, in milliseconds.
     timestampMs: DOMHighResTimeStamp;
+    // Elapsed time in millisecond since the demo was started.
+    // Stopped when demo is paused.
     elapsedMs: DOMHighResTimeStamp;
+    // Time delta in milliseconds since last frame. Null on first frame.
     deltaMs: DOMHighResTimeStamp | null;
+    // A random value for this frame. Has no particular meaning - just
+    // convenient to use with pseudo-rng per frame.
+    rng: number;
 }

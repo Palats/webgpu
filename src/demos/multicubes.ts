@@ -297,7 +297,7 @@ export const demo = {
                 elapsedMs: info.elapsedMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
-                rngSeed: Math.random(),
+                rngSeed: info.rng,
             }));
 
             // -- Do compute pass, to create projection matrices.

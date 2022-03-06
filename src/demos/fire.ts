@@ -284,7 +284,7 @@ export const demo = {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 computeWidth: computeWidth,
                 computeHeight: computeHeight,
-                rngSeed: Math.random(),
+                rngSeed: info.rng,
             }));
 
             // -- Do compute pass, where the actual effect is.
