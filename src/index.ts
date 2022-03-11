@@ -41,38 +41,56 @@ type CameraMoveInfo = {
     // Screen coordinate from [0, 1].
     x: number;
     y: number;
+    // Was shift pressed?
+    shift: boolean;
     // The event that triggered this move.
     evt: PointerEvent;
 }
 
 class Camera {
     private tr = glmatrix.vec3.fromValues(0, 0, 0);
+    private rot = glmatrix.vec3.fromValues(0, 0, 0);
 
     chain(camera: glmatrix.mat4, start?: CameraMoveInfo, current?: CameraMoveInfo) {
-        glmatrix.mat4.translate(
-            camera,
-            camera,
-            this.tr,
-        );
-        if (start && current) {
-            glmatrix.mat4.translate(
-                camera,
-                camera,
-                this.delta(start, current),
-            );
-        }
+        const { tr, rot } = this.current(start, current);
+
+        const q = glmatrix.quat.create();
+        glmatrix.quat.fromEuler(q, rot[0], rot[1], rot[2]);
+        const chg = glmatrix.mat4.create();
+        glmatrix.mat4.fromRotationTranslation(chg, q, tr);
+        glmatrix.mat4.mul(camera, camera, chg);
     }
 
     update(start: CameraMoveInfo, end: CameraMoveInfo) {
-        glmatrix.vec3.add(this.tr, this.tr, this.delta(start, end));
+        const { tr, rot } = this.current(start, end);
+        this.tr = tr;
+        this.rot = rot;
     }
 
-    private delta(start: CameraMoveInfo, end: CameraMoveInfo): glmatrix.vec3 {
-        return glmatrix.vec3.fromValues(
-            20 * (end.x - start.x),
-            -20 * (end.y - start.y),
-            0,
-        );
+    reset() {
+        this.tr = glmatrix.vec3.fromValues(0, 0, 0);
+        this.rot = glmatrix.vec3.fromValues(0, 0, 0);
+    }
+
+    private current(start?: CameraMoveInfo, end?: CameraMoveInfo) {
+        const tr = glmatrix.vec3.clone(this.tr);
+        const rot = glmatrix.vec3.clone(this.rot);
+        if (start && end) {
+            if (end.shift) {
+                glmatrix.vec3.add(tr, tr, glmatrix.vec3.fromValues(
+                    20 * (end.x - start.x),
+                    -20 * (end.y - start.y),
+                    0,
+                ));
+            } else {
+                glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(
+                    -10 * Math.PI * (end.y - start.y),
+                    -10 * Math.PI * (end.x - start.x),
+                    0,
+                ));
+            }
+        }
+        return { tr, rot };
     }
 }
 
@@ -262,6 +280,7 @@ export class AppMain extends LitElement {
 
     private paused = false;
     private step = false;
+    private shiftPressed = false;
 
     // -- Camera parameters.
     // When the camera is being moved, start event.
@@ -278,12 +297,20 @@ export class AppMain extends LitElement {
         document.addEventListener('keydown', e => {
             if (e.key == ' ') {
                 this.paused = !this.paused;
-            }
-            if (e.key == '.') {
+            } else if (e.key == '.') {
                 this.paused = true;
                 this.step = true;
+            } else if (e.key == 'Shift') {
+                this.shiftPressed = true;
+            } else if (e.key == 'Escape') {
+                this.camera.reset();
             }
         });
+        document.addEventListener('keyup', e => {
+            if (e.key == 'Shift') {
+                this.shiftPressed = false;
+            }
+        })
         document.addEventListener('pointerdown', e => {
             if (e.button == 0) {
                 if (this.cameraStart) {
@@ -313,6 +340,7 @@ export class AppMain extends LitElement {
         return {
             x: evt.x / this.canvas!.clientWidth,
             y: evt.y / this.canvas!.clientHeight,
+            shift: this.shiftPressed,
             evt: evt,
         }
     }
