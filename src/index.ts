@@ -46,7 +46,7 @@ type CameraMoveInfo = {
 }
 
 class Camera {
-    private tr = glmatrix.vec3.fromValues(0, 0, -25);
+    private tr = glmatrix.vec3.fromValues(0, 0, 0);
 
     chain(camera: glmatrix.mat4, start?: CameraMoveInfo, current?: CameraMoveInfo) {
         glmatrix.mat4.translate(

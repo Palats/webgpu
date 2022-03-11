@@ -4,7 +4,7 @@
 
 /// <reference types="@webgpu/types" />
 import * as demotypes from '../demotypes';
-
+import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
@@ -17,6 +17,7 @@ const instances = instancesWidth * instancesHeight
 
 // Space parameters.
 const boxSize = 20;
+const cameraOffset = glmatrix.vec3.fromValues(0, 0, -25);
 const spaceLimit = boxSize / 2.0;
 
 console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
@@ -292,6 +293,11 @@ export const demo = {
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
+            glmatrix.mat4.translate(
+                info.camera,
+                info.camera,
+                cameraOffset,
+            );
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 renderWidth: params.renderWidth,
