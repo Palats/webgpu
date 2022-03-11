@@ -25,10 +25,11 @@ console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
     elapsedMs: wg.Member(wg.F32, 0),
-    renderWidth: wg.Member(wg.F32, 1),
-    renderHeight: wg.Member(wg.F32, 2),
-    rngSeed: wg.Member(wg.F32, 3),
-    camera: wg.Member(wg.Mat4x4F32, 4),
+    deltaMs: wg.Member(wg.F32, 1),
+    renderWidth: wg.Member(wg.F32, 2),
+    renderHeight: wg.Member(wg.F32, 3),
+    rngSeed: wg.Member(wg.F32, 4),
+    camera: wg.Member(wg.Mat4x4F32, 5),
 })
 
 // Parameters from Javascript to the computer shader
@@ -146,19 +147,21 @@ export const demo = {
 
                             var pos = params[idx].pos;
 
-                            let nextpos = pos + params[idx].move;
-                            // This is probably horribly inefficient.
-                            if (nextpos.x < -${spaceLimit.toFixed(1)} || nextpos.x >= ${spaceLimit.toFixed(1)}) {
-                                params[idx].move.x = -params[idx].move.x;
+                            if (uniforms.deltaMs > 0.0) {
+                                let nextpos = pos + params[idx].move;
+                                // This is probably horribly inefficient.
+                                if (nextpos.x < -${spaceLimit.toFixed(1)} || nextpos.x >= ${spaceLimit.toFixed(1)}) {
+                                    params[idx].move.x = -params[idx].move.x;
+                                }
+                                if (nextpos.y < -${spaceLimit.toFixed(1)} || nextpos.y >= ${spaceLimit.toFixed(1)}) {
+                                    params[idx].move.y = -params[idx].move.y;
+                                }
+                                if (nextpos.z < -${spaceLimit.toFixed(1)} || nextpos.z >= ${spaceLimit.toFixed(1)}) {
+                                    params[idx].move.z = -params[idx].move.z;
+                                }
+                                pos = pos + params[idx].move;
+                                params[idx].pos = pos;
                             }
-                            if (nextpos.y < -${spaceLimit.toFixed(1)} || nextpos.y >= ${spaceLimit.toFixed(1)}) {
-                                params[idx].move.y = -params[idx].move.y;
-                            }
-                            if (nextpos.z < -${spaceLimit.toFixed(1)} || nextpos.z >= ${spaceLimit.toFixed(1)}) {
-                                params[idx].move.z = -params[idx].move.z;
-                            }
-                            pos = pos + params[idx].move;
-                            params[idx].pos = pos;
 
                             let TAU = 6.283185;
                             let c = (uniforms.elapsedMs / 1000.0) % TAU;
@@ -300,6 +303,7 @@ export const demo = {
             );
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
+                deltaMs: info.deltaMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
@@ -310,7 +314,7 @@ export const demo = {
             const commandEncoder = params.device.createCommandEncoder();
             commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
 
-            commandEncoder.pushDebugGroup('Compute projection');
+            commandEncoder.pushDebugGroup('Compute cube movement');
             const computeEncoder = commandEncoder.beginComputePass();
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, computeBindGroup);
@@ -320,7 +324,7 @@ export const demo = {
             commandEncoder.popDebugGroup();
 
             // -- And do the frame rendering.
-            commandEncoder.pushDebugGroup('Render cube');
+            commandEncoder.pushDebugGroup('Render cubes');
             const renderEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                     view: params.context.getCurrentTexture().createView(),

@@ -459,17 +459,18 @@ export class AppMain extends LitElement {
                     if (timestampMs) {
                         deltaMs = ts - timestampMs;
                     }
-                    timestampMs = ts;
 
                     // Even when paused, continue updating timestampMs - this
                     // way, when resuming, it will just count a delta of a
                     // single frame instead of the full time since paused.
-                    if (this.paused && !this.step) {
-                        continue;
+                    timestampMs = ts;
+
+                    if (!this.paused || this.step) {
+                        elapsedMs += deltaMs;
+                    } else {
+                        deltaMs = 0;
                     }
                     this.step = false;
-
-                    elapsedMs += deltaMs;
 
                     const camera = glmatrix.mat4.create();
                     glmatrix.mat4.perspective(
@@ -481,7 +482,6 @@ export class AppMain extends LitElement {
                     );
                     this.camera.chain(camera, this.cameraStart, this.cameraCurrent);
                     await renderer({
-                        timestampMs: ts,
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),
