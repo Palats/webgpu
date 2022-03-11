@@ -1,3 +1,5 @@
+import * as glmatrix from 'gl-matrix';
+
 // Description of a given effect.
 export interface Demo {
     id: string;
@@ -31,4 +33,6 @@ export interface FrameInfo {
     // A random value for this frame. Has no particular meaning - just
     // convenient to use with pseudo-rng per frame.
     rng: number;
+    // Camera matrix, incl. projection.
+    camera: glmatrix.mat4;
 }

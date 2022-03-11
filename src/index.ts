@@ -3,6 +3,7 @@
 import { LitElement, html, css, } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as demotypes from './demotypes';
+import * as glmatrix from 'gl-matrix';
 
 
 import * as conway from './demos/conway';
@@ -13,6 +14,7 @@ import * as conway2 from './demos/conway2';
 import * as cube from './demos/cube';
 import * as multicubes from './demos/multicubes';
 import * as testlibs from './demos/testlibs';
+import { glMatrix } from 'gl-matrix';
 
 export const allDemos: demotypes.Demo[] = [
     conway2.demo,
@@ -32,6 +34,46 @@ export function demoByID(id: string): demotypes.Demo {
         }
     }
     return allDemos[0];
+}
+
+type CameraMoveInfo = {
+    // Position of the cursor / click.
+    // Screen coordinate from [0, 1].
+    x: number;
+    y: number;
+    // The event that triggered this move.
+    evt: PointerEvent;
+}
+
+class Camera {
+    private tr = glmatrix.vec3.fromValues(0, 0, -25);
+
+    chain(camera: glmatrix.mat4, start?: CameraMoveInfo, current?: CameraMoveInfo) {
+        glmatrix.mat4.translate(
+            camera,
+            camera,
+            this.tr,
+        );
+        if (start && current) {
+            glmatrix.mat4.translate(
+                camera,
+                camera,
+                this.delta(start, current),
+            );
+        }
+    }
+
+    update(start: CameraMoveInfo, end: CameraMoveInfo) {
+        glmatrix.vec3.add(this.tr, this.tr, this.delta(start, end));
+    }
+
+    private delta(start: CameraMoveInfo, end: CameraMoveInfo): glmatrix.vec3 {
+        return glmatrix.vec3.fromValues(
+            20 * (end.x - start.x),
+            -20 * (end.y - start.y),
+            0,
+        );
+    }
 }
 
 
@@ -221,6 +263,13 @@ export class AppMain extends LitElement {
     private paused = false;
     private step = false;
 
+    // -- Camera parameters.
+    // When the camera is being moved, start event.
+    private cameraStart?: CameraMoveInfo;
+    // Last move event, when the camera is being moved.
+    private cameraCurrent?: CameraMoveInfo;
+    private camera = new Camera();
+
     constructor() {
         super();
         this.showControls = this.getBoolParam("c", true);
@@ -235,6 +284,37 @@ export class AppMain extends LitElement {
                 this.step = true;
             }
         });
+        document.addEventListener('pointerdown', e => {
+            if (e.button == 0) {
+                if (this.cameraStart) {
+                    console.error("missing pointerup");
+                }
+                this.cameraStart = this.getMoveInfo(e);
+            }
+        });
+        document.addEventListener('pointermove', e => {
+            if (!this.cameraStart) { return; }
+            if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
+            this.cameraCurrent = this.getMoveInfo(e);
+        });
+        document.addEventListener('pointerup', e => {
+            if (!this.cameraStart) { return; }
+            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) { return; }
+            if (this.cameraStart && this.cameraCurrent) {
+                this.camera.update(this.cameraStart, this.cameraCurrent);
+            }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
+
+    }
+
+    getMoveInfo(evt: PointerEvent): CameraMoveInfo {
+        return {
+            x: evt.x / this.canvas!.clientWidth,
+            y: evt.y / this.canvas!.clientHeight,
+            evt: evt,
+        }
     }
 
     override firstUpdated(_changedProperties: any) {
@@ -363,11 +443,21 @@ export class AppMain extends LitElement {
 
                     elapsedMs += deltaMs;
 
+                    const camera = glmatrix.mat4.create();
+                    glmatrix.mat4.perspective(
+                        camera,
+                        2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+                        this.renderWidth / this.renderHeight, // aspect
+                        1.0, // near
+                        100.0, // far
+                    );
+                    this.camera.chain(camera, this.cameraStart, this.cameraCurrent);
                     await renderer({
                         timestampMs: ts,
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),
+                        camera: camera,
                     });
 
                     if (this.error) {
