@@ -198,6 +198,8 @@ export const demo = {
         // -- Render pipeline.
         // It takes the projection matrix from the compute output
         // and create a cube from hard coded vertex coordinates.
+        const depthFormat = "depth24plus";
+
         const renderPipeline = params.device.createRenderPipeline({
             label: "Cube rendering pipeline",
             layout: params.device.createPipelineLayout({
@@ -222,7 +224,6 @@ export const demo = {
                 entryPoint: 'main',
                 module: params.device.createShaderModule(new wg.WGSLModule({
                     label: "cube vertex shader",
-                    // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
                     code: wg.wgsl`
                         struct InstanceState {
                             // ModelViewProjection
@@ -257,7 +258,7 @@ export const demo = {
             depthStencil: {
                 depthWriteEnabled: true,
                 depthCompare: 'less',
-                format: 'depth24plus',
+                format: depthFormat,
             },
             fragment: {
                 entryPoint: 'main',
@@ -290,9 +291,25 @@ export const demo = {
         const depthTextureView = params.device.createTexture({
             label: "depth view",
             size: [params.renderWidth, params.renderHeight],
-            format: 'depth24plus',
+            format: depthFormat,
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
+
+        // Prepare the rendering pipeline as a bundle.
+        const renderBundleEncoder = params.device.createRenderBundleEncoder({
+            label: "main render bundle",
+            depthReadOnly: false,
+            stencilReadOnly: false,
+            colorFormats: [params.renderFormat],
+            depthStencilFormat: depthFormat,
+        });
+        renderBundleEncoder.pushDebugGroup("plop");
+        renderBundleEncoder.setPipeline(renderPipeline);
+        renderBundleEncoder.setBindGroup(0, renderBindGroup);
+        // Cube mesh as a triangle-strip uses 14 vertices.
+        renderBundleEncoder.draw(14, instances, 0, 0);
+        renderBundleEncoder.popDebugGroup();
+        const renderBundle = renderBundleEncoder.finish();
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
@@ -342,10 +359,7 @@ export const demo = {
                     stencilStoreOp: 'store',
                 },
             });
-            renderEncoder.setPipeline(renderPipeline);
-            renderEncoder.setBindGroup(0, renderBindGroup);
-            // Cube mesh as a triangle-strip uses 14 vertices.
-            renderEncoder.draw(14, instances, 0, 0);
+            renderEncoder.executeBundles([renderBundle]);
             renderEncoder.end();
             commandEncoder.popDebugGroup();
 
