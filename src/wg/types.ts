@@ -24,6 +24,14 @@ abstract class WGSLType<T> {
     // Write a value from javascript to a data view.
     abstract dataViewSet(dv: DataView, offset: number, v: T): void;
 
+    // Create a javascript Array read to be sent to the GPU with the provided
+    // content.
+    createArray(values: T): ArrayBuffer {
+        const a = new ArrayBuffer(this.byteSize());
+        this.dataViewSet(new DataView(a), 0, values);
+        return a;
+    }
+
     // What to use in WGSL to refer to that type.
     abstract typename(): lang.WGSLCode;
 }
@@ -73,7 +81,7 @@ class Vec3f32Type extends WGSLType<number[]> {
         return wgsl`vec3<f32>`;
     }
 }
-export const Vec32f32 = new Vec3f32Type();
+export const Vec3f32 = new Vec3f32Type();
 
 // mat4x4<f32> WGSL type.
 class Mat4x4F32Type extends WGSLType<number[]> {
@@ -232,13 +240,6 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
         for (const smember of this.byIndex) {
             smember.member.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
         }
-    }
-
-    // Create an array containing the serialized value from each member.
-    createArray(values: MemberMapJSType<MM>): ArrayBuffer {
-        const a = new ArrayBuffer(this.byteSize());
-        this.dataViewSet(new DataView(a), 0, values);
-        return a;
     }
 
     // Refer to that structure type in a WGSL fragment. It will take care of

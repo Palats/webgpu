@@ -14,7 +14,6 @@ import * as conway2 from './demos/conway2';
 import * as cube from './demos/cube';
 import * as multicubes from './demos/multicubes';
 import * as testlibs from './demos/testlibs';
-import { glMatrix } from 'gl-matrix';
 
 export const allDemos: demotypes.Demo[] = [
     conway2.demo,

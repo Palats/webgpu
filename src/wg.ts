@@ -18,5 +18,5 @@ export {
     StructType,
     ArrayType,
     Mat4x4F32,
-    Vec32f32
+    Vec3f32
 } from './wg/types';
