@@ -83,6 +83,24 @@ class Vec3f32Type extends WGSLType<number[]> {
 }
 export const Vec3f32 = new Vec3f32Type();
 
+// Info about WGSL `vec4<f32>` type.
+class Vec4f32Type extends WGSLType<number[]> {
+    byteSize() { return 16; }
+    alignOf() { return 16; }
+
+    dataViewSet(dv: DataView, offset: number, v: number[]) {
+        dv.setFloat32(offset, v[0], true);
+        dv.setFloat32(offset + F32.byteSize(), v[1], true);
+        dv.setFloat32(offset + 2 * F32.byteSize(), v[2], true);
+        dv.setFloat32(offset + 3 * F32.byteSize(), v[3], true);
+    }
+
+    typename(): lang.WGSLCode {
+        return wgsl`vec4<f32>`;
+    }
+}
+export const Vec4f32 = new Vec4f32Type();
+
 // mat4x4<f32> WGSL type.
 class Mat4x4F32Type extends WGSLType<number[]> {
     byteSize() { return 64; }
