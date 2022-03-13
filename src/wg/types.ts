@@ -125,7 +125,7 @@ export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]
     readonly count: number;
     readonly etype: T;
 
-    private stride: number;
+    readonly stride: number;
 
     constructor(etype: T, count: number) {
         super();
