@@ -309,112 +309,13 @@ export const demo = {
         const renderBundle = renderBundleEncoder.finish();
 
         // Line drawing
-        // Prepare vertex buffer.
-        const lineCount = 3;
-        const pointDesc = new wg.StructType({
-            pos: wg.Member(wg.Vec3f32, 0),
-            color: wg.Member(wg.Vec4f32, 1),
-        })
-        const lineDesc = new wg.ArrayType(pointDesc, lineCount * 2);
-        const lineVertexBuffer = params.device.createBuffer({
-            label: "lines vertex buffer",
-            size: lineDesc.byteSize(),
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
+        const lineBundle = shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            mod: uniformsDesc,
+            buffer: uniformsBuffer,
         });
-        params.device.queue.writeBuffer(lineVertexBuffer, 0, lineDesc.createArray([
-            { pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0, 1], color: [1, 0, 0, 1] },
-            { pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0, 1], color: [0, 1, 0, 1] },
-            { pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1, 1], color: [0, 0, 1, 1] },
-        ]));
-
-        const linePipeline = params.device.createRenderPipeline({
-            label: "Line drawing pipeline",
-            layout: params.device.createPipelineLayout({
-                label: "line pipeline layouts",
-                bindGroupLayouts: [params.device.createBindGroupLayout({
-                    label: "compute pipeline main layout",
-                    entries: [
-                        {
-                            binding: 0,
-                            visibility: GPUShaderStage.VERTEX,
-                            buffer: { type: "uniform" },
-                        },
-                        {
-                            binding: 1,
-                            visibility: GPUShaderStage.VERTEX,
-                            buffer: { type: "read-only-storage" },
-                        },
-                    ]
-                })],
-            }),
-            vertex: {
-                entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "line vertex shader",
-                    code: wg.wgsl`
-                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
-                        @group(0) @binding(1) var<storage> points : ${lineDesc.typename()};
-                        struct Out {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) color: vec4<f32>;
-                        };
-
-                        @stage(vertex)
-                        fn main(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> Out {
-                            let p = points[idx];
-                            var out : Out;
-                            out.pos = uniforms.camera * vec4<f32>(p.pos, 1.0);
-                            out.color = p.color;
-                            return out;
-                        }
-                    `,
-                }).toDesc())
-            },
-            primitive: {
-                topology: 'line-list',
-            },
-            depthStencil: {
-                depthWriteEnabled: false,
-                // depthCompare: 'less',
-                format: depthFormat,
-            },
-
-            fragment: {
-                entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "line fragment",
-                    code: wg.wgsl`
-                        @stage(fragment)
-                        fn main(@location(0) color : vec4<f32>) -> @location(0) vec4<f32> {
-                            return color;
-                        }
-                    `,
-                }).toDesc()),
-                targets: [{ format: params.renderFormat }],
-            },
-        });
-        const lineBindGroup = params.device.createBindGroup({
-            label: "line pipeline bindgroup",
-            layout: linePipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: uniformsBuffer } },
-                { binding: 1, resource: { buffer: lineVertexBuffer } },
-            ]
-        });
-
-        const lineBundleEncoder = params.device.createRenderBundleEncoder({
-            label: "line render bundle",
-            depthReadOnly: true,
-            stencilReadOnly: true,
-            colorFormats: [params.renderFormat],
-            depthStencilFormat: depthFormat,
-        });
-        lineBundleEncoder.pushDebugGroup("line drawing bundle");
-        lineBundleEncoder.setPipeline(linePipeline);
-        lineBundleEncoder.setBindGroup(0, lineBindGroup);
-        lineBundleEncoder.draw(lineCount * 2, 1, 0, 0);
-        lineBundleEncoder.popDebugGroup();
-        const lineBundle = lineBundleEncoder.finish();
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {

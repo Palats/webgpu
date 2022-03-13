@@ -113,3 +113,128 @@ export const rand = new wg.WGSLModule({
         }
     `,
 })
+
+export type LineDesc = {
+    label?: string;
+    device: GPUDevice;
+
+    // Color format of where the bundle will be drawn.
+    colorFormat: GPUTextureFormat;
+    // Line drawing does not use depth buffer, but if one is present in the
+    // render pass, then the bundle still needs to know about it.
+    depthFormat?: GPUTextureFormat;
+
+    // temporary hack to get the camera transform.
+    mod: wg.StructType<any>;
+    buffer: GPUBuffer;
+}
+
+// Prepare a bundle which will draw a bunch of lines.
+export function buildLineBundle(lineDesc: LineDesc) {
+    const label = lineDesc.label ?? "lines";
+
+    const lineCount = 3;
+    const pointDesc = new wg.StructType({
+        pos: wg.Member(wg.Vec3f32, 0),
+        color: wg.Member(wg.Vec4f32, 1),
+    })
+    const arrayDesc = new wg.ArrayType(pointDesc, lineCount * 2);
+    const vertexBuffer = lineDesc.device.createBuffer({
+        label: `${label} - vertex buffer`,
+        size: arrayDesc.byteSize(),
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
+    });
+    lineDesc.device.queue.writeBuffer(vertexBuffer, 0, arrayDesc.createArray([
+        { pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0, 1], color: [1, 0, 0, 1] },
+        { pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0, 1], color: [0, 1, 0, 1] },
+        { pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1, 1], color: [0, 0, 1, 1] },
+    ]));
+
+    const pipeline = lineDesc.device.createRenderPipeline({
+        label: `${label} - pipeline`,
+        layout: lineDesc.device.createPipelineLayout({
+            label: `${label} - pipeline layouts`,
+            bindGroupLayouts: [lineDesc.device.createBindGroupLayout({
+                label: `${label} - main layout`,
+                entries: [
+                    {
+                        binding: 0,
+                        visibility: GPUShaderStage.VERTEX,
+                        buffer: { type: "uniform" },
+                    },
+                    {
+                        binding: 1,
+                        visibility: GPUShaderStage.VERTEX,
+                        buffer: { type: "read-only-storage" },
+                    },
+                ]
+            })],
+        }),
+        vertex: {
+            entryPoint: 'main',
+            module: lineDesc.device.createShaderModule(new wg.WGSLModule({
+                label: `${label} - vertex shader`,
+                code: wg.wgsl`
+                    @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
+                    @group(0) @binding(1) var<storage> points : ${arrayDesc.typename()};
+                    struct Out {
+                        @builtin(position) pos: vec4<f32>;
+                        @location(0) color: vec4<f32>;
+                    };
+
+                    @stage(vertex)
+                    fn main(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> Out {
+                        let p = points[idx];
+                        var out : Out;
+                        out.pos = uniforms.camera * vec4<f32>(p.pos, 1.0);
+                        out.color = p.color;
+                        return out;
+                    }
+                `,
+            }).toDesc())
+        },
+        primitive: {
+            topology: 'line-list',
+        },
+        depthStencil: lineDesc.depthFormat ? {
+            depthWriteEnabled: false,
+            format: lineDesc.depthFormat,
+        } : undefined,
+
+        fragment: {
+            entryPoint: 'main',
+            module: lineDesc.device.createShaderModule(new wg.WGSLModule({
+                label: `~{label} - fragment shader`,
+                code: wg.wgsl`
+                    @stage(fragment)
+                    fn main(@location(0) color : vec4<f32>) -> @location(0) vec4<f32> {
+                        return color;
+                    }
+                `,
+            }).toDesc()),
+            targets: [{ format: lineDesc.colorFormat }],
+        },
+    });
+    const bindGroup = lineDesc.device.createBindGroup({
+        label: `${label} - bindgroup`,
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: { buffer: lineDesc.buffer } },
+            { binding: 1, resource: { buffer: vertexBuffer } },
+        ]
+    });
+
+    const bundleEncoder = lineDesc.device.createRenderBundleEncoder({
+        label: label,
+        depthReadOnly: true,
+        stencilReadOnly: true,
+        colorFormats: [lineDesc.colorFormat],
+        depthStencilFormat: lineDesc.depthFormat ?? undefined,
+    });
+    bundleEncoder.pushDebugGroup(`${label} - building bundle`);
+    bundleEncoder.setPipeline(pipeline);
+    bundleEncoder.setBindGroup(0, bindGroup);
+    bundleEncoder.draw(lineCount * 2, 1, 0, 0);
+    bundleEncoder.popDebugGroup();
+    return bundleEncoder.finish();
+}
