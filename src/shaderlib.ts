@@ -178,16 +178,22 @@ export function buildLineBundle(lineDesc: LineDesc) {
                 label: `${label} - vertex shader`,
                 code: wg.wgsl`
                     @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
-                    struct Out {
+
+                    struct Input {
+                        @location(0) pos: vec3<f32>;
+                        @location(1) color: vec4<f32>;
+                    }
+
+                    struct Output {
                         @builtin(position) pos: vec4<f32>;
                         @location(0) color: vec4<f32>;
                     };
 
                     @stage(vertex)
-                    fn main(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32, @location(0) pos: vec3<f32>, @location(1) color: vec4<f32>) -> Out {
-                        var out : Out;
-                        out.pos = uniforms.camera * vec4<f32>(pos, 1.0);
-                        out.color = color;
+                    fn main(inp: Input) -> Output {
+                        var out : Output;
+                        out.pos = uniforms.camera * vec4<f32>(inp.pos, 1.0);
+                        out.color = inp.color;
                         return out;
                     }
                 `,
