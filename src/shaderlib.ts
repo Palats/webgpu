@@ -125,9 +125,10 @@ export type LineDesc = {
 
     // Color format of where the bundle will be drawn.
     colorFormat: GPUTextureFormat;
-    // Line drawing does not use depth buffer, but if one is present in the
+    // Even when drawing does not use depth buffer, if one is present in the
     // render pass, then the bundle still needs to know about it.
     depthFormat?: GPUTextureFormat;
+    depthCompare?: GPUCompareFunction;
 
     // List of lines to draw. Each entry of the list is a single independent
     // line. Each line will connect one point to the next.
@@ -165,10 +166,6 @@ export function buildLineBundle(lineDesc: LineDesc) {
     for (const line of lineDesc.lines) {
         let prev = line[0];
         for (let i = 1; i < line.length; i++) {
-            let prev = {
-                pos: line[0].pos,
-                color: line[0].color,
-            };
             let next = line[i];
             pointDesc.dataViewSet(dv, offset, prev);
             offset += pointDesc.byteSize();
@@ -233,6 +230,7 @@ export function buildLineBundle(lineDesc: LineDesc) {
         },
         depthStencil: lineDesc.depthFormat ? {
             depthWriteEnabled: false,
+            depthCompare: lineDesc.depthCompare ?? 'always',
             format: lineDesc.depthFormat,
         } : undefined,
 
@@ -274,8 +272,45 @@ export function buildLineBundle(lineDesc: LineDesc) {
     return bundleEncoder.finish();
 }
 
+// Lines for indicating the orthonormal reference.
 export const ortholines: Point[][] = [
     [{ pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0], color: [1, 0, 0, 1] }],
     [{ pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0], color: [0, 1, 0, 1] }],
     [{ pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1], color: [0, 0, 1, 1] }],
 ]
+
+// Lines for a cube centered in 0 and going [-s, +s].
+export function cubelines(s: number): Point[][] {
+    return [
+        [
+            { pos: [-s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, -s, -s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [-s, -s, s], color: [1, 1, 1, 1] },
+            { pos: [s, -s, s], color: [1, 1, 1, 1] },
+            { pos: [s, s, s], color: [1, 1, 1, 1] },
+            { pos: [-s, s, s], color: [1, 1, 1, 1] },
+            { pos: [-s, -s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [-s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, -s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, -s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [-s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, s, s], color: [1, 1, 1, 1] },
+        ],
+    ];
+}

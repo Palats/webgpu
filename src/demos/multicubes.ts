@@ -295,6 +295,8 @@ export const demo = {
         }).createView();
 
         // Prepare the rendering pipeline as a bundle.
+        const bundles: GPURenderBundle[] = [];
+
         const renderBundleEncoder = params.device.createRenderBundleEncoder({
             label: "main render bundle",
             depthReadOnly: false,
@@ -306,17 +308,27 @@ export const demo = {
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
         // Cube mesh as a triangle-strip uses 14 vertices.
         renderBundleEncoder.draw(14, instances, 0, 0);
-        const renderBundle = renderBundleEncoder.finish();
+        bundles.push(renderBundleEncoder.finish());
 
-        // Line drawing
-        const lineBundle = shaderlib.buildLineBundle({
+        // Orthonormals.
+        bundles.push(shaderlib.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
             lines: shaderlib.ortholines,
             mod: uniformsDesc,
             buffer: uniformsBuffer,
-        });
+        }));
+        // Cube surrounding the scene.
+        bundles.push(shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            lines: shaderlib.cubelines(spaceLimit),
+            depthCompare: 'less',
+            mod: uniformsDesc,
+            buffer: uniformsBuffer,
+        }));
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
@@ -366,7 +378,7 @@ export const demo = {
                     stencilStoreOp: 'store',
                 },
             });
-            renderEncoder.executeBundles([renderBundle, lineBundle]);
+            renderEncoder.executeBundles(bundles);
             renderEncoder.end();
             commandEncoder.popDebugGroup();
 
