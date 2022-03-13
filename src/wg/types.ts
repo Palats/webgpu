@@ -174,7 +174,7 @@ type MemberWGSLType<F> = F extends MemberType<infer T> ? T : never;
 type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
 
 // Description of the list of members of a struct, for StructType constructor.
-type MemberMap = { [k: string]: any }
+type MemberMap = { [k: string]: MemberType<any> }
 
 // Internal state keeping of a struct, tracking
 // explicit offset of each field.
@@ -207,7 +207,7 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
         this.members = members;
         this.byIndex = [];
 
-        if (members.length < 1) {
+        if (Object.keys(members).length < 1) {
             // Not sure if empty struct are valid in WGSL - in the mean time,
             // reject.
             throw new Error("struct must have at least one member");
