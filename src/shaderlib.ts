@@ -114,6 +114,11 @@ export const rand = new wg.WGSLModule({
     `,
 })
 
+export type Point = {
+    pos: [number, number, number];
+    color: [number, number, number, number];
+}
+
 export type LineDesc = {
     label?: string;
     device: GPUDevice;
@@ -124,6 +129,10 @@ export type LineDesc = {
     // render pass, then the bundle still needs to know about it.
     depthFormat?: GPUTextureFormat;
 
+    // List of lines to draw. Each entry of the list is a single independent
+    // line. Each line will connect one point to the next.
+    lines: Point[][];
+
     // temporary hack to get the camera transform.
     mod: wg.StructType<any>;
     buffer: GPUBuffer;
@@ -133,7 +142,12 @@ export type LineDesc = {
 export function buildLineBundle(lineDesc: LineDesc) {
     const label = lineDesc.label ?? "lines";
 
-    const lineCount = 3;
+    // Count the number of lines.
+    let lineCount = 0;
+    for (const line of lineDesc.lines) {
+        lineCount += line.length - 1;
+    }
+
     const pointDesc = new wg.StructType({
         pos: wg.Member(wg.Vec3f32, 0),
         color: wg.Member(wg.Vec4f32, 1),
@@ -144,11 +158,26 @@ export function buildLineBundle(lineDesc: LineDesc) {
         size: arrayDesc.byteSize(),
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
     });
-    lineDesc.device.queue.writeBuffer(vertexBuffer, 0, arrayDesc.createArray([
-        { pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0, 1], color: [1, 0, 0, 1] },
-        { pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0, 1], color: [0, 1, 0, 1] },
-        { pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1, 1], color: [0, 0, 1, 1] },
-    ]));
+
+    const a = new ArrayBuffer(arrayDesc.byteSize());
+    const dv = new DataView(a);
+    let offset = 0;
+    for (const line of lineDesc.lines) {
+        let prev = line[0];
+        for (let i = 1; i < line.length; i++) {
+            let prev = {
+                pos: line[0].pos,
+                color: line[0].color,
+            };
+            let next = line[i];
+            pointDesc.dataViewSet(dv, offset, prev);
+            offset += pointDesc.byteSize();
+            pointDesc.dataViewSet(dv, offset, next);
+            offset += pointDesc.byteSize();
+            prev = next;
+        }
+    }
+    lineDesc.device.queue.writeBuffer(vertexBuffer, 0, a);
 
     const pipeline = lineDesc.device.createRenderPipeline({
         label: `${label} - pipeline`,
@@ -244,3 +273,9 @@ export function buildLineBundle(lineDesc: LineDesc) {
     bundleEncoder.popDebugGroup();
     return bundleEncoder.finish();
 }
+
+export const ortholines: Point[][] = [
+    [{ pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0], color: [1, 0, 0, 1] }],
+    [{ pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0], color: [0, 1, 0, 1] }],
+    [{ pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1], color: [0, 0, 1, 1] }],
+]

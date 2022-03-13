@@ -313,6 +313,7 @@ export const demo = {
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
+            lines: shaderlib.ortholines,
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
