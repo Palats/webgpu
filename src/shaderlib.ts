@@ -176,6 +176,36 @@ export function buildLineBundle(lineDesc: LineDesc) {
     }
     lineDesc.device.queue.writeBuffer(vertexBuffer, 0, a);
 
+    const shader = lineDesc.device.createShaderModule(new wg.WGSLModule({
+        label: `${label} - render shader`,
+        code: wg.wgsl`
+            @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
+
+            struct Input {
+                @location(0) pos: vec3<f32>;
+                @location(1) color: vec4<f32>;
+            }
+
+            struct VertexOutput {
+                @builtin(position) pos: vec4<f32>;
+                @location(0) color: vec4<f32>;
+            };
+
+            @stage(vertex)
+            fn vertex(inp: Input) -> VertexOutput {
+                var out : VertexOutput;
+                out.pos = uniforms.camera * vec4<f32>(inp.pos, 1.0);
+                out.color = inp.color;
+                return out;
+            }
+
+            @stage(fragment)
+            fn fragment(@location(0) color : vec4<f32>) -> @location(0) vec4<f32> {
+                return color;
+            }
+        `,
+    }).toDesc());
+
     const pipeline = lineDesc.device.createRenderPipeline({
         label: `${label} - pipeline`,
         layout: lineDesc.device.createPipelineLayout({
@@ -192,7 +222,6 @@ export function buildLineBundle(lineDesc: LineDesc) {
             })],
         }),
         vertex: {
-            entryPoint: 'main',
             buffers: [{
                 arrayStride: arrayDesc.stride,
                 attributes: [
@@ -200,30 +229,8 @@ export function buildLineBundle(lineDesc: LineDesc) {
                     { shaderLocation: 1, format: "float32x4", offset: 16, },
                 ],
             }],
-            module: lineDesc.device.createShaderModule(new wg.WGSLModule({
-                label: `${label} - vertex shader`,
-                code: wg.wgsl`
-                    @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
-
-                    struct Input {
-                        @location(0) pos: vec3<f32>;
-                        @location(1) color: vec4<f32>;
-                    }
-
-                    struct Output {
-                        @builtin(position) pos: vec4<f32>;
-                        @location(0) color: vec4<f32>;
-                    };
-
-                    @stage(vertex)
-                    fn main(inp: Input) -> Output {
-                        var out : Output;
-                        out.pos = uniforms.camera * vec4<f32>(inp.pos, 1.0);
-                        out.color = inp.color;
-                        return out;
-                    }
-                `,
-            }).toDesc())
+            entryPoint: 'vertex',
+            module: shader,
         },
         primitive: {
             topology: 'line-list',
@@ -235,16 +242,8 @@ export function buildLineBundle(lineDesc: LineDesc) {
         } : undefined,
 
         fragment: {
-            entryPoint: 'main',
-            module: lineDesc.device.createShaderModule(new wg.WGSLModule({
-                label: `${label} - fragment shader`,
-                code: wg.wgsl`
-                    @stage(fragment)
-                    fn main(@location(0) color : vec4<f32>) -> @location(0) vec4<f32> {
-                        return color;
-                    }
-                `,
-            }).toDesc()),
+            entryPoint: "fragment",
+            module: shader,
             targets: [{ format: lineDesc.colorFormat }],
         },
     });
