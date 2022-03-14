@@ -13,6 +13,7 @@ export {
 
 export {
     Member,
+    U16,
     U32,
     F32,
     StructType,

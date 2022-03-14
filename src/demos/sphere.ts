@@ -1,0 +1,256 @@
+// Draw a sphere.
+
+/// <reference types="@webgpu/types" />
+import * as demotypes from '../demotypes';
+import * as glmatrix from 'gl-matrix';
+import * as wg from '../wg';
+import * as shaderlib from '../shaderlib';
+
+// Basic parameters provided to all the shaders.
+const uniformsDesc = new wg.StructType({
+    elapsedMs: wg.Member(wg.F32, 0),
+    deltaMs: wg.Member(wg.F32, 1),
+    renderWidth: wg.Member(wg.F32, 2),
+    renderHeight: wg.Member(wg.F32, 3),
+    rngSeed: wg.Member(wg.F32, 4),
+    camera: wg.Member(wg.Mat4x4F32, 5),
+})
+
+export const demo = {
+    id: "sphere",
+    caption: "A sphere",
+
+    async init(params: demotypes.InitParams) {
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
+        // -- Prepare mesh.
+        const vertexCount = 8;
+        const vertexDesc = new wg.StructType({
+            pos: wg.Member(wg.Vec3f32, 0),
+            color: wg.Member(wg.Vec4f32, 1),
+        })
+        const meshDesc = new wg.ArrayType(vertexDesc, vertexCount);
+        const vertexBuffer = params.device.createBuffer({
+            label: `vertex buffer`,
+            size: meshDesc.byteSize(),
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+
+        const meshAB = new ArrayBuffer(meshDesc.byteSize());
+        const r = 0.5;
+        meshDesc.dataViewSet(new DataView(meshAB), 0, [
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1] },
+            { pos: [r, r, r], color: [1, 1, 1, 1] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1] },
+        ]);
+        params.device.queue.writeBuffer(vertexBuffer, 0, meshAB);
+
+        const triCount = 12;
+        const indexDesc = new wg.ArrayType(wg.U16, 3 * triCount);
+        const indexBuffer = params.device.createBuffer({
+            label: `index buffer`,
+            size: indexDesc.byteSize(),
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+
+        const indexAB = new ArrayBuffer(indexDesc.byteSize());
+        indexDesc.dataViewSet(new DataView(indexAB), 0, [
+            0, 3, 1, // back
+            1, 3, 2,
+            5, 1, 6, // right
+            6, 1, 2,
+            0, 7, 3, // left
+            0, 4, 7,
+            7, 4, 5, // front
+            5, 6, 7,
+            3, 7, 6, // top
+            6, 2, 3,
+            4, 0, 5, // bottom
+            5, 0, 1,
+        ]);
+        params.device.queue.writeBuffer(indexBuffer, 0, indexAB);
+
+        // -- Render pipeline.
+
+        const shader = params.device.createShaderModule(new wg.WGSLModule({
+            label: "vertex shader",
+            code: wg.wgsl`
+                @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+
+                struct Input {
+                    @location(0) pos: vec3<f32>;
+                    @location(1) color: vec4<f32>;
+                }
+
+                struct Vertex {
+                    @builtin(position) pos: vec4<f32>;
+                    @location(0) color: vec4<f32>;
+                };
+
+                @stage(vertex)
+                fn vertex(inp: Input) -> Vertex {
+                    let TAU = 6.283185;
+                    let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                    let r = vec3<f32>(c, c, c);
+
+                    var out : Vertex;
+                    out.pos =
+                        uniforms.camera
+                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                        * ${shaderlib.tr.ref("rotateY")}(r.y)
+                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * vec4<f32>(inp.pos, 1.0);
+                    out.color = inp.color;
+                    return out;
+                }
+
+                @stage(fragment)
+                fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                    return vert.color;
+                }
+            `,
+        }).toDesc());
+
+        const depthFormat = "depth24plus";
+
+        const renderPipeline = params.device.createRenderPipeline({
+            label: "Rendering pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        label: "render pipeline layout",
+                        entries: [
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                                buffer: { type: 'uniform' },
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: 'vertex',
+                module: shader,
+                buffers: [{
+                    arrayStride: meshDesc.stride,
+                    attributes: [
+                        { shaderLocation: 0, format: "float32x3", offset: 0, },
+                        { shaderLocation: 1, format: "float32x4", offset: 16, },
+                    ],
+                }],
+            },
+            primitive: {
+                topology: 'triangle-list',
+                cullMode: 'back',
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: depthFormat,
+            },
+            fragment: {
+                entryPoint: 'fragment',
+                module: shader,
+                targets: [{
+                    format: params.renderFormat,
+                }],
+            },
+        });
+
+        const renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                },
+            ]
+        });
+
+        const depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: depthFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+
+        // Prepare the rendering pipeline as a bundle.
+        const bundles: GPURenderBundle[] = [];
+
+        const renderBundleEncoder = params.device.createRenderBundleEncoder({
+            label: "main render bundle",
+            depthReadOnly: false,
+            stencilReadOnly: false,
+            colorFormats: [params.renderFormat],
+            depthStencilFormat: depthFormat,
+        });
+        renderBundleEncoder.setPipeline(renderPipeline);
+        renderBundleEncoder.setIndexBuffer(indexBuffer, 'uint16');
+        renderBundleEncoder.setVertexBuffer(0, vertexBuffer);
+        renderBundleEncoder.setBindGroup(0, renderBindGroup);
+        // Cube mesh as a triangle-strip uses 14 vertices.
+        renderBundleEncoder.drawIndexed(triCount * 3);
+        bundles.push(renderBundleEncoder.finish());
+
+        const cameraOffset = glmatrix.vec3.fromValues(0, 0, -4);
+
+        // -- Single frame rendering.
+        return async (info: demotypes.FrameInfo) => {
+            glmatrix.mat4.translate(
+                info.camera,
+                info.camera,
+                cameraOffset,
+            );
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                elapsedMs: info.elapsedMs,
+                deltaMs: info.deltaMs,
+                renderWidth: params.renderWidth,
+                renderHeight: params.renderHeight,
+                rngSeed: info.rng,
+                camera: Array.from(info.camera),
+            }));
+
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+
+            // -- Frame rendering.
+            commandEncoder.pushDebugGroup('Render cubes');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                    view: params.context.getCurrentTexture().createView(),
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                }],
+                depthStencilAttachment: {
+                    view: depthTextureView,
+                    depthClearValue: 1.0,
+                    depthLoadOp: 'clear',
+                    depthStoreOp: 'store',
+                    stencilClearValue: 0,
+                    stencilLoadOp: 'clear',
+                    stencilStoreOp: 'store',
+                },
+            });
+            renderEncoder.executeBundles(bundles);
+            renderEncoder.end();
+            commandEncoder.popDebugGroup();
+
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+        };
+    }
+}

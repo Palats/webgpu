@@ -51,13 +51,30 @@ class F32Type extends WGSLType<number> {
 }
 export const F32 = new F32Type();
 
+// Info about WGSL `u16` type.
+// This is not a real type in WGSL, but it can be used to map
+// vertex indices.
+class U16Type extends WGSLType<number> {
+    byteSize() { return 2; }
+    alignOf() { return 2; }
+
+    dataViewSet(dv: DataView, offset: number, v: number) {
+        dv.setUint16(offset, v, true);
+    }
+
+    typename(): lang.WGSLCode {
+        return wgsl`u16`;
+    }
+}
+export const U16 = new U16Type();
+
 // Info about WGSL `u32` type.
 class U32Type extends WGSLType<number> {
     byteSize() { return 4; }
     alignOf() { return 4; }
 
     dataViewSet(dv: DataView, offset: number, v: number) {
-        dv.setInt32(offset, v, true);
+        dv.setUint32(offset, v, true);
     }
 
     typename(): lang.WGSLCode {
