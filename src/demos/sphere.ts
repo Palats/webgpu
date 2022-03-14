@@ -16,6 +16,16 @@ const uniformsDesc = new wg.StructType({
     camera: wg.Member(wg.Mat4x4F32, 5),
 })
 
+const vertexDesc = new wg.StructType({
+    pos: wg.Member(wg.Vec3f32, 0),
+    color: wg.Member(wg.Vec4f32, 1),
+});
+
+type Mesh = {
+    vertices: wg.types.WGSLJSType<typeof vertexDesc>[];
+    indices: number[];
+}
+
 export const demo = {
     id: "sphere",
     caption: "A sphere",
@@ -28,59 +38,27 @@ export const demo = {
         });
 
         // -- Prepare mesh.
-        const vertexCount = 8;
-        const vertexDesc = new wg.StructType({
-            pos: wg.Member(wg.Vec3f32, 0),
-            color: wg.Member(wg.Vec4f32, 1),
-        })
-        const meshDesc = new wg.ArrayType(vertexDesc, vertexCount);
+        const mesh = cubeMesh();
+
+        const vertexCount = mesh.vertices.length;
+        const verticesDesc = new wg.ArrayType(vertexDesc, vertexCount);
         const vertexBuffer = params.device.createBuffer({
             label: `vertex buffer`,
-            size: meshDesc.byteSize(),
+            size: verticesDesc.byteSize(),
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
+        params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
 
-        const meshAB = new ArrayBuffer(meshDesc.byteSize());
-        const r = 0.5;
-        meshDesc.dataViewSet(new DataView(meshAB), 0, [
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1] },
-            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
-            { pos: [r, -r, r], color: [1, 0, 1, 1] },
-            { pos: [r, r, r], color: [1, 1, 1, 1] },
-            { pos: [-r, r, r], color: [0, 1, 1, 1] },
-        ]);
-        params.device.queue.writeBuffer(vertexBuffer, 0, meshAB);
-
-        const triCount = 12;
-        const indexDesc = new wg.ArrayType(wg.U16, 3 * triCount);
+        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
         const indexBuffer = params.device.createBuffer({
             label: `index buffer`,
             size: indexDesc.byteSize(),
             usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         });
 
-        const indexAB = new ArrayBuffer(indexDesc.byteSize());
-        indexDesc.dataViewSet(new DataView(indexAB), 0, [
-            0, 3, 1, // back
-            1, 3, 2,
-            5, 1, 6, // right
-            6, 1, 2,
-            0, 7, 3, // left
-            0, 4, 7,
-            7, 4, 5, // front
-            5, 6, 7,
-            3, 7, 6, // top
-            6, 2, 3,
-            4, 0, 5, // bottom
-            5, 0, 1,
-        ]);
-        params.device.queue.writeBuffer(indexBuffer, 0, indexAB);
+        params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
 
         // -- Render pipeline.
-
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
@@ -143,7 +121,7 @@ export const demo = {
                 entryPoint: 'vertex',
                 module: shader,
                 buffers: [{
-                    arrayStride: meshDesc.stride,
+                    arrayStride: verticesDesc.stride,
                     attributes: [
                         { shaderLocation: 0, format: "float32x3", offset: 0, },
                         { shaderLocation: 1, format: "float32x4", offset: 16, },
@@ -200,8 +178,7 @@ export const demo = {
         renderBundleEncoder.setIndexBuffer(indexBuffer, 'uint16');
         renderBundleEncoder.setVertexBuffer(0, vertexBuffer);
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
-        // Cube mesh as a triangle-strip uses 14 vertices.
-        renderBundleEncoder.drawIndexed(triCount * 3);
+        renderBundleEncoder.drawIndexed(mesh.indices.length);
         bundles.push(renderBundleEncoder.finish());
 
         const cameraOffset = glmatrix.vec3.fromValues(0, 0, -4);
@@ -253,4 +230,35 @@ export const demo = {
             params.device.queue.submit([commandEncoder.finish()]);
         };
     }
+}
+
+function cubeMesh(): Mesh {
+    const r = 0.5;
+
+    return {
+        vertices: [
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1] },
+            { pos: [r, r, r], color: [1, 1, 1, 1] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1] },
+        ],
+        indices: [
+            0, 3, 1, // back
+            1, 3, 2,
+            5, 1, 6, // right
+            6, 1, 2,
+            0, 7, 3, // left
+            0, 4, 7,
+            7, 4, 5, // front
+            5, 6, 7,
+            3, 7, 6, // top
+            6, 2, 3,
+            4, 0, 5, // bottom
+            5, 0, 1,
+        ]
+    };
 }

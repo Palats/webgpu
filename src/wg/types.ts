@@ -188,7 +188,7 @@ export function Member<T>(type: T, idx: number): MemberType<T> {
 // Extract the WGSL type class of a field declaration.
 type MemberWGSLType<F> = F extends MemberType<infer T> ? T : never;
 // Extract the javascript type from a WGSL type (e.g., F32Type -> number).
-type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
+export type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
 
 // Description of the list of members of a struct, for StructType constructor.
 type MemberMap = { [k: string]: MemberType<any> }
