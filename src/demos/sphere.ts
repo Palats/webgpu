@@ -38,7 +38,7 @@ export const demo = {
         });
 
         // -- Prepare mesh.
-        const mesh = cubeMesh();
+        const mesh = sphereMesh();
 
         const vertexCount = mesh.vertices.length;
         const verticesDesc = new wg.ArrayType(vertexDesc, vertexCount);
@@ -260,5 +260,71 @@ function cubeMesh(): Mesh {
             4, 0, 5, // bottom
             5, 0, 1,
         ]
+    };
+}
+
+// Inspired from https://github.com/caosdoar/spheres/blob/master/src/spheres.cpp
+const faces = [
+    { idx: 0, origin: glmatrix.vec3.fromValues(-1, -1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 1, origin: glmatrix.vec3.fromValues(1, -1, -1), right: glmatrix.vec3.fromValues(0, 0, 2), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 2, origin: glmatrix.vec3.fromValues(1, -1, 1), right: glmatrix.vec3.fromValues(-2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 3, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(0, 0, -2), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 4, origin: glmatrix.vec3.fromValues(-1, 1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, 2) },
+    { idx: 5, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, -2) },
+]
+
+function sphereMesh(): Mesh {
+    const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
+    const indices: number[] = [];
+
+    const divisions = 3;
+    const step = 1 / divisions;
+
+    for (const face of faces) {
+        for (let j = 0; j <= divisions; j++) {
+            for (let i = 0; i <= divisions; i++) {
+                const p = glmatrix.vec3.fromValues(
+                    face.origin[0] + step * (i * face.right[0] + j * face.up[0]),
+                    face.origin[1] + step * (i * face.right[1] + j * face.up[1]),
+                    face.origin[2] + step * (i * face.right[2] + j * face.up[2]),
+                );
+                const p2 = glmatrix.vec3.multiply(glmatrix.vec3.create(), p, p);
+                vertices.push({
+                    pos: [
+                        p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
+                        p[1] * Math.sqrt(1 - 0.5 * (p2[2] + p2[0]) + p2[2] * p2[0] / 3),
+                        p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
+                    ],
+                    color: [j / divisions, i / divisions, 0, 1],
+                });
+            }
+        }
+    }
+
+    const k = divisions + 1;
+    for (const face of faces) {
+        for (let j = 0; j < divisions; j++) {
+            const bottom = j < (divisions / 2);
+            for (let i = 0; i < divisions; i++) {
+                const left = i < (divisions / 2);
+                const a = (face.idx * k + j) * k + i;
+                const b = (face.idx * k + j) * k + i + 1;
+                const c = (face.idx * k + j + 1) * k + i;
+                const d = (face.idx * k + j + 1) * k + i + 1;
+                if ((!bottom && !left) || (bottom && left)) {
+                    indices.push(...[a, c, d, a, d, b]);
+                    // indices.push(...[a, c, b, c, d, b]);
+
+                } else {
+                    // indices.push(...[a, c, d, a, d, b]);
+                    indices.push(...[a, c, b, c, d, b]);
+                }
+            }
+        }
+    }
+
+    return {
+        vertices: vertices,
+        indices: indices,
     };
 }
