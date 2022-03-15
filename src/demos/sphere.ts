@@ -87,7 +87,8 @@ export const demo = {
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
                         * vec4<f32>(inp.pos, 1.0);
-                    out.color = inp.color;
+                    // out.color = inp.color;
+                    out.color = vec4<f32>(0.5 * (inp.pos + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
                 }
 
@@ -277,7 +278,7 @@ function sphereMesh(): Mesh {
     const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
     const indices: number[] = [];
 
-    const divisions = 3;
+    const divisions = 4;
     const step = 1 / divisions;
 
     for (const face of faces) {
