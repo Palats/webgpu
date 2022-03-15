@@ -84,7 +84,7 @@ class U32Type extends WGSLType<number> {
 export const U32 = new U32Type();
 
 // Info about WGSL `vec3<f32>` type.
-class Vec3f32Type extends WGSLType<number[]> {
+class Vec3f32Type extends WGSLType<[number, number, number]> {
     byteSize() { return 12; }
     alignOf() { return 16; }
 
@@ -101,7 +101,7 @@ class Vec3f32Type extends WGSLType<number[]> {
 export const Vec3f32 = new Vec3f32Type();
 
 // Info about WGSL `vec4<f32>` type.
-class Vec4f32Type extends WGSLType<number[]> {
+class Vec4f32Type extends WGSLType<[number, number, number, number]> {
     byteSize() { return 16; }
     alignOf() { return 16; }
 
