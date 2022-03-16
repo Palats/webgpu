@@ -179,12 +179,12 @@ type MemberWGSLType<F> = F extends MemberDecl<infer T> ? T : never;
 export type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
 
 // Description of the list of members of a struct, for StructType constructor.
-type MemberMap = { [k: string]: MemberDecl<any> }
+type MemberDeclMap = { [k: string]: MemberDecl<any> }
 
 // Internal state keeping of a struct, tracking
 // explicit offset of each field.
-type StructMember = {
-    type: WGSLType<any>,
+type Member<T> = {
+    type: WGSLType<T>,
     idx: number,
     name: string
     sizeOf: number
@@ -194,21 +194,21 @@ type StructMember = {
 
 // Description of a WGSL struct allowing mapping between javascript and WGSL.
 // An instance of a StructType describes just the layout of the struct:
-//  - The MemberMap (aka MM) descripts the list of members - name, position in
+//  - The MemberDeclMap (aka MDM) describes the list of members - name, position in
 //    the struct.
-//  - StructJSType<StructType<MM>> describes javascript object, which member
+//  - StructJSType<StructType<MDM>> describes javascript object, which member
 //    names are the same as the struct. The type of the value are the typescript
 //    types corresponding to the WGSL values - e.g., a `f32` is mapped to a number.
-export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<MM>> {
+export class StructType<MDM extends MemberDeclMap> extends WGSLType<MemberDeclMapJSType<MDM>> {
     // The object listing the fields this struct contains.
-    public members: MM;
+    public members: MDM;
 
-    private byIndex: StructMember[];
+    private byIndex: Member<any>[];
     private _byteSize: number;
     private _alignOf: number;
     private mod?: lang.WGSLModule;
 
-    constructor(members: MM) {
+    constructor(members: MDM) {
         super();
         this.members = members;
         this.byIndex = [];
@@ -261,7 +261,7 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
 
     // Take an object containg the value for each member, and write it
     // in the provided data view.
-    dataViewSet(dv: DataView, offset: number, v: MemberMapJSType<MM>): void {
+    dataViewSet(dv: DataView, offset: number, v: MemberDeclMapJSType<MDM>): void {
         for (const smember of this.byIndex) {
             smember.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
         }
@@ -292,17 +292,17 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
     }
 }
 
-// A structure representing in javascript the content of the provided MemberMap.
-export type MemberMapJSType<MM> = {
-    [k in keyof MM]: WGSLJSType<MemberWGSLType<MM[k]>>;
+// A structure representing in javascript the content of the provided MemberDeclMap.
+export type MemberDeclMapJSType<MDM> = {
+    [k in keyof MDM]: WGSLJSType<MemberWGSLType<MDM[k]>>;
 }
 
 // Extract the member map for the given struct type.
-export type StructMemberMap<ST> = ST extends StructType<infer MM> ? MM : never;
+export type StructMemberDeclMap<ST> = ST extends StructType<infer MDM> ? MDM : never;
 
 // Type definition for a mapping member name / javascript value, suitable to
 // feed into a descriptor value. I.e., the actual structure as javascript.
-type StructJSType<ST> = MemberMapJSType<StructMemberMap<ST>>;
+type StructJSType<ST> = MemberDeclMapJSType<StructMemberDeclMap<ST>>;
 
 //-----------------------------------------------
 // Basic test
