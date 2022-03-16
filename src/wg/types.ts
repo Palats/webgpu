@@ -167,19 +167,19 @@ export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]
 }
 
 // Description of a given member of a WGSL struct.
-type MemberDecl<T> = {
+type MemberDesc<T> = {
     // Index of the field in the struct is mandatory, to reduce renaming and moving mistakes.
     idx: number;
     type: T;
 }
 
-// Extract the WGSL type class of a field declaration.
-type MemberWGSLType<F> = F extends MemberDecl<infer T> ? T : never;
+// Extract the WGSL type class of a field descriptor.
+type MemberWGSLType<F> = F extends MemberDesc<infer T> ? T : never;
 // Extract the javascript type from a WGSL type (e.g., F32Type -> number).
 export type WGSLJSType<F> = F extends WGSLType<infer T> ? T : never;
 
 // Description of the list of members of a struct, for StructType constructor.
-type MemberDeclMap = { [k: string]: MemberDecl<any> }
+type MemberDescMap = { [k: string]: MemberDesc<any> }
 
 // Details about each field of the struct.
 export type Member<T> = {
@@ -193,12 +193,12 @@ export type Member<T> = {
 
 // Description of a WGSL struct allowing mapping between javascript and WGSL.
 // An instance of a StructType describes just the layout of the struct:
-//  - The MemberDeclMap (aka MDM) describes the list of members - name, position in
+//  - The MemberDescMap (aka MDM) describes the list of members - name, position in
 //    the struct.
 //  - StructJSType<StructType<MDM>> describes javascript object, which member
 //    names are the same as the struct. The type of the value are the typescript
 //    types corresponding to the WGSL values - e.g., a `f32` is mapped to a number.
-export class StructType<MDM extends MemberDeclMap> extends WGSLType<MemberDeclMapJSType<MDM>> {
+export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMapJSType<MDM>> {
     // Info about each single field.
     public members: MemberMap<MDM>;
 
@@ -207,33 +207,33 @@ export class StructType<MDM extends MemberDeclMap> extends WGSLType<MemberDeclMa
     private _alignOf: number;
     private mod?: lang.WGSLModule;
 
-    constructor(membersdecl: MDM) {
+    constructor(membersdesc: MDM) {
         super();
         this.members = {} as MemberMap<MDM>;
         this.byIndex = [];
 
-        if (Object.keys(membersdecl).length < 1) {
+        if (Object.keys(membersdesc).length < 1) {
             // Not sure if empty struct are valid in WGSL - in the mean time,
             // reject.
             throw new Error("struct must have at least one member");
         }
 
-        for (const [name, memberdecl] of Object.entries(membersdecl)) {
-            if (this.byIndex[memberdecl.idx]) {
-                throw new Error(`member index ${memberdecl.idx} is duplicated`);
+        for (const [name, memberdesc] of Object.entries(membersdesc)) {
+            if (this.byIndex[memberdesc.idx]) {
+                throw new Error(`member index ${memberdesc.idx} is duplicated`);
             }
             const member = {
                 name,
-                idx: memberdecl.idx,
-                type: memberdecl.type,
+                idx: memberdesc.idx,
+                type: memberdesc.type,
                 // No support for @size & @align attributes for now.
-                sizeOf: memberdecl.type.byteSize(),
-                alignOf: memberdecl.type.alignOf(),
+                sizeOf: memberdesc.type.byteSize(),
+                alignOf: memberdesc.type.alignOf(),
                 // Calculated below
                 offset: 0,
             }
             this.members[name as keyof MemberMap<MDM>] = member;
-            this.byIndex[memberdecl.idx] = member;
+            this.byIndex[memberdesc.idx] = member;
         }
 
         // Struct offsets, size and aligns are non-trivial - see
@@ -261,7 +261,7 @@ export class StructType<MDM extends MemberDeclMap> extends WGSLType<MemberDeclMa
 
     // Take an object containg the value for each member, and write it
     // in the provided data view.
-    dataViewSet(dv: DataView, offset: number, v: MemberDeclMapJSType<MDM>): void {
+    dataViewSet(dv: DataView, offset: number, v: MemberDescMapJSType<MDM>): void {
         for (const member of this.byIndex) {
             member.type.dataViewSet(dv, offset + member.offset, v[member.name]);
         }
@@ -292,27 +292,27 @@ export class StructType<MDM extends MemberDeclMap> extends WGSLType<MemberDeclMa
     }
 }
 
-// A structure representing in javascript the content of the provided MemberDeclMap.
-type MemberDeclMapJSType<MDM> = {
+// A structure representing in javascript the content of the provided MemberDescMap.
+type MemberDescMapJSType<MDM> = {
     [k in keyof MDM]: WGSLJSType<MemberWGSLType<MDM[k]>>;
 }
 
-// Extract the type a MemberDecl holds - e.g.,
-//    MemberDeclType<typeof {type: F32, idx:0}> -> F32
-type MemberDeclType<MD> = MD extends MemberDecl<infer T> ? T : never;
+// Extract the type a MemberDesc holds - e.g.,
+//    MemberDescType<typeof {type: F32, idx:0}> -> F32
+type MemberDescType<MD> = MD extends MemberDesc<infer T> ? T : never;
 
-// MemberMap takes a MemberDeclMap and creates a map to the full member info
-// (instead of the initial MemberDecl info).
+// MemberMap takes a MemberDescMap and creates a map to the full member info
+// (instead of the initial MemberDesc info).
 type MemberMap<MDM> = {
-    [k in keyof MDM]: Member<MemberDeclType<MDM[k]>>;
+    [k in keyof MDM]: Member<MemberDescType<MDM[k]>>;
 }
 
 // Extract the member map for the given struct type.
-export type StructMemberDeclMap<ST> = ST extends StructType<infer MDM> ? MDM : never;
+export type StructMemberDescMap<ST> = ST extends StructType<infer MDM> ? MDM : never;
 
 // Type definition for a mapping member name / javascript value, suitable to
 // feed into a descriptor value. I.e., the actual structure as javascript.
-type StructJSType<ST> = MemberDeclMapJSType<StructMemberDeclMap<ST>>;
+type StructJSType<ST> = MemberDescMapJSType<StructMemberDescMap<ST>>;
 
 //-----------------------------------------------
 // Basic test
