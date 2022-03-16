@@ -196,7 +196,8 @@ type MemberMap = { [k: string]: MemberType<any> }
 // Internal state keeping of a struct, tracking
 // explicit offset of each field.
 type StructMember = {
-    member: MemberType<any>
+    type: WGSLType<any>,
+    idx: number,
     name: string
     sizeOf: number
     alignOf: number
@@ -236,8 +237,9 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
                 throw new Error(`member index ${member.idx} is duplicated`);
             }
             this.byIndex[member.idx] = {
-                member: member,
                 name,
+                idx: member.idx,
+                type: member.type,
                 // No support for @size & @align attributes for now.
                 sizeOf: member.type.byteSize(),
                 alignOf: member.type.alignOf(),
@@ -273,7 +275,7 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
     // in the provided data view.
     dataViewSet(dv: DataView, offset: number, v: MemberMapJSType<MM>): void {
         for (const smember of this.byIndex) {
-            smember.member.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
+            smember.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
         }
     }
 
@@ -288,7 +290,7 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
 
             for (const smember of this.byIndex) {
                 lines.push(wgsl`  // offset: ${smember.offset.toString()} sizeOf: ${smember.sizeOf.toString()} ; alignOf: ${smember.alignOf.toString()}\n`,);
-                lines.push(wgsl`  ${smember.name}: ${smember.member.type.typename()};\n`);
+                lines.push(wgsl`  ${smember.name}: ${smember.type.typename()};\n`);
             }
 
             lines.push(wgsl`};\n`);
