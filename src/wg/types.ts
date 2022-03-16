@@ -167,22 +167,10 @@ export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]
 }
 
 // Description of a given member of a WGSL struct.
-class MemberType<T> {
-    // Index of that field in the struct.
-    readonly idx: number;
-    // Type of the content of that field.
-    readonly type: T;
-
-    constructor(t: T, idx: number) {
-        this.idx = idx;
-        this.type = t;
-    }
-}
-
-// Declare a field of the given type, at the given position. Index of the field
-// in the struct is mandatory, to reduce renaming and moving mistakes.
-export function Member<T>(type: T, idx: number): MemberType<T> {
-    return new MemberType(type, idx);
+type MemberType<T> = {
+    // Index of the field in the struct is mandatory, to reduce renaming and moving mistakes.
+    idx: number;
+    type: T;
 }
 
 // Extract the WGSL type class of a field declaration.
@@ -232,7 +220,7 @@ export class StructType<MM extends MemberMap> extends WGSLType<MemberMapJSType<M
         }
 
         for (const [name, member] of Object.entries(members)) {
-            if (!(member instanceof MemberType)) { continue }
+            // if (!(member instanceof MemberType)) { continue }
             if (this.byIndex[member.idx]) {
                 throw new Error(`member index ${member.idx} is duplicated`);
             }
@@ -322,10 +310,10 @@ type StructJSType<ST> = MemberMapJSType<StructMemberMap<ST>>;
 function testBuffer() {
     console.group("testBuffer");
     const uniformsDesc = new StructType({
-        elapsedMs: Member(F32, 0),
-        renderWidth: Member(F32, 1),
-        renderHeight: Member(F32, 2),
-        plop: Member(new ArrayType(F32, 4), 3),
+        elapsedMs: { type: F32, idx: 0 },
+        renderWidth: { type: F32, idx: 1 },
+        renderHeight: { type: F32, idx: 2 },
+        plop: { type: new ArrayType(F32, 4), idx: 3 },
     })
 
     console.log("byteSize", uniformsDesc.byteSize);

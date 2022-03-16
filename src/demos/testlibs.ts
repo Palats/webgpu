@@ -7,9 +7,9 @@ import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
 const uniformsDesc = new wg.StructType({
-    elapsedMs: wg.Member(wg.F32, 0),
-    renderWidth: wg.Member(wg.F32, 1),
-    renderHeight: wg.Member(wg.F32, 2),
+    elapsedMs: { type: wg.F32, idx: 0 },
+    renderWidth: { type: wg.F32, idx: 1 },
+    renderHeight: { type: wg.F32, idx: 2 },
 })
 
 export const demo = {

@@ -6,7 +6,7 @@ import * as demotypes from '../demotypes';
 import * as wg from '../wg';
 
 const uniformsDesc = new wg.StructType({
-    elapsedMs: wg.Member(wg.F32, 0),
+    elapsedMs: { type: wg.F32, idx: 0 },
 })
 
 const computeTexFormat: GPUTextureFormat = "rgba8unorm";

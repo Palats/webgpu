@@ -150,8 +150,8 @@ export function buildLineBundle(lineDesc: LineDesc) {
     }
 
     const pointDesc = new wg.StructType({
-        pos: wg.Member(wg.Vec3f32, 0),
-        color: wg.Member(wg.Vec4f32, 1),
+        pos: { type: wg.Vec3f32, idx: 0 },
+        color: { type: wg.Vec4f32, idx: 1 },
     })
     const arrayDesc = new wg.ArrayType(pointDesc, lineCount * 2);
     const vertexBuffer = lineDesc.device.createBuffer({

@@ -24,22 +24,22 @@ console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
 
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
-    elapsedMs: wg.Member(wg.F32, 0),
-    deltaMs: wg.Member(wg.F32, 1),
-    renderWidth: wg.Member(wg.F32, 2),
-    renderHeight: wg.Member(wg.F32, 3),
-    rngSeed: wg.Member(wg.F32, 4),
-    camera: wg.Member(wg.Mat4x4F32, 5),
+    elapsedMs: { idx: 0, type: wg.F32 },
+    deltaMs: { idx: 1, type: wg.F32 },
+    renderWidth: { idx: 2, type: wg.F32 },
+    renderHeight: { idx: 3, type: wg.F32 },
+    rngSeed: { idx: 4, type: wg.F32 },
+    camera: { idx: 5, type: wg.Mat4x4F32 },
 })
 
 // Parameters from Javascript to the computer shader
 // for each instance.
 
 const instanceParamsDesc = new wg.StructType({
-    'pos': wg.Member(wg.Vec3f32, 0),
-    'rot': wg.Member(wg.Vec3f32, 1),
-    'move': wg.Member(wg.Vec3f32, 2),
-    'scale': wg.Member(wg.F32, 3),
+    'pos': { type: wg.Vec3f32, idx: 0 },
+    'rot': { type: wg.Vec3f32, idx: 1 },
+    'move': { type: wg.Vec3f32, idx: 2 },
+    'scale': { type: wg.F32, idx: 3 },
 })
 
 const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);

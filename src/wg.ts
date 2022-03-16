@@ -12,7 +12,6 @@ export {
 } from './wg/lang';
 
 export {
-    Member,
     U16,
     U32,
     F32,

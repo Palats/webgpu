@@ -7,9 +7,9 @@ import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 
 const uniformsDesc = new wg.StructType({
-    computeWidth: wg.Member(wg.U32, 0),
-    computeHeight: wg.Member(wg.U32, 1),
-    rngSeed: wg.Member(wg.F32, 2),
+    computeWidth: { type: wg.U32, idx: 0 },
+    computeHeight: { type: wg.U32, idx: 1 },
+    rngSeed: { type: wg.F32, idx: 2 },
 })
 
 const computeTexFormat: GPUTextureFormat = "rgba8unorm";
