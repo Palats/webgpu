@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 
-import { LitElement, html, css, } from 'lit';
+import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as demotypes from './demotypes';
 import * as glmatrix from 'gl-matrix';
@@ -214,25 +214,7 @@ export class AppMain extends LitElement {
 
             <div id="overlay">
                 <div id="controls">
-                    ${this.showControls ? html`
-                    <div class="labelvalue">
-                        <label>Demo</label>
-                        <select class="value" @change=${this.demoChange}>
-                            ${allDemos.map(d => html`
-                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
-                            `)}
-                        </select>
-                    </div>
-                    <div class="doc">${demoByID(this.demoID).caption}</div>
-                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-                    <div class="labelvalue">
-                        <label>Limit canvas</label>
-                        <input class="value" type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}></input>
-                    </div>
-                    <div class="doc">
-                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
-                    </div>
-                `: ``}
+                    ${this.showControls ? this.controls : ``}
                     <div class="line">
                         <button @click="${() => { this.setShowControls(!this.showControls) }}">
                             ${this.showControls ? 'Close' : 'Open'} controls
@@ -279,6 +261,8 @@ export class AppMain extends LitElement {
     renderWidth: number = 0;
     renderHeight: number = 0;
 
+    private controls: TemplateResult[] = [];
+
     private paused = false;
     private step = false;
     private shiftPressed = false;
@@ -295,6 +279,30 @@ export class AppMain extends LitElement {
         this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", allDemos[0].id)
+
+        // Setup UI
+        this.controls.push(html`
+            <div class="labelvalue">
+                <label>Demo</label>
+                <select class="value" @change=${this.demoChange}>
+                    ${allDemos.map(d => html`
+                        <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
+                    `)}
+                </select>
+            </div>
+            <div class="doc">${demoByID(this.demoID).caption}</div>
+            <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
+
+            <div class="labelvalue">
+                <label>Limit canvas</label>
+                <input class="value" type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}></input>
+            </div>
+            <div class="doc">
+                Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
+            </div>
+        `);
+
+        // Setup listener
         document.addEventListener('keydown', e => {
             if (e.key == ' ') {
                 this.paused = !this.paused;
@@ -444,7 +452,8 @@ export class AppMain extends LitElement {
                     device: device,
                     renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
-                    renderHeight: this.renderHeight
+                    renderHeight: this.renderHeight,
+                    expose: (t: TemplateResult) => { this.controls.push(t) },
                 });
                 if (this.error) {
                     throw new Error("init failed");

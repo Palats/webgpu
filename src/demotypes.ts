@@ -1,4 +1,5 @@
 import * as glmatrix from 'gl-matrix';
+import { TemplateResult } from 'lit';
 
 // Description of a given effect.
 export interface Demo {
@@ -20,6 +21,13 @@ export interface InitParams {
     // Size of the rendering area on the canvas.
     renderWidth: number;
     renderHeight: number;
+
+    expose: (t: TemplateResult) => void;
+}
+
+export type VarDesc<T> = {
+    caption: string;
+    change: (v: T) => void;
 }
 
 export interface FrameInfo {

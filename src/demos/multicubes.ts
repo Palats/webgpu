@@ -3,6 +3,7 @@
 // Rotation, translation and projection are calculated within compute shaders.
 
 /// <reference types="@webgpu/types" />
+import { html } from 'lit';
 import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
@@ -19,8 +20,6 @@ const instances = instancesWidth * instancesHeight
 const boxSize = 20;
 const cameraOffset = glmatrix.vec3.fromValues(0, 0, -25);
 const spaceLimit = boxSize / 2.0;
-
-console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
 
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
@@ -49,6 +48,22 @@ export const demo = {
     caption: "Multiple independent rotating cubes.",
 
     async init(params: demotypes.InitParams) {
+        // Setup controls.
+        let showBoundaries = true;
+        let showBasis = false;
+        params.expose(html`
+            <div class="labelvalue">
+                <label>Show boundaries</label>
+                <input class="value" type=checkbox ?checked=${showBoundaries} @change=${(e: Event) => { showBoundaries = (e.target as HTMLInputElement).checked; }}></input>
+            </div>
+        `);
+        params.expose(html`
+            <div class="labelvalue">
+                <label>Show basis</label>
+                <input class="value" type=checkbox ?checked=${showBasis} @change=${(e: Event) => { showBasis = (e.target as HTMLInputElement).checked; }}></input>
+            </div>
+        `);
+
         // Setup some initial positions for the cubes.
         const positions = [];
         for (let y = 0; y < instancesHeight; y++) {
@@ -295,8 +310,6 @@ export const demo = {
         }).createView();
 
         // Prepare the rendering pipeline as a bundle.
-        const bundles: GPURenderBundle[] = [];
-
         const renderBundleEncoder = params.device.createRenderBundleEncoder({
             label: "main render bundle",
             depthReadOnly: false,
@@ -308,19 +321,19 @@ export const demo = {
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
         // Cube mesh as a triangle-strip uses 14 vertices.
         renderBundleEncoder.draw(14, instances, 0, 0);
-        bundles.push(renderBundleEncoder.finish());
+        const renderBundle = renderBundleEncoder.finish();
 
         // Orthonormals.
-        bundles.push(shaderlib.buildLineBundle({
+        const basisBundle = shaderlib.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
             lines: shaderlib.ortholines,
             mod: uniformsDesc,
             buffer: uniformsBuffer,
-        }));
+        });
         // Cube surrounding the scene.
-        bundles.push(shaderlib.buildLineBundle({
+        const boundariesBundle = shaderlib.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
@@ -328,7 +341,7 @@ export const demo = {
             depthCompare: 'less',
             mod: uniformsDesc,
             buffer: uniformsBuffer,
-        }));
+        });
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
@@ -378,6 +391,9 @@ export const demo = {
                     stencilStoreOp: 'store',
                 },
             });
+            const bundles = [renderBundle];
+            if (showBoundaries) { bundles.push(boundariesBundle); }
+            if (showBasis) { bundles.push(basisBundle); }
             renderEncoder.executeBundles(bundles);
             renderEncoder.end();
             commandEncoder.popDebugGroup();
