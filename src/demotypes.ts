@@ -43,12 +43,12 @@ export type exposeBoolDesc = {
     caption?: string;
 }
 
-export function exposeBool(obj: any, field: string, desc: exposeBoolDesc = {}): TemplateResult {
-    const current = obj[field] as boolean;
+export function exposeBool<T extends { [k in K]: boolean }, K extends string | number | symbol>(obj: T, field: K, desc: exposeBoolDesc = {}): TemplateResult {
+    const current = obj[field];
     return html`
         <div class="labelvalue">
             <label>${desc.caption ?? field}</label>
-            <input class="value" type=checkbox ?checked=${current} @change=${(e: Event) => { obj[field] = (e.target as HTMLInputElement).checked; }}></input>
+            <input class="value" type=checkbox ?checked=${current} @change=${(e: Event) => { obj[field] = (e.target as HTMLInputElement).checked as any; }}></input>
         </div>
     `;
 }
