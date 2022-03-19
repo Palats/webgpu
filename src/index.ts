@@ -248,8 +248,16 @@ export class AppMain extends LitElement {
     @property({ type: Boolean })
     showControls;
 
-    @property({ type: Boolean })
-    limitCanvas;
+    // @property({ type: Boolean })
+    private _limitCanvas = false;
+    get limitCanvas() { return this._limitCanvas; }
+    set limitCanvas(v: boolean) {
+        if (v === this._limitCanvas) { return; }
+        this._limitCanvas = v;
+        this.updateURL("l", this._limitCanvas);
+        this.updateSize();
+        this.requestUpdate('limitCanvas', !v);
+    }
 
     @property()
     demoID: string;
@@ -292,11 +300,9 @@ export class AppMain extends LitElement {
             </div>
             <div class="doc">${demoByID(this.demoID).caption}</div>
             <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-
-            <div class="labelvalue">
-                <label>Limit canvas</label>
-                <input class="value" type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}></input>
-            </div>
+        `);
+        this.controls.push(demotypes.exposeBool(this, 'limitCanvas', { caption: "Limit canvas" }));
+        this.controls.push(html`
             <div class="doc">
                 Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
             </div>
@@ -518,14 +524,6 @@ export class AppMain extends LitElement {
                 }
             }
         }
-    }
-
-    limitCanvasChange(evt: Event) {
-        const checked = (evt.target as HTMLInputElement).checked;
-        if (checked === this.limitCanvas) { return; }
-        this.limitCanvas = checked;
-        this.updateURL("l", this.limitCanvas);
-        this.updateSize();
     }
 
     setShowControls(v: boolean) {
