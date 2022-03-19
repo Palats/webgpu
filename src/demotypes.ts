@@ -1,5 +1,5 @@
 import * as glmatrix from 'gl-matrix';
-import { TemplateResult } from 'lit';
+import { TemplateResult, html } from 'lit';
 
 // Description of a given effect.
 export interface Demo {
@@ -25,11 +25,6 @@ export interface InitParams {
     expose: (t: TemplateResult) => void;
 }
 
-export type VarDesc<T> = {
-    caption: string;
-    change: (v: T) => void;
-}
-
 export interface FrameInfo {
     // Elapsed time in millisecond since the demo was started.
     // Stopped when demo is paused.
@@ -42,4 +37,18 @@ export interface FrameInfo {
     rng: number;
     // Camera matrix, incl. projection.
     camera: glmatrix.mat4;
+}
+
+export type exposeBoolDesc = {
+    caption?: string;
+}
+
+export function exposeBool(obj: any, field: string, desc: exposeBoolDesc = {}): TemplateResult {
+    const current = obj[field] as boolean;
+    return html`
+        <div class="labelvalue">
+            <label>${desc.caption ?? field}</label>
+            <input class="value" type=checkbox ?checked=${current} @change=${(e: Event) => { obj[field] = (e.target as HTMLInputElement).checked; }}></input>
+        </div>
+    `;
 }

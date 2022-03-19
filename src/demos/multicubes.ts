@@ -49,20 +49,12 @@ export const demo = {
 
     async init(params: demotypes.InitParams) {
         // Setup controls.
-        let showBoundaries = true;
-        let showBasis = false;
-        params.expose(html`
-            <div class="labelvalue">
-                <label>Show boundaries</label>
-                <input class="value" type=checkbox ?checked=${showBoundaries} @change=${(e: Event) => { showBoundaries = (e.target as HTMLInputElement).checked; }}></input>
-            </div>
-        `);
-        params.expose(html`
-            <div class="labelvalue">
-                <label>Show basis</label>
-                <input class="value" type=checkbox ?checked=${showBasis} @change=${(e: Event) => { showBasis = (e.target as HTMLInputElement).checked; }}></input>
-            </div>
-        `);
+        const ctrls = {
+            showBoundaries: true,
+            showBasis: false,
+        };
+        params.expose(demotypes.exposeBool(ctrls, 'showBoundaries'));
+        params.expose(demotypes.exposeBool(ctrls, 'showBasis'));
 
         // Setup some initial positions for the cubes.
         const positions = [];
@@ -392,8 +384,8 @@ export const demo = {
                 },
             });
             const bundles = [renderBundle];
-            if (showBoundaries) { bundles.push(boundariesBundle); }
-            if (showBasis) { bundles.push(basisBundle); }
+            if (ctrls.showBoundaries) { bundles.push(boundariesBundle); }
+            if (ctrls.showBasis) { bundles.push(basisBundle); }
             renderEncoder.executeBundles(bundles);
             renderEncoder.end();
             commandEncoder.popDebugGroup();
