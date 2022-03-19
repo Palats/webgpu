@@ -38,17 +38,3 @@ export interface FrameInfo {
     // Camera matrix, incl. projection.
     camera: glmatrix.mat4;
 }
-
-export type exposeBoolDesc = {
-    caption?: string;
-}
-
-export function exposeBool<T extends { [k in K]: boolean }, K extends string | number | symbol>(obj: T, field: K, desc: exposeBoolDesc = {}): TemplateResult {
-    const current = obj[field];
-    return html`
-        <div class="labelvalue">
-            <label>${desc.caption ?? field}</label>
-            <input class="value" type=checkbox ?checked=${current} @change=${(e: Event) => { obj[field] = (e.target as HTMLInputElement).checked as any; }}></input>
-        </div>
-    `;
-}

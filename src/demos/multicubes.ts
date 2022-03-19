@@ -3,11 +3,11 @@
 // Rotation, translation and projection are calculated within compute shaders.
 
 /// <reference types="@webgpu/types" />
-import { html } from 'lit';
 import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
+import * as controls from '../controls';
 
 // Number of instances.
 const workgroupWidth = 8;
@@ -53,8 +53,8 @@ export const demo = {
             showBoundaries: true,
             showBasis: false,
         };
-        params.expose(demotypes.exposeBool(ctrls, 'showBoundaries'));
-        params.expose(demotypes.exposeBool(ctrls, 'showBasis'));
+        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
+        params.expose(controls.exposeBool(ctrls, 'showBasis'));
 
         // Setup some initial positions for the cubes.
         const positions = [];

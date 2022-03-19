@@ -2,9 +2,10 @@
 
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { ref, createRef } from 'lit/directives/ref.js';
 import * as demotypes from './demotypes';
 import * as glmatrix from 'gl-matrix';
-
+import * as controls from './controls';
 
 import * as conway from './demos/conway';
 import * as fire from './demos/fire';
@@ -160,44 +161,6 @@ export class AppMain extends LitElement {
             font-style: italic;
         }
 
-        .labelvalue {
-            display: grid;
-            grid-template-columns: 8em 100fr;
-            grid-template-rows: 100fr;
-
-            border-top: 1px solid #4d4d4d;
-            padding: 2px 1px 2px 1px;
-            font: 11px 'Lucida Grande', sans-serif;
-        }
-
-        .labelvalue select, .labelvalue input {
-            font: 11px 'Lucida Grande', sans-serif;
-            margin: 0;
-        }
-
-        .labelvalue label {
-            grid-column-start: 1;
-            grid-column-end: 2;
-        }
-
-        .value {
-            grid-column-start: 2;
-            grid-column-end: 3;
-        }
-
-        .line {
-            border-top: 1px solid #4d4d4d;
-            display: flex;
-            justify-content: center;
-        }
-
-        .line button {
-            flex-grow: 1;
-            font: italic 11px 'Lucida Grande', sans-serif;
-            border: none;
-            background-color: transparent;
-        }
-
         #errors {
             background-color: #ffbebede;
             grid-column-start: 2;
@@ -213,14 +176,7 @@ export class AppMain extends LitElement {
             </div>
 
             <div id="overlay">
-                <div id="controls">
-                    ${this.showControls ? this.controls : ``}
-                    <div class="line">
-                        <button @click="${() => { this.setShowControls(!this.showControls) }}">
-                            ${this.showControls ? 'Close' : 'Open'} controls
-                        </button>
-                    </div>
-                </div>
+                <ctrl-ui ${ref(this.ctrlRef)}></ctrl-ui>
                 ${(!this.webGPUpresent || this.error) ? html`
                 <div id="errors">
                     ${this.webGPUpresent ? '' : html`
@@ -245,10 +201,6 @@ export class AppMain extends LitElement {
     @property()
     error: string = "";
 
-    @property({ type: Boolean })
-    showControls;
-
-    // @property({ type: Boolean })
     private _limitCanvas = false;
     get limitCanvas() { return this._limitCanvas; }
     set limitCanvas(v: boolean) {
@@ -269,7 +221,7 @@ export class AppMain extends LitElement {
     renderWidth: number = 0;
     renderHeight: number = 0;
 
-    private controls: TemplateResult[] = [];
+    ctrlRef = createRef<controls.CtrlUI>();
 
     private paused = false;
     private step = false;
@@ -284,29 +236,8 @@ export class AppMain extends LitElement {
 
     constructor() {
         super();
-        this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", allDemos[0].id)
-
-        // Setup UI
-        this.controls.push(html`
-            <div class="labelvalue">
-                <label>Demo</label>
-                <select class="value" @change=${this.demoChange}>
-                    ${allDemos.map(d => html`
-                        <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
-                    `)}
-                </select>
-            </div>
-            <div class="doc">${demoByID(this.demoID).caption}</div>
-            <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-        `);
-        this.controls.push(demotypes.exposeBool(this, 'limitCanvas', { caption: "Limit canvas" }));
-        this.controls.push(html`
-            <div class="doc">
-                Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
-            </div>
-        `);
 
         // Setup listener
         document.addEventListener('keydown', e => {
@@ -362,6 +293,29 @@ export class AppMain extends LitElement {
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
+
+        // Setup UI
+        const ctrl = this.ctrlRef.value!;
+        ctrl.appendEntry(html`
+            <div class="labelvalue">
+                <label>Demo</label>
+                <select class="value" @change=${(e: Event) => this.demoChange(e)}>
+                    ${allDemos.map(d => html`
+                        <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
+                    `)}
+                </select>
+            </div>
+            <div class="doc">${demoByID(this.demoID).caption}</div>
+            <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
+        `);
+        ctrl.appendEntry(controls.exposeBool(this, 'limitCanvas', { caption: "Limit canvas" }));
+        ctrl.appendEntry(html`
+            <div class="doc">
+                Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
+            </div>
+        `);
+
+        // Size & observe canvas.
         this.canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
         this.updateSize();
         new ResizeObserver(() => {
@@ -459,7 +413,7 @@ export class AppMain extends LitElement {
                     renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight,
-                    expose: (t: TemplateResult) => { this.controls.push(t) },
+                    expose: (t: TemplateResult) => { this.ctrlRef.value!.appendEntry(t) },
                 });
                 if (this.error) {
                     throw new Error("init failed");
@@ -524,11 +478,6 @@ export class AppMain extends LitElement {
                 }
             }
         }
-    }
-
-    setShowControls(v: boolean) {
-        this.updateURL("c", v);
-        this.showControls = v;
     }
 
     demoChange(evt: Event) {
