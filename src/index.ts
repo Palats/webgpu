@@ -172,7 +172,7 @@ export class AppMain extends LitElement {
     render() {
         return html`
             <div id="display">
-                <canvas id="canvas"></canvas>
+                <canvas id="canvas" tabindex=0></canvas>
             </div>
 
             <div id="overlay">
@@ -238,57 +238,6 @@ export class AppMain extends LitElement {
         super();
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", allDemos[0].id)
-
-        // Setup listener
-        document.addEventListener('keydown', e => {
-            if (e.key == ' ') {
-                this.paused = !this.paused;
-            } else if (e.key == '.') {
-                this.paused = true;
-                this.step = true;
-            } else if (e.key == 'Shift') {
-                this.shiftPressed = true;
-            } else if (e.key == 'Escape') {
-                this.camera.reset();
-            }
-        });
-        document.addEventListener('keyup', e => {
-            if (e.key == 'Shift') {
-                this.shiftPressed = false;
-            }
-        })
-        document.addEventListener('pointerdown', e => {
-            if (e.button == 0) {
-                if (this.cameraStart) {
-                    console.error("missing pointerup");
-                }
-                this.cameraStart = this.getMoveInfo(e);
-            }
-        });
-        document.addEventListener('pointermove', e => {
-            if (!this.cameraStart) { return; }
-            if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
-            this.cameraCurrent = this.getMoveInfo(e);
-        });
-        document.addEventListener('pointerup', e => {
-            if (!this.cameraStart) { return; }
-            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) { return; }
-            if (this.cameraStart && this.cameraCurrent) {
-                this.camera.update(this.cameraStart, this.cameraCurrent);
-            }
-            this.cameraStart = undefined;
-            this.cameraCurrent = undefined;
-        });
-
-    }
-
-    getMoveInfo(evt: PointerEvent): CameraMoveInfo {
-        return {
-            x: evt.x / this.canvas!.clientWidth,
-            y: evt.y / this.canvas!.clientHeight,
-            shift: this.shiftPressed,
-            evt: evt,
-        }
     }
 
     override firstUpdated(_changedProperties: any) {
@@ -322,6 +271,60 @@ export class AppMain extends LitElement {
             this.updateSize();
         }).observe(this.canvas);
         this.loop(this.canvas);
+
+        // Setup listener
+        const eventElement = this.canvas;
+        eventElement.addEventListener('keydown', e => {
+            if (e.key == ' ') {
+                this.paused = !this.paused;
+            } else if (e.key == '.') {
+                this.paused = true;
+                this.step = true;
+            } else if (e.key == 'Shift') {
+                this.shiftPressed = true;
+            } else if (e.key == 'Escape') {
+                this.camera.reset();
+            }
+        });
+        eventElement.addEventListener('keyup', e => {
+            if (e.key == 'Shift') {
+                this.shiftPressed = false;
+            }
+        })
+        eventElement.addEventListener('pointerdown', e => {
+            if (e.button == 0) {
+                if (this.cameraStart) {
+                    console.error("missing pointerup");
+                }
+                this.cameraStart = this.getMoveInfo(e);
+            }
+        });
+        eventElement.addEventListener('pointermove', e => {
+            if (!this.cameraStart) { return; }
+            if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
+            this.cameraCurrent = this.getMoveInfo(e);
+        });
+        eventElement.addEventListener('pointerup', e => {
+            if (!this.cameraStart) { return; }
+            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) { return; }
+            if (this.cameraStart && this.cameraCurrent) {
+                this.camera.update(this.cameraStart, this.cameraCurrent);
+            }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
+
+        // Make sure keyboard events go to the canvas initially.
+        this.canvas.focus();
+    }
+
+    getMoveInfo(evt: PointerEvent): CameraMoveInfo {
+        return {
+            x: evt.x / this.canvas!.clientWidth,
+            y: evt.y / this.canvas!.clientHeight,
+            shift: this.shiftPressed,
+            evt: evt,
+        }
     }
 
     updateSize() {
