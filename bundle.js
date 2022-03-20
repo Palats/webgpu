@@ -7806,6 +7806,131 @@ var forEach = function () {
 
 /***/ }),
 
+/***/ "./src/controls.ts":
+/*!*************************!*\
+  !*** ./src/controls.ts ***!
+  \*************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CtrlBool = exports.exposeBool = exports.CtrlUI = exports.commonStyle = void 0;
+const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
+const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
+exports.commonStyle = (0, lit_1.css) `
+    .labelvalue {
+        display: grid;
+        grid-template-columns: 8em 100fr;
+        grid-template-rows: 100fr;
+
+        border-top: 1px solid #4d4d4d;
+        padding: 2px 1px 2px 1px;
+        font: 11px 'Lucida Grande', sans-serif;
+    }
+
+    .labelvalue select, .labelvalue input {
+        font: 11px 'Lucida Grande', sans-serif;
+        margin: 0;
+    }
+
+    .labelvalue label {
+        grid-column-start: 1;
+        grid-column-end: 2;
+    }
+
+    .value {
+        grid-column-start: 2;
+        grid-column-end: 3;
+    }
+`;
+let CtrlUI = class CtrlUI extends lit_1.LitElement {
+    constructor() {
+        super(...arguments);
+        this.expanded = true;
+    }
+    static { this.styles = [exports.commonStyle, (0, lit_1.css) `
+        :host {
+            background-color: #d6d6d6f0;
+            border: #8b8b8b 1px solid;
+            font-size: 11px;
+        }
+
+        .line {
+            border-top: 1px solid #4d4d4d;
+            display: flex;
+            justify-content: center;
+        }
+
+        .line button {
+            flex-grow: 1;
+            font: italic 11px 'Lucida Grande', sans-serif;
+            border: none;
+            background-color: transparent;
+        }
+    `]; }
+    render() {
+        return (0, lit_1.html) `
+            ${this.expanded ? (0, lit_1.html) `<slot></slot>` : ``}
+            <div class="line">
+                <button @click="${() => { this.expanded = !this.expanded; }}">
+                    ${this.expanded ? 'Close' : 'Open'} controls
+                </button>
+            </div>
+        `;
+    }
+};
+__decorate([
+    (0, decorators_js_1.property)({ type: Boolean })
+], CtrlUI.prototype, "expanded", void 0);
+CtrlUI = __decorate([
+    (0, decorators_js_1.customElement)('ctrl-ui')
+], CtrlUI);
+exports.CtrlUI = CtrlUI;
+function exposeBool(obj, field, desc = {}) {
+    return (0, lit_1.html) `<ctrl-bool .obj=${obj} .field=${field}>${desc.caption}</ctrl-bool>`;
+}
+exports.exposeBool = exposeBool;
+let CtrlBool = class CtrlBool extends lit_1.LitElement {
+    constructor() {
+        super(...arguments);
+        this.field = "";
+    }
+    static { this.styles = [exports.commonStyle]; }
+    render() {
+        return (0, lit_1.html) `
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <input class="value" type=checkbox ?checked=${this.getValue()} @change=${(e) => { this.setValue(e.target.checked); }}></input>
+            </div>
+        `;
+    }
+    getValue() {
+        return this.obj[this.field] ?? false;
+    }
+    setValue(v) {
+        this.obj[this.field] = v;
+    }
+};
+__decorate([
+    (0, decorators_js_1.property)()
+], CtrlBool.prototype, "field", void 0);
+__decorate([
+    (0, decorators_js_1.property)()
+], CtrlBool.prototype, "obj", void 0);
+CtrlBool = __decorate([
+    (0, decorators_js_1.customElement)('ctrl-bool')
+], CtrlBool);
+exports.CtrlBool = CtrlBool;
+
+
+/***/ }),
+
 /***/ "./src/demos/conway.ts":
 /*!*****************************!*\
   !*** ./src/demos/conway.ts ***!
@@ -7818,8 +7943,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const uniformsDesc = new wg.StructType({
-    computeWidth: wg.Member(wg.U32, 0),
-    computeHeight: wg.Member(wg.U32, 1),
+    computeWidth: { type: wg.U32, idx: 0 },
+    computeHeight: { type: wg.U32, idx: 1 },
 });
 const computeTexFormat = "rgba8unorm";
 exports.demo = {
@@ -8796,9 +8921,6 @@ exports.demo = {
                     depthClearValue: 1.0,
                     depthLoadOp: 'clear',
                     depthStoreOp: 'store',
-                    stencilClearValue: 0,
-                    stencilLoadOp: 'clear',
-                    stencilStoreOp: 'store',
                 },
             });
             renderEncoder.setPipeline(renderPipeline);
@@ -8829,7 +8951,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const uniformsDesc = new wg.StructType({
-    elapsedMs: wg.Member(wg.F32, 0),
+    elapsedMs: { type: wg.F32, idx: 0 },
 });
 const computeTexFormat = "rgba8unorm";
 exports.demo = {
@@ -9117,9 +9239,9 @@ exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
 const uniformsDesc = new wg.StructType({
-    computeWidth: wg.Member(wg.U32, 0),
-    computeHeight: wg.Member(wg.U32, 1),
-    rngSeed: wg.Member(wg.F32, 2),
+    computeWidth: { type: wg.U32, idx: 0 },
+    computeHeight: { type: wg.U32, idx: 1 },
+    rngSeed: { type: wg.F32, idx: 2 },
 });
 const computeTexFormat = "rgba8unorm";
 exports.demo = {
@@ -9538,6 +9660,7 @@ exports.demo = void 0;
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+const controls = __webpack_require__(/*! ../controls */ "./src/controls.ts");
 // Number of instances.
 const workgroupWidth = 8;
 const workgroupHeight = 8;
@@ -9548,29 +9671,35 @@ const instances = instancesWidth * instancesHeight;
 const boxSize = 20;
 const cameraOffset = glmatrix.vec3.fromValues(0, 0, -25);
 const spaceLimit = boxSize / 2.0;
-console.log(`Instances: ${instances} (${instancesWidth} x ${instancesHeight})`);
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
-    elapsedMs: wg.Member(wg.F32, 0),
-    deltaMs: wg.Member(wg.F32, 1),
-    renderWidth: wg.Member(wg.F32, 2),
-    renderHeight: wg.Member(wg.F32, 3),
-    rngSeed: wg.Member(wg.F32, 4),
-    camera: wg.Member(wg.Mat4x4F32, 5),
+    elapsedMs: { idx: 0, type: wg.F32 },
+    deltaMs: { idx: 1, type: wg.F32 },
+    renderWidth: { idx: 2, type: wg.F32 },
+    renderHeight: { idx: 3, type: wg.F32 },
+    rngSeed: { idx: 4, type: wg.F32 },
+    camera: { idx: 5, type: wg.Mat4x4F32 },
 });
 // Parameters from Javascript to the computer shader
 // for each instance.
 const instanceParamsDesc = new wg.StructType({
-    'pos': wg.Member(wg.Vec3f32, 0),
-    'rot': wg.Member(wg.Vec3f32, 1),
-    'move': wg.Member(wg.Vec3f32, 2),
-    'scale': wg.Member(wg.F32, 3),
+    'pos': { type: wg.Vec3f32, idx: 0 },
+    'rot': { type: wg.Vec3f32, idx: 1 },
+    'move': { type: wg.Vec3f32, idx: 2 },
+    'scale': { type: wg.F32, idx: 3 },
 });
 const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);
 exports.demo = {
     id: "multicubes",
     caption: "Multiple independent rotating cubes.",
     async init(params) {
+        // Setup controls.
+        const ctrls = {
+            showBoundaries: true,
+            showBasis: false,
+        };
+        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
+        params.expose(controls.exposeBool(ctrls, 'showBasis'));
         // Setup some initial positions for the cubes.
         const positions = [];
         for (let y = 0; y < instancesHeight; y++) {
@@ -9818,11 +9947,22 @@ exports.demo = {
         // Cube mesh as a triangle-strip uses 14 vertices.
         renderBundleEncoder.draw(14, instances, 0, 0);
         const renderBundle = renderBundleEncoder.finish();
-        // Line drawing
-        const lineBundle = shaderlib.buildLineBundle({
+        // Orthonormals.
+        const basisBundle = shaderlib.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
+            lines: shaderlib.ortholines,
+            mod: uniformsDesc,
+            buffer: uniformsBuffer,
+        });
+        // Cube surrounding the scene.
+        const boundariesBundle = shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            lines: shaderlib.cubelines(spaceLimit),
+            depthCompare: 'less',
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
@@ -9862,12 +10002,16 @@ exports.demo = {
                     depthClearValue: 1.0,
                     depthLoadOp: 'clear',
                     depthStoreOp: 'store',
-                    stencilClearValue: 0,
-                    stencilLoadOp: 'clear',
-                    stencilStoreOp: 'store',
                 },
             });
-            renderEncoder.executeBundles([renderBundle, lineBundle]);
+            const bundles = [renderBundle];
+            if (ctrls.showBoundaries) {
+                bundles.push(boundariesBundle);
+            }
+            if (ctrls.showBasis) {
+                bundles.push(basisBundle);
+            }
+            renderEncoder.executeBundles(bundles);
             renderEncoder.end();
             commandEncoder.popDebugGroup();
             // Submit all the work.
@@ -9876,6 +10020,303 @@ exports.demo = {
         };
     }
 };
+
+
+/***/ }),
+
+/***/ "./src/demos/sphere.ts":
+/*!*****************************!*\
+  !*** ./src/demos/sphere.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+// Draw a sphere.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+// Basic parameters provided to all the shaders.
+const uniformsDesc = new wg.StructType({
+    elapsedMs: { idx: 0, type: wg.F32 },
+    deltaMs: { idx: 1, type: wg.F32 },
+    renderWidth: { idx: 2, type: wg.F32 },
+    renderHeight: { idx: 3, type: wg.F32 },
+    rngSeed: { idx: 4, type: wg.F32 },
+    camera: { idx: 5, type: wg.Mat4x4F32 },
+});
+const vertexDesc = new wg.StructType({
+    pos: { type: wg.Vec3f32, idx: 0 },
+    color: { type: wg.Vec4f32, idx: 1 },
+});
+exports.demo = {
+    id: "sphere",
+    caption: "A sphere",
+    async init(params) {
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // -- Prepare mesh.
+        const mesh = sphereMesh();
+        const vertexCount = mesh.vertices.length;
+        const verticesDesc = new wg.ArrayType(vertexDesc, vertexCount);
+        const vertexBuffer = params.device.createBuffer({
+            label: `vertex buffer`,
+            size: verticesDesc.byteSize(),
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
+        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+        const indexBuffer = params.device.createBuffer({
+            label: `index buffer`,
+            size: indexDesc.byteSize(),
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
+        // -- Render pipeline.
+        const shader = params.device.createShaderModule(new wg.WGSLModule({
+            label: "vertex shader",
+            code: wg.wgsl `
+                @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+
+                struct Input {
+                    @location(0) pos: vec3<f32>;
+                    @location(1) color: vec4<f32>;
+                }
+
+                struct Vertex {
+                    @builtin(position) pos: vec4<f32>;
+                    @location(0) color: vec4<f32>;
+                };
+
+                @stage(vertex)
+                fn vertex(inp: Input) -> Vertex {
+                    let TAU = 6.283185;
+                    let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                    let r = vec3<f32>(c, c, c);
+
+                    var out : Vertex;
+                    out.pos =
+                        uniforms.camera
+                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                        * ${shaderlib.tr.ref("rotateY")}(r.y)
+                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * vec4<f32>(inp.pos, 1.0);
+                    // out.color = inp.color;
+                    out.color = vec4<f32>(0.5 * (inp.pos + vec3<f32>(1., 1., 1.)), 1.0);
+                    return out;
+                }
+
+                @stage(fragment)
+                fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                    return vert.color;
+                }
+            `,
+        }).toDesc());
+        const depthFormat = "depth24plus";
+        const renderPipeline = params.device.createRenderPipeline({
+            label: "Rendering pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        label: "render pipeline layout",
+                        entries: [
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                                buffer: { type: 'uniform' },
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: 'vertex',
+                module: shader,
+                buffers: [{
+                        arrayStride: verticesDesc.stride,
+                        attributes: [
+                            { shaderLocation: 0, format: "float32x3", offset: 0, },
+                            { shaderLocation: 1, format: "float32x4", offset: 16, },
+                        ],
+                    }],
+            },
+            primitive: {
+                topology: 'triangle-list',
+                cullMode: 'back',
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: depthFormat,
+            },
+            fragment: {
+                entryPoint: 'fragment',
+                module: shader,
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+        });
+        const renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                },
+            ]
+        });
+        const depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: depthFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+        // Prepare the rendering pipeline as a bundle.
+        const bundles = [];
+        const renderBundleEncoder = params.device.createRenderBundleEncoder({
+            label: "main render bundle",
+            depthReadOnly: false,
+            stencilReadOnly: false,
+            colorFormats: [params.renderFormat],
+            depthStencilFormat: depthFormat,
+        });
+        renderBundleEncoder.setPipeline(renderPipeline);
+        renderBundleEncoder.setIndexBuffer(indexBuffer, 'uint16');
+        renderBundleEncoder.setVertexBuffer(0, vertexBuffer);
+        renderBundleEncoder.setBindGroup(0, renderBindGroup);
+        renderBundleEncoder.drawIndexed(mesh.indices.length);
+        bundles.push(renderBundleEncoder.finish());
+        const cameraOffset = glmatrix.vec3.fromValues(0, 0, -4);
+        // -- Single frame rendering.
+        return async (info) => {
+            glmatrix.mat4.translate(info.camera, info.camera, cameraOffset);
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                elapsedMs: info.elapsedMs,
+                deltaMs: info.deltaMs,
+                renderWidth: params.renderWidth,
+                renderHeight: params.renderHeight,
+                rngSeed: info.rng,
+                camera: Array.from(info.camera),
+            }));
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+            // -- Frame rendering.
+            commandEncoder.pushDebugGroup('Render cubes');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        loadOp: 'clear',
+                        storeOp: 'store',
+                    }],
+                depthStencilAttachment: {
+                    view: depthTextureView,
+                    depthClearValue: 1.0,
+                    depthLoadOp: 'clear',
+                    depthStoreOp: 'store',
+                },
+            });
+            renderEncoder.executeBundles(bundles);
+            renderEncoder.end();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+        };
+    }
+};
+function cubeMesh() {
+    const r = 0.5;
+    return {
+        vertices: [
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1] },
+            { pos: [r, r, r], color: [1, 1, 1, 1] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1] },
+        ],
+        indices: [
+            0, 3, 1,
+            1, 3, 2,
+            5, 1, 6,
+            6, 1, 2,
+            0, 7, 3,
+            0, 4, 7,
+            7, 4, 5,
+            5, 6, 7,
+            3, 7, 6,
+            6, 2, 3,
+            4, 0, 5,
+            5, 0, 1,
+        ]
+    };
+}
+// Inspired from https://github.com/caosdoar/spheres/blob/master/src/spheres.cpp
+const faces = [
+    { idx: 0, origin: glmatrix.vec3.fromValues(-1, -1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 1, origin: glmatrix.vec3.fromValues(1, -1, -1), right: glmatrix.vec3.fromValues(0, 0, 2), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 2, origin: glmatrix.vec3.fromValues(1, -1, 1), right: glmatrix.vec3.fromValues(-2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 3, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(0, 0, -2), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 4, origin: glmatrix.vec3.fromValues(-1, 1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, 2) },
+    { idx: 5, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, -2) },
+];
+function sphereMesh() {
+    const vertices = [];
+    const indices = [];
+    const divisions = 4;
+    const step = 1 / divisions;
+    for (const face of faces) {
+        for (let j = 0; j <= divisions; j++) {
+            for (let i = 0; i <= divisions; i++) {
+                const p = glmatrix.vec3.fromValues(face.origin[0] + step * (i * face.right[0] + j * face.up[0]), face.origin[1] + step * (i * face.right[1] + j * face.up[1]), face.origin[2] + step * (i * face.right[2] + j * face.up[2]));
+                const p2 = glmatrix.vec3.multiply(glmatrix.vec3.create(), p, p);
+                vertices.push({
+                    pos: [
+                        p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
+                        p[1] * Math.sqrt(1 - 0.5 * (p2[2] + p2[0]) + p2[2] * p2[0] / 3),
+                        p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
+                    ],
+                    color: [j / divisions, i / divisions, 0, 1],
+                });
+            }
+        }
+    }
+    const k = divisions + 1;
+    for (const face of faces) {
+        for (let j = 0; j < divisions; j++) {
+            const bottom = j < (divisions / 2);
+            for (let i = 0; i < divisions; i++) {
+                const left = i < (divisions / 2);
+                const a = (face.idx * k + j) * k + i;
+                const b = (face.idx * k + j) * k + i + 1;
+                const c = (face.idx * k + j + 1) * k + i;
+                const d = (face.idx * k + j + 1) * k + i + 1;
+                if ((!bottom && !left) || (bottom && left)) {
+                    indices.push(...[a, c, d, a, d, b]);
+                    // indices.push(...[a, c, b, c, d, b]);
+                }
+                else {
+                    // indices.push(...[a, c, d, a, d, b]);
+                    indices.push(...[a, c, b, c, d, b]);
+                }
+            }
+        }
+    }
+    return {
+        vertices: vertices,
+        indices: indices,
+    };
+}
 
 
 /***/ }),
@@ -9893,9 +10334,9 @@ exports.demo = void 0;
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
 const uniformsDesc = new wg.StructType({
-    elapsedMs: wg.Member(wg.F32, 0),
-    renderWidth: wg.Member(wg.F32, 1),
-    renderHeight: wg.Member(wg.F32, 2),
+    elapsedMs: { type: wg.F32, idx: 0 },
+    renderWidth: { type: wg.F32, idx: 1 },
+    renderHeight: { type: wg.F32, idx: 2 },
 });
 exports.demo = {
     id: "testlibs",
@@ -10106,9 +10547,6 @@ exports.demo = {
                     depthClearValue: 1.0,
                     depthLoadOp: 'clear',
                     depthStoreOp: 'store',
-                    stencilClearValue: 0,
-                    stencilLoadOp: 'clear',
-                    stencilStoreOp: 'store',
                 },
             });
             renderEncoder.setPipeline(renderPipeline);
@@ -10146,6 +10584,7 @@ exports.AppMain = exports.demoByID = exports.allDemos = void 0;
 const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
 const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
+const controls = __webpack_require__(/*! ./controls */ "./src/controls.ts");
 const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts");
 const fire = __webpack_require__(/*! ./demos/fire */ "./src/demos/fire.ts");
 const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
@@ -10153,6 +10592,7 @@ const minimal = __webpack_require__(/*! ./demos/minimal */ "./src/demos/minimal.
 const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.ts");
 const cube = __webpack_require__(/*! ./demos/cube */ "./src/demos/cube.ts");
 const multicubes = __webpack_require__(/*! ./demos/multicubes */ "./src/demos/multicubes.ts");
+const sphere = __webpack_require__(/*! ./demos/sphere */ "./src/demos/sphere.ts");
 const testlibs = __webpack_require__(/*! ./demos/testlibs */ "./src/demos/testlibs.ts");
 exports.allDemos = [
     conway2.demo,
@@ -10163,6 +10603,7 @@ exports.allDemos = [
     cube.demo,
     testlibs.demo,
     multicubes.demo,
+    sphere.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -10214,65 +10655,16 @@ let AppMain = class AppMain extends lit_1.LitElement {
         super();
         this.webGPUpresent = false;
         this.error = "";
+        this._limitCanvas = false;
         this.renderWidth = 0;
         this.renderHeight = 0;
+        this.extraControls = [];
         this.paused = false;
         this.step = false;
         this.shiftPressed = false;
         this.camera = new Camera();
-        this.showControls = this.getBoolParam("c", true);
         this.limitCanvas = this.getBoolParam("l", false);
         this.demoID = this.getStringParam("d", exports.allDemos[0].id);
-        document.addEventListener('keydown', e => {
-            if (e.key == ' ') {
-                this.paused = !this.paused;
-            }
-            else if (e.key == '.') {
-                this.paused = true;
-                this.step = true;
-            }
-            else if (e.key == 'Shift') {
-                this.shiftPressed = true;
-            }
-            else if (e.key == 'Escape') {
-                this.camera.reset();
-            }
-        });
-        document.addEventListener('keyup', e => {
-            if (e.key == 'Shift') {
-                this.shiftPressed = false;
-            }
-        });
-        document.addEventListener('pointerdown', e => {
-            if (e.button == 0) {
-                if (this.cameraStart) {
-                    console.error("missing pointerup");
-                }
-                this.cameraStart = this.getMoveInfo(e);
-            }
-        });
-        document.addEventListener('pointermove', e => {
-            if (!this.cameraStart) {
-                return;
-            }
-            if (e.pointerId != this.cameraStart.evt.pointerId) {
-                return;
-            }
-            this.cameraCurrent = this.getMoveInfo(e);
-        });
-        document.addEventListener('pointerup', e => {
-            if (!this.cameraStart) {
-                return;
-            }
-            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) {
-                return;
-            }
-            if (this.cameraStart && this.cameraCurrent) {
-                this.camera.update(this.cameraStart, this.cameraCurrent);
-            }
-            this.cameraStart = undefined;
-            this.cameraCurrent = undefined;
-        });
     }
     static { this.styles = (0, lit_1.css) `
         /* Cover both shadow dom / non shadow dom cases */
@@ -10336,44 +10728,6 @@ let AppMain = class AppMain extends lit_1.LitElement {
             font-style: italic;
         }
 
-        .labelvalue {
-            display: grid;
-            grid-template-columns: 8em 100fr;
-            grid-template-rows: 100fr;
-
-            border-top: 1px solid #4d4d4d;
-            padding: 2px 1px 2px 1px;
-            font: 11px 'Lucida Grande', sans-serif;
-        }
-
-        .labelvalue select, .labelvalue input {
-            font: 11px 'Lucida Grande', sans-serif;
-            margin: 0;
-        }
-
-        .labelvalue label {
-            grid-column-start: 1;
-            grid-column-end: 2;
-        }
-
-        .value {
-            grid-column-start: 2;
-            grid-column-end: 3;
-        }
-
-        .line {
-            border-top: 1px solid #4d4d4d;
-            display: flex;
-            justify-content: center;
-        }
-
-        .line button {
-            flex-grow: 1;
-            font: italic 11px 'Lucida Grande', sans-serif;
-            border: none;
-            background-color: transparent;
-        }
-
         #errors {
             background-color: #ffbebede;
             grid-column-start: 2;
@@ -10384,15 +10738,15 @@ let AppMain = class AppMain extends lit_1.LitElement {
     render() {
         return (0, lit_1.html) `
             <div id="display">
-                <canvas id="canvas"></canvas>
+                <canvas id="canvas" tabindex=0></canvas>
             </div>
 
             <div id="overlay">
-                <div id="controls">
-                    ${this.showControls ? (0, lit_1.html) `
+                <ctrl-ui>
+                    <style>${controls.commonStyle}</style>
                     <div class="labelvalue">
                         <label>Demo</label>
-                        <select class="value" @change=${this.demoChange}>
+                        <select class="value" @change=${(e) => this.demoChange(e)}>
                             ${exports.allDemos.map(d => (0, lit_1.html) `
                                 <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
                             `)}
@@ -10400,20 +10754,12 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     </div>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-                    <div class="labelvalue">
-                        <label>Limit canvas</label>
-                        <input class="value" type=checkbox ?checked=${this.limitCanvas} @change=${this.limitCanvasChange}></input>
-                    </div>
+                    <ctrl-bool .obj=${this} field="limitCanvas">Limit canvas</ctrl-bool>
                     <div class="doc">
                         Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
                     </div>
-                ` : ``}
-                    <div class="line">
-                        <button @click="${() => { this.setShowControls(!this.showControls); }}">
-                            ${this.showControls ? 'Close' : 'Open'} controls
-                        </button>
-                    </div>
-                </div>
+                    ${this.extraControls}
+                </ctrl-ui>
                 ${(!this.webGPUpresent || this.error) ? (0, lit_1.html) `
                 <div id="errors">
                     ${this.webGPUpresent ? '' : (0, lit_1.html) `
@@ -10431,6 +10777,80 @@ let AppMain = class AppMain extends lit_1.LitElement {
             </div>
         `;
     }
+    get limitCanvas() { return this._limitCanvas; }
+    set limitCanvas(v) {
+        if (v === this._limitCanvas) {
+            return;
+        }
+        this._limitCanvas = v;
+        this.updateURL("l", this._limitCanvas);
+        this.updateSize();
+        this.requestUpdate('limitCanvas', !v);
+    }
+    firstUpdated(_changedProperties) {
+        super.firstUpdated(_changedProperties);
+        // Size & observe canvas.
+        this.canvas = this.renderRoot.querySelector('#canvas');
+        this.updateSize();
+        new ResizeObserver(() => {
+            this.updateSize();
+        }).observe(this.canvas);
+        this.loop(this.canvas);
+        // Setup listener
+        const eventElement = this.canvas;
+        eventElement.addEventListener('keydown', e => {
+            if (e.key == ' ') {
+                this.paused = !this.paused;
+            }
+            else if (e.key == '.') {
+                this.paused = true;
+                this.step = true;
+            }
+            else if (e.key == 'Shift') {
+                this.shiftPressed = true;
+            }
+            else if (e.key == 'Escape') {
+                this.camera.reset();
+            }
+        });
+        eventElement.addEventListener('keyup', e => {
+            if (e.key == 'Shift') {
+                this.shiftPressed = false;
+            }
+        });
+        eventElement.addEventListener('pointerdown', e => {
+            if (e.button == 0) {
+                if (this.cameraStart) {
+                    console.error("missing pointerup");
+                }
+                this.cameraStart = this.getMoveInfo(e);
+            }
+        });
+        eventElement.addEventListener('pointermove', e => {
+            if (!this.cameraStart) {
+                return;
+            }
+            if (e.pointerId != this.cameraStart.evt.pointerId) {
+                return;
+            }
+            this.cameraCurrent = this.getMoveInfo(e);
+        });
+        eventElement.addEventListener('pointerup', e => {
+            if (!this.cameraStart) {
+                return;
+            }
+            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) {
+                return;
+            }
+            if (this.cameraStart && this.cameraCurrent) {
+                this.camera.update(this.cameraStart, this.cameraCurrent);
+            }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
+        // Make sure keyboard events go to the canvas initially.
+        this.canvas.focus();
+    }
     getMoveInfo(evt) {
         return {
             x: evt.x / this.canvas.clientWidth,
@@ -10438,15 +10858,6 @@ let AppMain = class AppMain extends lit_1.LitElement {
             shift: this.shiftPressed,
             evt: evt,
         };
-    }
-    firstUpdated(_changedProperties) {
-        super.firstUpdated(_changedProperties);
-        this.canvas = this.renderRoot.querySelector('#canvas');
-        this.updateSize();
-        new ResizeObserver(() => {
-            this.updateSize();
-        }).observe(this.canvas);
-        this.loop(this.canvas);
     }
     updateSize() {
         if (!this.canvas) {
@@ -10520,18 +10931,21 @@ let AppMain = class AppMain extends lit_1.LitElement {
                 context.configure({
                     device: device,
                     format: renderFormat,
+                    compositingAlphaMode: 'opaque',
                     size: {
                         width: this.renderWidth,
                         height: this.renderHeight,
                     },
                 });
+                this.extraControls = [];
                 const renderer = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
                     device: device,
                     renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
-                    renderHeight: this.renderHeight
+                    renderHeight: this.renderHeight,
+                    expose: (t) => { this.extraControls.push(t); },
                 });
                 if (this.error) {
                     throw new Error("init failed");
@@ -10590,19 +11004,6 @@ let AppMain = class AppMain extends lit_1.LitElement {
             }
         }
     }
-    limitCanvasChange(evt) {
-        const checked = evt.target.checked;
-        if (checked === this.limitCanvas) {
-            return;
-        }
-        this.limitCanvas = checked;
-        this.updateURL("l", this.limitCanvas);
-        this.updateSize();
-    }
-    setShowControls(v) {
-        this.updateURL("c", v);
-        this.showControls = v;
-    }
     demoChange(evt) {
         const options = evt.target.selectedOptions;
         if (!options) {
@@ -10651,12 +11052,6 @@ __decorate([
     (0, decorators_js_1.property)()
 ], AppMain.prototype, "error", void 0);
 __decorate([
-    (0, decorators_js_1.property)({ type: Boolean })
-], AppMain.prototype, "showControls", void 0);
-__decorate([
-    (0, decorators_js_1.property)({ type: Boolean })
-], AppMain.prototype, "limitCanvas", void 0);
-__decorate([
     (0, decorators_js_1.property)()
 ], AppMain.prototype, "demoID", void 0);
 AppMain = __decorate([
@@ -10682,7 +11077,7 @@ document.body.appendChild(document.createElement("app-main"));
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildLineBundle = exports.rand = exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
+exports.cubelines = exports.ortholines = exports.buildLineBundle = exports.rand = exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
 const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
 // Functions to calculate projection matrices.
 exports.projection = new wg.WGSLModule({
@@ -10797,10 +11192,14 @@ exports.rand = new wg.WGSLModule({
 // Prepare a bundle which will draw a bunch of lines.
 function buildLineBundle(lineDesc) {
     const label = lineDesc.label ?? "lines";
-    const lineCount = 3;
+    // Count the number of lines.
+    let lineCount = 0;
+    for (const line of lineDesc.lines) {
+        lineCount += line.length - 1;
+    }
     const pointDesc = new wg.StructType({
-        pos: wg.Member(wg.Vec3f32, 0),
-        color: wg.Member(wg.Vec4f32, 1),
+        pos: { type: wg.Vec3f32, idx: 0 },
+        color: { type: wg.Vec4f32, idx: 1 },
     });
     const arrayDesc = new wg.ArrayType(pointDesc, lineCount * 2);
     const vertexBuffer = lineDesc.device.createBuffer({
@@ -10808,11 +11207,50 @@ function buildLineBundle(lineDesc) {
         size: arrayDesc.byteSize(),
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
     });
-    lineDesc.device.queue.writeBuffer(vertexBuffer, 0, arrayDesc.createArray([
-        { pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0, 1], color: [1, 0, 0, 1] },
-        { pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0, 1], color: [0, 1, 0, 1] },
-        { pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1, 1], color: [0, 0, 1, 1] },
-    ]));
+    const a = new ArrayBuffer(arrayDesc.byteSize());
+    const dv = new DataView(a);
+    let offset = 0;
+    for (const line of lineDesc.lines) {
+        let prev = line[0];
+        for (let i = 1; i < line.length; i++) {
+            let next = line[i];
+            pointDesc.dataViewSet(dv, offset, prev);
+            offset += pointDesc.byteSize();
+            pointDesc.dataViewSet(dv, offset, next);
+            offset += pointDesc.byteSize();
+            prev = next;
+        }
+    }
+    lineDesc.device.queue.writeBuffer(vertexBuffer, 0, a);
+    const shader = lineDesc.device.createShaderModule(new wg.WGSLModule({
+        label: `${label} - render shader`,
+        code: wg.wgsl `
+            @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
+
+            struct Input {
+                @location(0) pos: vec3<f32>;
+                @location(1) color: vec4<f32>;
+            }
+
+            struct VertexOutput {
+                @builtin(position) pos: vec4<f32>;
+                @location(0) color: vec4<f32>;
+            };
+
+            @stage(vertex)
+            fn vertex(inp: Input) -> VertexOutput {
+                var out : VertexOutput;
+                out.pos = uniforms.camera * vec4<f32>(inp.pos, 1.0);
+                out.color = inp.color;
+                return out;
+            }
+
+            @stage(fragment)
+            fn fragment(@location(0) color : vec4<f32>) -> @location(0) vec4<f32> {
+                return color;
+            }
+        `,
+    }).toDesc());
     const pipeline = lineDesc.device.createRenderPipeline({
         label: `${label} - pipeline`,
         layout: lineDesc.device.createPipelineLayout({
@@ -10829,7 +11267,6 @@ function buildLineBundle(lineDesc) {
                 })],
         }),
         vertex: {
-            entryPoint: 'main',
             buffers: [{
                     arrayStride: arrayDesc.stride,
                     attributes: [
@@ -10837,49 +11274,20 @@ function buildLineBundle(lineDesc) {
                         { shaderLocation: 1, format: "float32x4", offset: 16, },
                     ],
                 }],
-            module: lineDesc.device.createShaderModule(new wg.WGSLModule({
-                label: `${label} - vertex shader`,
-                code: wg.wgsl `
-                    @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
-
-                    struct Input {
-                        @location(0) pos: vec3<f32>;
-                        @location(1) color: vec4<f32>;
-                    }
-
-                    struct Output {
-                        @builtin(position) pos: vec4<f32>;
-                        @location(0) color: vec4<f32>;
-                    };
-
-                    @stage(vertex)
-                    fn main(inp: Input) -> Output {
-                        var out : Output;
-                        out.pos = uniforms.camera * vec4<f32>(inp.pos, 1.0);
-                        out.color = inp.color;
-                        return out;
-                    }
-                `,
-            }).toDesc())
+            entryPoint: 'vertex',
+            module: shader,
         },
         primitive: {
             topology: 'line-list',
         },
         depthStencil: lineDesc.depthFormat ? {
             depthWriteEnabled: false,
+            depthCompare: lineDesc.depthCompare ?? 'always',
             format: lineDesc.depthFormat,
         } : undefined,
         fragment: {
-            entryPoint: 'main',
-            module: lineDesc.device.createShaderModule(new wg.WGSLModule({
-                label: `${label} - fragment shader`,
-                code: wg.wgsl `
-                    @stage(fragment)
-                    fn main(@location(0) color : vec4<f32>) -> @location(0) vec4<f32> {
-                        return color;
-                    }
-                `,
-            }).toDesc()),
+            entryPoint: "fragment",
+            module: shader,
             targets: [{ format: lineDesc.colorFormat }],
         },
     });
@@ -10906,6 +11314,48 @@ function buildLineBundle(lineDesc) {
     return bundleEncoder.finish();
 }
 exports.buildLineBundle = buildLineBundle;
+// Lines for indicating the orthonormal reference.
+exports.ortholines = [
+    [{ pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0], color: [1, 0, 0, 1] }],
+    [{ pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0], color: [0, 1, 0, 1] }],
+    [{ pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1], color: [0, 0, 1, 1] }],
+];
+// Lines for a cube centered in 0 and going [-s, +s].
+function cubelines(s) {
+    return [
+        [
+            { pos: [-s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, -s, -s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [-s, -s, s], color: [1, 1, 1, 1] },
+            { pos: [s, -s, s], color: [1, 1, 1, 1] },
+            { pos: [s, s, s], color: [1, 1, 1, 1] },
+            { pos: [-s, s, s], color: [1, 1, 1, 1] },
+            { pos: [-s, -s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [-s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, -s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [s, -s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, -s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [s, s, s], color: [1, 1, 1, 1] },
+        ],
+        [
+            { pos: [-s, s, -s], color: [1, 1, 1, 1] },
+            { pos: [-s, s, s], color: [1, 1, 1, 1] },
+        ],
+    ];
+}
+exports.cubelines = cubelines;
 
 
 /***/ }),
@@ -10922,14 +11372,14 @@ exports.buildLineBundle = buildLineBundle;
 //   - A way to manage mapping between Javascript types and WGSL types, for
 //     simple buffer translation.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Vec4f32 = exports.Vec3f32 = exports.Mat4x4F32 = exports.ArrayType = exports.StructType = exports.F32 = exports.U32 = exports.Member = exports.wgsl = exports.WGSLModule = exports.lang = exports.types = void 0;
+exports.Vec4f32 = exports.Vec3f32 = exports.Mat4x4F32 = exports.ArrayType = exports.StructType = exports.F32 = exports.U32 = exports.U16 = exports.wgsl = exports.WGSLModule = exports.lang = exports.types = void 0;
 exports.types = __webpack_require__(/*! ./wg/types */ "./src/wg/types.ts");
 exports.lang = __webpack_require__(/*! ./wg/lang */ "./src/wg/lang.ts");
 var lang_1 = __webpack_require__(/*! ./wg/lang */ "./src/wg/lang.ts");
 Object.defineProperty(exports, "WGSLModule", ({ enumerable: true, get: function () { return lang_1.WGSLModule; } }));
 Object.defineProperty(exports, "wgsl", ({ enumerable: true, get: function () { return lang_1.wgsl; } }));
 var types_1 = __webpack_require__(/*! ./wg/types */ "./src/wg/types.ts");
-Object.defineProperty(exports, "Member", ({ enumerable: true, get: function () { return types_1.Member; } }));
+Object.defineProperty(exports, "U16", ({ enumerable: true, get: function () { return types_1.U16; } }));
 Object.defineProperty(exports, "U32", ({ enumerable: true, get: function () { return types_1.U32; } }));
 Object.defineProperty(exports, "F32", ({ enumerable: true, get: function () { return types_1.F32; } }));
 Object.defineProperty(exports, "StructType", ({ enumerable: true, get: function () { return types_1.StructType; } }));
@@ -11191,7 +11641,7 @@ function testWGSLModules() {
 // Javascript.
 // It is a bit overcomplicated in order to keep typing work.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.StructType = exports.Member = exports.ArrayType = exports.Mat4x4F32 = exports.Vec4f32 = exports.Vec3f32 = exports.U32 = exports.F32 = void 0;
+exports.StructType = exports.ArrayType = exports.Mat4x4F32 = exports.Vec4f32 = exports.Vec3f32 = exports.U32 = exports.U16 = exports.F32 = void 0;
 const lang = __webpack_require__(/*! ./lang */ "./src/wg/lang.ts");
 const wgsl = lang.wgsl;
 // Basic class to represent info about a given WGSL type. The template parameter
@@ -11217,12 +11667,26 @@ class F32Type extends WGSLType {
     }
 }
 exports.F32 = new F32Type();
+// Info about WGSL `u16` type.
+// This is not a real type in WGSL, but it can be used to map
+// vertex indices.
+class U16Type extends WGSLType {
+    byteSize() { return 2; }
+    alignOf() { return 2; }
+    dataViewSet(dv, offset, v) {
+        dv.setUint16(offset, v, true);
+    }
+    typename() {
+        return wgsl `u16`;
+    }
+}
+exports.U16 = new U16Type();
 // Info about WGSL `u32` type.
 class U32Type extends WGSLType {
     byteSize() { return 4; }
     alignOf() { return 4; }
     dataViewSet(dv, offset, v) {
-        dv.setInt32(offset, v, true);
+        dv.setUint32(offset, v, true);
     }
     typename() {
         return wgsl `u32`;
@@ -11294,66 +11758,53 @@ class ArrayType extends WGSLType {
     }
 }
 exports.ArrayType = ArrayType;
-// Description of a given member of a WGSL struct.
-class MemberType {
-    constructor(t, idx) {
-        this.idx = idx;
-        this.type = t;
-    }
-}
-// Declare a field of the given type, at the given position. Index of the field
-// in the struct is mandatory, to reduce renaming and moving mistakes.
-function Member(type, idx) {
-    return new MemberType(type, idx);
-}
-exports.Member = Member;
 // Description of a WGSL struct allowing mapping between javascript and WGSL.
 // An instance of a StructType describes just the layout of the struct:
-//  - The MemberMap (aka MM) descripts the list of members - name, position in
+//  - The MemberDescMap (aka MDM) describes the list of members - name, position in
 //    the struct.
-//  - StructJSType<StructType<MM>> describes javascript object, which member
+//  - StructJSType<StructType<MDM>> describes javascript object, which member
 //    names are the same as the struct. The type of the value are the typescript
 //    types corresponding to the WGSL values - e.g., a `f32` is mapped to a number.
 class StructType extends WGSLType {
-    constructor(members) {
+    constructor(membersdesc) {
         super();
-        this.members = members;
+        this.members = {};
         this.byIndex = [];
-        if (Object.keys(members).length < 1) {
+        if (Object.keys(membersdesc).length < 1) {
             // Not sure if empty struct are valid in WGSL - in the mean time,
             // reject.
             throw new Error("struct must have at least one member");
         }
-        for (const [name, member] of Object.entries(members)) {
-            if (!(member instanceof MemberType)) {
-                continue;
+        for (const [name, memberdesc] of Object.entries(membersdesc)) {
+            if (this.byIndex[memberdesc.idx]) {
+                throw new Error(`member index ${memberdesc.idx} is duplicated`);
             }
-            if (this.byIndex[member.idx]) {
-                throw new Error(`member index ${member.idx} is duplicated`);
-            }
-            this.byIndex[member.idx] = {
-                member: member,
+            const member = {
                 name,
+                idx: memberdesc.idx,
+                type: memberdesc.type,
                 // No support for @size & @align attributes for now.
-                sizeOf: member.type.byteSize(),
-                alignOf: member.type.alignOf(),
+                sizeOf: memberdesc.type.byteSize(),
+                alignOf: memberdesc.type.alignOf(),
                 // Calculated below
                 offset: 0,
             };
+            this.members[name] = member;
+            this.byIndex[memberdesc.idx] = member;
         }
         // Struct offsets, size and aligns are non-trivial - see
         // https://gpuweb.github.io/gpuweb/wgsl/#structure-member-layout
         this._byteSize = 0;
         this._alignOf = 0;
-        for (const [idx, smember] of this.byIndex.entries()) {
-            if (!smember) {
+        for (const [idx, member] of this.byIndex.entries()) {
+            if (!member) {
                 throw new Error(`missing member index ${idx}`);
             }
             if (idx > 0) {
                 const prev = this.byIndex[idx - 1];
-                smember.offset = smember.alignOf * Math.ceil((prev.offset + prev.sizeOf) / smember.alignOf);
+                member.offset = member.alignOf * Math.ceil((prev.offset + prev.sizeOf) / member.alignOf);
             }
-            this._alignOf = Math.max(this._alignOf, smember.alignOf);
+            this._alignOf = Math.max(this._alignOf, member.alignOf);
         }
         const last = this.byIndex[this.byIndex.length - 1];
         this._byteSize = this._alignOf * Math.ceil((last.offset + last.sizeOf) / this._alignOf);
@@ -11363,8 +11814,8 @@ class StructType extends WGSLType {
     // Take an object containg the value for each member, and write it
     // in the provided data view.
     dataViewSet(dv, offset, v) {
-        for (const smember of this.byIndex) {
-            smember.member.type.dataViewSet(dv, offset + smember.offset, v[smember.name]);
+        for (const member of this.byIndex) {
+            member.type.dataViewSet(dv, offset + member.offset, v[member.name]);
         }
     }
     // Refer to that structure type in a WGSL fragment. It will take care of
@@ -11375,9 +11826,9 @@ class StructType extends WGSLType {
                 wgsl `// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
                 wgsl `struct @@structname {\n`,
             ];
-            for (const smember of this.byIndex) {
-                lines.push(wgsl `  // offset: ${smember.offset.toString()} sizeOf: ${smember.sizeOf.toString()} ; alignOf: ${smember.alignOf.toString()}\n`);
-                lines.push(wgsl `  ${smember.name}: ${smember.member.type.typename()};\n`);
+            for (const member of this.byIndex) {
+                lines.push(wgsl `  // offset: ${member.offset.toString()} sizeOf: ${member.sizeOf.toString()} ; alignOf: ${member.alignOf.toString()}\n`);
+                lines.push(wgsl `  ${member.name}: ${member.type.typename()};\n`);
             }
             lines.push(wgsl `};\n`);
             this.mod = new lang.WGSLModule({
@@ -11394,10 +11845,10 @@ exports.StructType = StructType;
 function testBuffer() {
     console.group("testBuffer");
     const uniformsDesc = new StructType({
-        elapsedMs: Member(exports.F32, 0),
-        renderWidth: Member(exports.F32, 1),
-        renderHeight: Member(exports.F32, 2),
-        plop: Member(new ArrayType(exports.F32, 4), 3),
+        elapsedMs: { type: exports.F32, idx: 0 },
+        renderWidth: { type: exports.F32, idx: 1 },
+        renderHeight: { type: exports.F32, idx: 2 },
+        plop: { type: new ArrayType(exports.F32, 4), idx: 3 },
     });
     console.log("byteSize", uniformsDesc.byteSize);
     console.log("content", uniformsDesc.createArray({
