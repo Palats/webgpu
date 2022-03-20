@@ -400,6 +400,7 @@ export class AppMain extends LitElement {
                 context.configure({
                     device: device,
                     format: renderFormat,
+                    compositingAlphaMode: 'opaque',
                     size: {
                         width: this.renderWidth,
                         height: this.renderHeight,
