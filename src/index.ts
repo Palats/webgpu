@@ -176,7 +176,24 @@ export class AppMain extends LitElement {
             </div>
 
             <div id="overlay">
-                <ctrl-ui ${ref(this.ctrlRef)}></ctrl-ui>
+                <ctrl-ui>
+                    <style>${controls.commonStyle}</style>
+                    <div class="labelvalue">
+                        <label>Demo</label>
+                        <select class="value" @change=${(e: Event) => this.demoChange(e)}>
+                            ${allDemos.map(d => html`
+                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
+                            `)}
+                        </select>
+                    </div>
+                    <div class="doc">${demoByID(this.demoID).caption}</div>
+                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
+                    <ctrl-bool .obj=${this} field="limitCanvas">Limit canvas</ctrl-bool>
+                    <div class="doc">
+                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
+                    </div>
+                    ${this.extraControls}
+                </ctrl-ui>
                 ${(!this.webGPUpresent || this.error) ? html`
                 <div id="errors">
                     ${this.webGPUpresent ? '' : html`
@@ -221,7 +238,7 @@ export class AppMain extends LitElement {
     renderWidth: number = 0;
     renderHeight: number = 0;
 
-    ctrlRef = createRef<controls.CtrlUI>();
+    private extraControls: TemplateResult[] = [];
 
     private paused = false;
     private step = false;
@@ -242,27 +259,6 @@ export class AppMain extends LitElement {
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
-
-        // Setup UI
-        const ctrl = this.ctrlRef.value!;
-        ctrl.appendEntry(html`
-            <div class="labelvalue">
-                <label>Demo</label>
-                <select class="value" @change=${(e: Event) => this.demoChange(e)}>
-                    ${allDemos.map(d => html`
-                        <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
-                    `)}
-                </select>
-            </div>
-            <div class="doc">${demoByID(this.demoID).caption}</div>
-            <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-        `);
-        ctrl.appendEntry(controls.exposeBool(this, 'limitCanvas', { caption: "Limit canvas" }));
-        ctrl.appendEntry(html`
-            <div class="doc">
-                Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
-            </div>
-        `);
 
         // Size & observe canvas.
         this.canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
@@ -410,6 +406,7 @@ export class AppMain extends LitElement {
                     },
                 });
 
+                this.extraControls = [];
                 const renderer = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
@@ -417,7 +414,7 @@ export class AppMain extends LitElement {
                     renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight,
-                    expose: (t: TemplateResult) => { this.ctrlRef.value!.appendEntry(t) },
+                    expose: (t: TemplateResult) => { this.extraControls.push(t) },
                 });
                 if (this.error) {
                     throw new Error("init failed");
