@@ -170,6 +170,8 @@ export class AppMain extends LitElement {
     `;
 
     render() {
+        const demoValues = allDemos.map(d => d.id);
+
         return html`
             <div id="display">
                 <canvas id="canvas" tabindex=0></canvas>
@@ -178,14 +180,7 @@ export class AppMain extends LitElement {
             <div id="overlay">
                 <ctrl-ui>
                     <style>${controls.commonStyle}</style>
-                    <div class="labelvalue">
-                        <label>Demo</label>
-                        <select class="value" @change=${(e: Event) => this.demoChange(e)}>
-                            ${allDemos.map(d => html`
-                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
-                            `)}
-                        </select>
-                    </div>
+                    <ctrl-select .obj=${this} field="demoID" .values=${demoValues}>Demo</ctrl-select>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
                     <ctrl-bool .obj=${this} field="limitCanvas">Limit canvas</ctrl-bool>
@@ -229,7 +224,15 @@ export class AppMain extends LitElement {
     }
 
     @property()
-    demoID: string;
+    private _demoID: string;
+
+    get demoID() { return this._demoID; }
+    set demoID(v: string) {
+        if (this._demoID === v) { return; }
+        this._demoID = v;
+        this.updateURL("d", this._demoID);
+        this.rebuild("changed demo");
+    }
 
     canvas?: HTMLCanvasElement;
 
@@ -254,7 +257,7 @@ export class AppMain extends LitElement {
     constructor() {
         super();
         this.limitCanvas = this.getBoolParam("l", false);
-        this.demoID = this.getStringParam("d", allDemos[0].id)
+        this._demoID = this.getStringParam("d", allDemos[0].id)
     }
 
     override firstUpdated(_changedProperties: any) {
@@ -479,18 +482,6 @@ export class AppMain extends LitElement {
                 }
             }
         }
-    }
-
-    demoChange(evt: Event) {
-        const options = (evt.target as HTMLSelectElement).selectedOptions;
-        if (!options) {
-            return;
-        }
-        const v = options[0].value;
-        if (this.demoID === v) { return; }
-        this.demoID = v;
-        this.updateURL("d", this.demoID);
-        this.rebuild("changed demo");
     }
 
     updateURL(k: string, v: string | boolean) {

@@ -113,3 +113,56 @@ declare global {
         "ctrl-bool": CtrlBool,
     }
 }
+
+// Type of the values of a CtrlSelect.
+export type CtrlSelectType = string | number;
+
+@customElement('ctrl-select')
+export class CtrlSelect extends LitElement {
+    static styles = [commonStyle];
+
+    @property()
+    field: string | number | symbol = "";
+
+    @property({ attribute: false })
+    obj: any;
+
+    @property({ attribute: false })
+    values: CtrlSelectType[] = [];
+
+    render() {
+        const current = this.getValue();
+        return html`
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <select class="value" @change=${this.onChange}>
+                    ${this.values.map(id => html`
+                        <option value=${id} ?selected=${id === current}>${id}</option>
+                    `)}
+                </select>
+            </div>
+        `;
+    }
+
+    onChange(evt: Event) {
+        const options = (evt.target as HTMLSelectElement).selectedOptions;
+        if (!options) {
+            return;
+        }
+        this.setValue(options[0].value);
+    }
+
+    getValue(): CtrlSelectType {
+        return this.obj[this.field] ?? false;
+    }
+
+    setValue(v: CtrlSelectType) {
+        this.obj[this.field] = v;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ctrl-select": CtrlSelect,
+    }
+}
