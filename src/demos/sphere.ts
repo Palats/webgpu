@@ -55,7 +55,6 @@ export const demo = {
             size: indexDesc.byteSize(),
             usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         });
-
         params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
 
         // -- Render pipeline.
@@ -121,13 +120,7 @@ export const demo = {
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
-                buffers: [{
-                    arrayStride: verticesDesc.stride,
-                    attributes: [
-                        { shaderLocation: 0, format: "float32x3", offset: 0, },
-                        { shaderLocation: 1, format: "float32x4", offset: 16, },
-                    ],
-                }],
+                buffers: [verticesDesc.vertexBufferLayout()],
             },
             primitive: {
                 topology: 'triangle-list',

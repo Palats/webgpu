@@ -87,8 +87,7 @@ export const demo = {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
         const a = new ArrayBuffer(instanceArrayDesc.byteSize());
-        const dv = new DataView(a);
-        instanceArrayDesc.dataViewSet(dv, 0, positions);
+        instanceArrayDesc.dataViewSet(new DataView(a), 0, positions);
         params.device.queue.writeBuffer(instancesBuffer, 0, a);
 
         const uniformsBuffer = params.device.createBuffer({

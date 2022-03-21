@@ -21,6 +21,24 @@ abstract class WGSLType<T> {
     // https://gpuweb.github.io/gpuweb/wgsl/#alignment
     abstract alignOf(): number;
 
+    // Return the GPUVertexFormat associated to this type.
+    // If no vertex format exists, throw an exception.
+    vertexFormat(): GPUVertexFormat {
+        throw new Error("type with no vertex format");
+    }
+
+    // Return the list of GPUVertexAttribute for this type, suitable for a
+    // GPUVertexFormat. Can throw an error if that type does not support being
+    // used as vertex attribute.
+    // By default, just use the vertexFormat of this type.
+    vertexAttributes(): GPUVertexAttribute[] {
+        return [{
+            shaderLocation: 0,
+            offset: 0,
+            format: this.vertexFormat(),
+        }]
+    }
+
     // Write a value from javascript to a data view.
     abstract dataViewSet(dv: DataView, offset: number, v: T): void;
 
@@ -97,6 +115,10 @@ class Vec3f32Type extends WGSLType<[number, number, number]> {
     typename(): lang.WGSLCode {
         return wgsl`vec3<f32>`;
     }
+
+    vertexFormat(): GPUVertexFormat {
+        return "float32x3";
+    }
 }
 export const Vec3f32 = new Vec3f32Type();
 
@@ -114,6 +136,10 @@ class Vec4f32Type extends WGSLType<[number, number, number, number]> {
 
     typename(): lang.WGSLCode {
         return wgsl`vec4<f32>`;
+    }
+
+    vertexFormat(): GPUVertexFormat {
+        return "float32x4";
     }
 }
 export const Vec4f32 = new Vec4f32Type();
@@ -163,6 +189,15 @@ export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]
 
     typename(): lang.WGSLCode {
         return wgsl`array<${this.etype.typename()}, ${this.count.toString()}>`;
+    }
+
+    // Creates a vertex buffer layout matching this array, suitable for a
+    // createRenderPipeline call.
+    vertexBufferLayout(): GPUVertexBufferLayout {
+        return {
+            arrayStride: this.stride,
+            attributes: this.etype.vertexAttributes(),
+        }
     }
 }
 
@@ -289,6 +324,20 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
         }
 
         return wgsl`${new lang.WGSLRef(this.mod, "structname")}`;
+    }
+
+    // Return a list of vertex attribute, suitable for a GPUVertexBufferLayout.
+    // Location is mapped to the index of the fields.
+    vertexAttributes(): GPUVertexAttribute[] {
+        const attrs: GPUVertexAttribute[] = [];
+        for (const m of this.byIndex) {
+            attrs.push({
+                shaderLocation: m.idx,
+                format: m.type.vertexFormat(),
+                offset: m.offset,
+            });
+        }
+        return attrs;
     }
 }
 
