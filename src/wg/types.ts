@@ -240,7 +240,9 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
     private byIndex: Member<any>[];
     private _byteSize: number;
     private _alignOf: number;
-    private mod?: lang.WGSLModule;
+
+    // Module when using this struct for a variable.
+    private typemod?: lang.WGSLModule;
 
     constructor(membersdesc: MDM) {
         super();
@@ -305,7 +307,7 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
     // Refer to that structure type in a WGSL fragment. It will take care of
     // creating a name and inserting the struct declaration as needed.
     typename(): lang.WGSLCode {
-        if (!this.mod) {
+        if (!this.typemod) {
             const lines = [
                 wgsl`// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
                 wgsl`struct @@structname {\n`,
@@ -317,13 +319,27 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
             }
 
             lines.push(wgsl`};\n`);
-            this.mod = new lang.WGSLModule({
+            this.typemod = new lang.WGSLModule({
                 label: "buffer struct declaration",
                 code: wgsl`${lines}`,
             });
         }
 
-        return wgsl`${new lang.WGSLRef(this.mod, "structname")}`;
+        return wgsl`${new lang.WGSLRef(this.typemod, "structname")}`;
+    }
+
+    vertexStruct(name: string): lang.WGSLCode {
+        const lines = [
+            wgsl`// vertex definition\n`,
+            wgsl`struct ${name} {\n`,
+        ];
+
+        for (const member of this.byIndex) {
+            lines.push(wgsl`  @location(${member.idx.toFixed(0)}) ${member.name}: ${member.type.typename()};\n`);
+        }
+
+        lines.push(wgsl`};\n`);
+        return wgsl`${lines}`;
     }
 
     // Return a list of vertex attribute, suitable for a GPUVertexBufferLayout.

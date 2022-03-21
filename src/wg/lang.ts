@@ -135,9 +135,6 @@ export class WGSLRef {
 
 export type WGSLToken = string | WGSLName | WGSLRef;
 
-// https://gpuweb.github.io/gpuweb/wgsl/#identifiers
-const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
-
 // WGSLCode holds a snippet of code, without parsing.
 // This is used to allow mixing actual text representation of WGSL but also
 // Javascript references to other module - that are interpretated differently
@@ -171,6 +168,12 @@ export function wgsl(strings: TemplateStringsArray, ...keys: (WGSLToken | WGSLCo
     return new WGSLCode(tokens);
 }
 
+// https://gpuweb.github.io/gpuweb/wgsl/#identifiers
+const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
+
+// Split the content of a string containing WGSL code to extract all identifiers
+// prefixed with @@. Those identifiers can then be replaced as needed within the
+// module rendering.
 function wgslSplit(s: string): WGSLToken[] {
     const tokens: WGSLToken[] = [];
     let prevIndex = 0;
