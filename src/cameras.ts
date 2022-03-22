@@ -27,10 +27,45 @@ export interface Camera {
     reset(): void;
 }
 
+// A null camera, doing nothing.
+export class Null {
+    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) { }
+    update(start: MoveInfo, end: MoveInfo) { }
+    reset() { }
+}
+
+// A static camera, which cannot be moved.
+export class Static {
+    private tr;
+    private rot;
+
+    constructor(tr: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0), rot: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0)) {
+        this.tr = tr;
+        this.rot = rot;
+    }
+
+    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
+        const q = glmatrix.quat.create();
+        glmatrix.quat.fromEuler(q, this.rot[0], this.rot[1], this.rot[2]);
+        const chg = glmatrix.mat4.create();
+        glmatrix.mat4.fromRotationTranslation(chg, q, this.tr);
+        glmatrix.mat4.mul(camera, camera, chg);
+    }
+
+    update(start: MoveInfo, end: MoveInfo) { }
+    reset() { }
+}
+
+
 // A camera where the pointer allows to rotate from the current position.
 export class FirstPerson {
-    private tr = glmatrix.vec3.fromValues(0, 0, 0);
-    private rot = glmatrix.vec3.fromValues(0, 0, 0);
+    private tr;
+    private rot;
+
+    constructor(tr: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0), rot: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0)) {
+        this.tr = tr;
+        this.rot = rot;
+    }
 
     transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
         const { tr, rot } = this.current(start, current);

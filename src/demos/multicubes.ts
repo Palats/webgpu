@@ -8,6 +8,7 @@ import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 import * as controls from '../controls';
+import * as cameras from '../cameras';
 
 // Number of instances.
 const workgroupWidth = 8;
@@ -334,13 +335,11 @@ export const demo = {
             buffer: uniformsBuffer,
         });
 
+        // Configuring camera.
+        params.setCamera(new cameras.FirstPerson(cameraOffset));
+
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
-            glmatrix.mat4.translate(
-                info.camera,
-                info.camera,
-                cameraOffset,
-            );
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,

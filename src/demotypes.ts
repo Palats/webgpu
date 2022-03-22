@@ -1,4 +1,5 @@
 import * as glmatrix from 'gl-matrix';
+import * as cameras from './cameras';
 import { TemplateResult, html } from 'lit';
 
 // Description of a given effect.
@@ -22,7 +23,12 @@ export interface InitParams {
     renderWidth: number;
     renderHeight: number;
 
-    expose: (t: TemplateResult) => void;
+    // Set the camera to use. This is up to the demo to apply transformations -
+    // that will just be used to take into account pointer events.
+    setCamera(c: cameras.Camera): void;
+
+    // Add some controls in the control panel.
+    expose(t: TemplateResult): void;
 }
 
 export interface FrameInfo {

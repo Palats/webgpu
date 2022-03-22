@@ -193,7 +193,7 @@ export class AppMain extends LitElement {
     private cameraStart?: cameras.MoveInfo;
     // Last move event, when the camera is being moved.
     private cameraCurrent?: cameras.MoveInfo;
-    private camera: cameras.Camera = new cameras.FirstPerson();
+    private camera: cameras.Camera = new cameras.Null();
 
     constructor() {
         super();
@@ -351,6 +351,7 @@ export class AppMain extends LitElement {
                 });
 
                 this.extraControls = [];
+                this.camera = new cameras.Null();
                 const renderer = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
@@ -358,6 +359,7 @@ export class AppMain extends LitElement {
                     renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight,
+                    setCamera: (c: cameras.Camera) => { this.camera = c; },
                     expose: (t: TemplateResult) => { this.extraControls.push(t) },
                 });
                 if (this.error) {
