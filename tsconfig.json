@@ -11,7 +11,8 @@
         // For `query` decorator to work
         "useDefineForClassFields": false,
         // Without, fields like `.interactive` on Sprite are not visible.
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "declaration": true,
     },
     "include": [
         "src/*"

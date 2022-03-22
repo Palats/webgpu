@@ -63,15 +63,13 @@ export const demo = {
             code: wg.wgsl`
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
 
-                ${vertexDesc.vertexStruct("Input")}
-
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>;
                     @location(0) color: vec4<f32>;
                 };
 
                 @stage(vertex)
-                fn vertex(inp: Input) -> Vertex {
+                fn vertex(inp: ${vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);

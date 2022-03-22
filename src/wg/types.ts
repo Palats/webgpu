@@ -243,6 +243,8 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
 
     // Module when using this struct for a variable.
     private typemod?: lang.WGSLModule;
+    // Module when using this struct for a vertex buffer.
+    private vertexmod?: lang.WGSLModule;
 
     constructor(membersdesc: MDM) {
         super();
@@ -308,38 +310,42 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
     // creating a name and inserting the struct declaration as needed.
     typename(): lang.WGSLCode {
         if (!this.typemod) {
-            const lines = [
-                wgsl`// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
-                wgsl`struct @@structname {\n`,
-            ];
-
-            for (const member of this.byIndex) {
-                lines.push(wgsl`  // offset: ${member.offset.toString()} sizeOf: ${member.sizeOf.toString()} ; alignOf: ${member.alignOf.toString()}\n`,);
-                lines.push(wgsl`  ${member.name}: ${member.type.typename()};\n`);
-            }
-
-            lines.push(wgsl`};\n`);
-            this.typemod = new lang.WGSLModule({
-                label: "buffer struct declaration",
-                code: wgsl`${lines}`,
-            });
+            this.typemod = this.genModule("buffer struct", false);
         }
-
         return wgsl`${new lang.WGSLRef(this.typemod, "structname")}`;
     }
 
-    vertexStruct(name: string): lang.WGSLCode {
+    // Refer to that structure in a WGSL fragment. Similar to typename(), but it
+    // will als insert the appropriate `location` info, making it suitable to
+    // use for vertex buffer representation.
+    // Location is mapped to the index of the fields.
+    vertexType(): lang.WGSLCode {
+        if (!this.vertexmod) {
+            this.vertexmod = this.genModule("vertex struct", true);
+        }
+        return wgsl`${new lang.WGSLRef(this.vertexmod, "structname")}`;
+    }
+
+    private genModule(label: string, locations: boolean): lang.WGSLModule {
         const lines = [
-            wgsl`// vertex definition\n`,
-            wgsl`struct ${name} {\n`,
+            wgsl`// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
+            wgsl`struct @@structname {\n`,
         ];
 
         for (const member of this.byIndex) {
-            lines.push(wgsl`  @location(${member.idx.toFixed(0)}) ${member.name}: ${member.type.typename()};\n`);
+            lines.push(wgsl`  // offset: ${member.offset.toString()} sizeOf: ${member.sizeOf.toString()} ; alignOf: ${member.alignOf.toString()}\n`,);
+            let location = "";
+            if (locations) {
+                location = `@location(${member.idx}) `;
+            }
+            lines.push(wgsl`  ${location}${member.name}: ${member.type.typename()};\n`);
         }
 
         lines.push(wgsl`};\n`);
-        return wgsl`${lines}`;
+        return new lang.WGSLModule({
+            label: label,
+            code: wgsl`${lines}`,
+        });
     }
 
     // Return a list of vertex attribute, suitable for a GPUVertexBufferLayout.
