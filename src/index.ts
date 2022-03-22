@@ -38,7 +38,6 @@ export function demoByID(id: string): demotypes.Demo {
     return allDemos[0];
 }
 
-
 @customElement('app-main')
 export class AppMain extends LitElement {
     static styles = css`
@@ -191,10 +190,10 @@ export class AppMain extends LitElement {
 
     // -- Camera parameters.
     // When the camera is being moved, start event.
-    private cameraStart?: cameras.CameraMoveInfo;
+    private cameraStart?: cameras.MoveInfo;
     // Last move event, when the camera is being moved.
-    private cameraCurrent?: cameras.CameraMoveInfo;
-    private camera = new cameras.Camera();
+    private cameraCurrent?: cameras.MoveInfo;
+    private camera: cameras.Camera = new cameras.FirstPerson();
 
     constructor() {
         super();
@@ -237,13 +236,13 @@ export class AppMain extends LitElement {
                 if (this.cameraStart) {
                     console.error("missing pointerup");
                 }
-                this.cameraStart = this.getMoveInfo(e);
+                this.cameraStart = this.getCameraMoveInfo(e);
             }
         });
         eventElement.addEventListener('pointermove', e => {
             if (!this.cameraStart) { return; }
             if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
-            this.cameraCurrent = this.getMoveInfo(e);
+            this.cameraCurrent = this.getCameraMoveInfo(e);
         });
         eventElement.addEventListener('pointerup', e => {
             if (!this.cameraStart) { return; }
@@ -259,7 +258,7 @@ export class AppMain extends LitElement {
         this.canvas.focus();
     }
 
-    getMoveInfo(evt: PointerEvent): cameras.CameraMoveInfo {
+    getCameraMoveInfo(evt: PointerEvent): cameras.MoveInfo {
         return {
             x: evt.x / this.canvas!.clientWidth,
             y: evt.y / this.canvas!.clientHeight,
@@ -396,7 +395,7 @@ export class AppMain extends LitElement {
                         1.0, // near
                         100.0, // far
                     );
-                    this.camera.chain(camera, this.cameraStart, this.cameraCurrent);
+                    this.camera.transform(camera, this.cameraStart, this.cameraCurrent);
                     await renderer({
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
