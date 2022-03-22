@@ -2,10 +2,10 @@
 
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { ref, createRef } from 'lit/directives/ref.js';
 import * as demotypes from './demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as controls from './controls';
+import * as cameras from './cameras';
 
 import * as conway from './demos/conway';
 import * as fire from './demos/fire';
@@ -36,64 +36,6 @@ export function demoByID(id: string): demotypes.Demo {
         }
     }
     return allDemos[0];
-}
-
-type CameraMoveInfo = {
-    // Position of the cursor / click.
-    // Screen coordinate from [0, 1].
-    x: number;
-    y: number;
-    // Was shift pressed?
-    shift: boolean;
-    // The event that triggered this move.
-    evt: PointerEvent;
-}
-
-class Camera {
-    private tr = glmatrix.vec3.fromValues(0, 0, 0);
-    private rot = glmatrix.vec3.fromValues(0, 0, 0);
-
-    chain(camera: glmatrix.mat4, start?: CameraMoveInfo, current?: CameraMoveInfo) {
-        const { tr, rot } = this.current(start, current);
-
-        const q = glmatrix.quat.create();
-        glmatrix.quat.fromEuler(q, rot[0], rot[1], rot[2]);
-        const chg = glmatrix.mat4.create();
-        glmatrix.mat4.fromRotationTranslation(chg, q, tr);
-        glmatrix.mat4.mul(camera, camera, chg);
-    }
-
-    update(start: CameraMoveInfo, end: CameraMoveInfo) {
-        const { tr, rot } = this.current(start, end);
-        this.tr = tr;
-        this.rot = rot;
-    }
-
-    reset() {
-        this.tr = glmatrix.vec3.fromValues(0, 0, 0);
-        this.rot = glmatrix.vec3.fromValues(0, 0, 0);
-    }
-
-    private current(start?: CameraMoveInfo, end?: CameraMoveInfo) {
-        const tr = glmatrix.vec3.clone(this.tr);
-        const rot = glmatrix.vec3.clone(this.rot);
-        if (start && end) {
-            if (end.shift) {
-                glmatrix.vec3.add(tr, tr, glmatrix.vec3.fromValues(
-                    20 * (end.x - start.x),
-                    -20 * (end.y - start.y),
-                    0,
-                ));
-            } else {
-                glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(
-                    -10 * Math.PI * (end.y - start.y),
-                    -10 * Math.PI * (end.x - start.x),
-                    0,
-                ));
-            }
-        }
-        return { tr, rot };
-    }
 }
 
 
@@ -249,10 +191,10 @@ export class AppMain extends LitElement {
 
     // -- Camera parameters.
     // When the camera is being moved, start event.
-    private cameraStart?: CameraMoveInfo;
+    private cameraStart?: cameras.CameraMoveInfo;
     // Last move event, when the camera is being moved.
-    private cameraCurrent?: CameraMoveInfo;
-    private camera = new Camera();
+    private cameraCurrent?: cameras.CameraMoveInfo;
+    private camera = new cameras.Camera();
 
     constructor() {
         super();
@@ -317,7 +259,7 @@ export class AppMain extends LitElement {
         this.canvas.focus();
     }
 
-    getMoveInfo(evt: PointerEvent): CameraMoveInfo {
+    getMoveInfo(evt: PointerEvent): cameras.CameraMoveInfo {
         return {
             x: evt.x / this.canvas!.clientWidth,
             y: evt.y / this.canvas!.clientHeight,
