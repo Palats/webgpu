@@ -61,10 +61,12 @@ export class Static {
 export class FirstPerson {
     private tr;
     private rot;
+    private baseTr;
+    private baseRot;
 
     constructor(tr: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0), rot: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0)) {
-        this.tr = tr;
-        this.rot = rot;
+        this.tr = this.baseTr = tr;
+        this.rot = this.baseRot = rot;
     }
 
     transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
@@ -84,8 +86,8 @@ export class FirstPerson {
     }
 
     reset() {
-        this.tr = glmatrix.vec3.fromValues(0, 0, 0);
-        this.rot = glmatrix.vec3.fromValues(0, 0, 0);
+        this.tr = this.baseTr;
+        this.rot = this.baseRot;
     }
 
     private current(start?: MoveInfo, end?: MoveInfo) {
@@ -100,8 +102,8 @@ export class FirstPerson {
                 ));
             } else {
                 glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(
-                    -10 * Math.PI * (end.y - start.y),
-                    -10 * Math.PI * (end.x - start.x),
+                    30 * Math.PI * (end.y - start.y),
+                    30 * Math.PI * (end.x - start.x),
                     0,
                 ));
             }
