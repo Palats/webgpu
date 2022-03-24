@@ -237,6 +237,7 @@ export class AppMain extends LitElement {
                     console.error("missing pointerup");
                 }
                 this.cameraStart = this.getCameraMoveInfo(e);
+                this.canvas?.setPointerCapture(e.pointerId);
             }
         });
         eventElement.addEventListener('pointermove', e => {
@@ -250,6 +251,12 @@ export class AppMain extends LitElement {
             if (this.cameraStart && this.cameraCurrent) {
                 this.camera.update(this.cameraStart, this.cameraCurrent);
             }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
+        eventElement.addEventListener('pointerout', e => {
+            if (!this.cameraStart) { return; }
+            if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
         });
