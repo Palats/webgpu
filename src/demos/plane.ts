@@ -117,7 +117,7 @@ export const demo = {
             },
             primitive: {
                 topology: 'triangle-list',
-                cullMode: 'back',
+                cullMode: 'none',
             },
             depthStencil: {
                 depthWriteEnabled: true,
