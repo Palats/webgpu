@@ -23,8 +23,8 @@ export interface InitParams {
     renderWidth: number;
     renderHeight: number;
 
-    // Set the camera to use. This is up to the demo to apply transformations -
-    // that will just be used to take into account pointer events.
+    // Connect a camera to pointer events. This is up to the demo to apply
+    // transformations or any other calculations.
     setCamera(c: cameras.Camera): void;
 
     // Add some controls in the control panel.
@@ -41,6 +41,10 @@ export interface FrameInfo {
     // A random value for this frame. Has no particular meaning - just
     // convenient to use with pseudo-rng per frame.
     rng: number;
-    // Camera matrix, incl. projection.
-    camera: glmatrix.mat4;
+    // There is a camera movement in progress - typically, it means that the
+    // pointer is currently held to move the camera.
+    // cameraStart indicates where that started and cameraCurrent where it is
+    // for this frame.
+    cameraStart?: cameras.MoveInfo;
+    cameraCurrent?: cameras.MoveInfo;
 }

@@ -336,17 +336,26 @@ export const demo = {
         });
 
         // Configuring camera.
-        params.setCamera(new cameras.FirstPerson(cameraOffset));
+        const camera = new cameras.FirstPerson(cameraOffset)
+        params.setCamera(camera);
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
+            const viewproj = glmatrix.mat4.perspective(
+                glmatrix.mat4.create(),
+                2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+                params.renderWidth / params.renderHeight, // aspect
+                1.0, // near
+                100.0, // far
+            );
+            camera.transform(viewproj, info.cameraStart, info.cameraCurrent);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
-                camera: Array.from(info.camera),
+                camera: Array.from(viewproj),
             }));
 
             // -- Do compute pass, to create projection matrices.

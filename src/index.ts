@@ -394,20 +394,12 @@ export class AppMain extends LitElement {
                     }
                     this.step = false;
 
-                    const camera = glmatrix.mat4.create();
-                    glmatrix.mat4.perspective(
-                        camera,
-                        2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
-                        this.renderWidth / this.renderHeight, // aspect
-                        1.0, // near
-                        100.0, // far
-                    );
-                    this.camera.transform(camera, this.cameraStart, this.cameraCurrent);
                     await renderer({
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),
-                        camera: camera,
+                        cameraStart: this.cameraStart,
+                        cameraCurrent: this.cameraCurrent,
                     });
 
                     if (this.error) {
