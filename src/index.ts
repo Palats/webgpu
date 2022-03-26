@@ -15,7 +15,6 @@ import * as conway2 from './demos/conway2';
 import * as cube from './demos/cube';
 import * as multicubes from './demos/multicubes';
 import * as sphere from './demos/sphere';
-import * as testlibs from './demos/testlibs';
 
 export const allDemos: demotypes.Demo[] = [
     conway2.demo,
@@ -24,7 +23,6 @@ export const allDemos: demotypes.Demo[] = [
     fade.demo,
     minimal.demo,
     cube.demo,
-    testlibs.demo,
     multicubes.demo,
     sphere.demo,
 ];
