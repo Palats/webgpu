@@ -82,14 +82,13 @@ export const demo = {
 
                     var out : Vertex;
                     out.pos = uniforms.camera * pos;
-                    out.coord = uniforms.camera * pos;
+                    out.coord = pos;
                     return out;
                 }
 
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
-                    let h = uniforms.revCamera * vert.coord;
-                    let world = h / h.w;
+                    let world = vert.coord / vert.coord.w;
                     return vec4<f32>(fract(world.x), fract(world.y), 0., 1.);
                 }
             `,
