@@ -16,6 +16,7 @@ const uniformsDesc = new wg.StructType({
     renderHeight: { idx: 3, type: wg.F32 },
     rngSeed: { idx: 4, type: wg.F32 },
     camera: { idx: 5, type: wg.Mat4x4F32 },
+    revCamera: { idx: 6, type: wg.Mat4x4F32 },
 })
 
 // Parameters from Javascript to the computer shader
@@ -29,7 +30,7 @@ export const demo = {
         // Setup controls.
         const ctrls = {
             showBoundaries: true,
-            showBasis: false,
+            showBasis: true,
         };
         params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
         params.expose(controls.exposeBool(ctrls, 'showBasis'));
@@ -81,16 +82,15 @@ export const demo = {
 
                     var out : Vertex;
                     out.pos = uniforms.camera * pos;
-                    out.coord.x = (pos.x + 1.0) / 2.0;
-                    out.coord.y = (pos.y + 1.0) / 2.0;
-                    out.coord.z = (pos.z + 1.0) / 2.0;
-                    out.coord.w = 1.0;
+                    out.coord = uniforms.camera * pos;
                     return out;
                 }
 
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
-                    return vert.coord;
+                    let h = uniforms.revCamera * vert.coord;
+                    let world = h / h.w;
+                    return vec4<f32>(fract(world.x), fract(world.y), 0., 1.);
                 }
             `,
         }).toDesc());
@@ -206,6 +206,7 @@ export const demo = {
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
                 camera: Array.from(viewproj),
+                revCamera: Array.from(glmatrix.mat4.invert(glmatrix.mat4.create(), viewproj)),
             }));
 
             const commandEncoder = params.device.createCommandEncoder();
