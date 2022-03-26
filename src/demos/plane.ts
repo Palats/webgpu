@@ -45,10 +45,30 @@ export const demo = {
         // and create a cube from hard coded vertex coordinates.
         const depthFormat = "depth24plus";
 
+        // Inspiration from https://stackoverflow.com/questions/12965161/rendering-infinitely-large-plane
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+
+                // An XY plane described using 4 triangles.
+                let mesh = array<vec4<f32>, 12>(
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(1.f, 0.f, 0.f, 0.f),
+                    vec4<f32>(0.f, 1.f, 0.f, 0.f),
+
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(0.f, 1.f, 0.f, 0.f),
+                    vec4<f32>(-1.f, 0.f, 0.f, 0.f),
+
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(-1.f, 0.f, 0.f, 0.f),
+                    vec4<f32>(0.f, -1.f, 0.f, 0.f),
+
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(0.f, -1.f, 0.f, 0.f),
+                    vec4<f32>(1.f, 0.f, 0.f, 0.f),
+                );
 
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>;
@@ -57,10 +77,10 @@ export const demo = {
 
                 @stage(vertex)
                 fn vertex(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> Vertex {
-                    let pos = ${shaderlib.cubeMeshStrip.ref("mesh")}[idx];
+                    let pos = mesh[idx];
 
                     var out : Vertex;
-                    out.pos = uniforms.camera * vec4<f32>(pos , 1.0);
+                    out.pos = uniforms.camera * pos;
                     out.coord.x = (pos.x + 1.0) / 2.0;
                     out.coord.y = (pos.y + 1.0) / 2.0;
                     out.coord.z = (pos.z + 1.0) / 2.0;
@@ -97,7 +117,7 @@ export const demo = {
                 module: shader,
             },
             primitive: {
-                topology: 'triangle-strip',
+                topology: 'triangle-list',
                 cullMode: 'back',
             },
             depthStencil: {
@@ -142,8 +162,7 @@ export const demo = {
         });
         renderBundleEncoder.setPipeline(renderPipeline);
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
-        // Cube mesh as a triangle-strip uses 14 vertices.
-        renderBundleEncoder.draw(14, 1, 0, 0);
+        renderBundleEncoder.draw(12, 1, 0, 0);
         const renderBundle = renderBundleEncoder.finish();
 
         // Orthonormals.
