@@ -12,7 +12,6 @@
         "useDefineForClassFields": false,
         // Without, fields like `.interactive` on Sprite are not visible.
         "allowSyntheticDefaultImports": true,
-        "declaration": true,
     },
     "include": [
         "src/*"
