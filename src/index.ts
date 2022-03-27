@@ -119,7 +119,7 @@ export class AppMain extends LitElement {
             </div>
 
             <div id="overlay">
-                <ctrl-ui>
+                <ctrl-ui ?expanded=${this.controlsExpanded}>
                     <style>${controls.commonStyle}</style>
                     <ctrl-select .obj=${this} field="demoID" .values=${demoValues}>Demo</ctrl-select>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
@@ -182,6 +182,8 @@ export class AppMain extends LitElement {
     renderWidth: number = 0;
     renderHeight: number = 0;
 
+    controlsExpanded = true;
+
     private extraControls: TemplateResult[] = [];
 
     private paused = false;
@@ -199,6 +201,7 @@ export class AppMain extends LitElement {
         super();
         this.limitCanvas = this.getBoolParam("l", false);
         this._demoID = this.getStringParam("d", allDemos[0].id)
+        this.controlsExpanded = this.getBoolParam("c", true);
     }
 
     override firstUpdated(_changedProperties: any) {

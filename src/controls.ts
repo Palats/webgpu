@@ -63,7 +63,7 @@ export class CtrlUI extends LitElement {
     }
 
     @property({ type: Boolean })
-    expanded = true;
+    expanded = false;
 }
 
 declare global {
