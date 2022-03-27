@@ -86,10 +86,16 @@ export const demo = {
                     return out;
                 }
 
+                let lineWidth = 0.02;
+                let gridStep = 1.0;
+
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
                     let world = vert.coord / vert.coord.w;
-                    return vec4<f32>(fract(world.x), fract(world.y), 0., 1.);
+                    let isOnX = step(fract((world.x + lineWidth / 2.) / gridStep), lineWidth);
+                    let isOnY = step(fract((world.y + lineWidth / 2.) / gridStep), lineWidth);
+                    let color = min(1.0, isOnX + isOnY);
+                    return vec4<f32>(color, color, color, 1.0);
                 }
             `,
         }).toDesc());
