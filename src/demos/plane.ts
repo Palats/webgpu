@@ -104,7 +104,7 @@ export const demo = {
                     let grid = abs(fract(coord - 0.5) - 0.5) / d;
                     let line = min(grid.x, grid.y);
                     var presence = 1.0 - min(line, 1.0);
-                    out.color = vec4<f32>(presence, .0, .0, 1.);
+                    out.color = vec4<f32>(.8, .8, .8, presence);
                     return out;
                 }
             `,
@@ -147,6 +147,20 @@ export const demo = {
                 module: shader,
                 targets: [{
                     format: params.renderFormat,
+                    blend: {
+                        // Do alpha blending of the color.
+                        color: {
+                            operation: "add",
+                            srcFactor: "src-alpha",
+                            dstFactor: "one-minus-src-alpha"
+                        },
+                        // State of alpha on the target always ends up at 1.
+                        alpha: {
+                            operation: "add",
+                            srcFactor: "zero",
+                            dstFactor: "one",
+                        },
+                    }
                 }],
             },
         });
