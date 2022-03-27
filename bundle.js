@@ -7806,6 +7806,82 @@ var forEach = function () {
 
 /***/ }),
 
+/***/ "./src/cameras.ts":
+/*!************************!*\
+  !*** ./src/cameras.ts ***!
+  \************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FirstPerson = exports.Static = exports.Null = void 0;
+const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
+// A null camera, doing nothing.
+class Null {
+    transform(camera, start, current) { }
+    update(start, end) { }
+    reset() { }
+}
+exports.Null = Null;
+// A static camera, which cannot be moved.
+class Static {
+    constructor(tr = glmatrix.vec3.fromValues(0, 0, 0), rot = glmatrix.vec3.fromValues(0, 0, 0)) {
+        this.tr = tr;
+        this.rot = rot;
+    }
+    transform(camera, start, current) {
+        const q = glmatrix.quat.create();
+        glmatrix.quat.fromEuler(q, this.rot[0], this.rot[1], this.rot[2]);
+        const chg = glmatrix.mat4.create();
+        glmatrix.mat4.fromRotationTranslation(chg, q, this.tr);
+        glmatrix.mat4.mul(camera, camera, chg);
+    }
+    update(start, end) { }
+    reset() { }
+}
+exports.Static = Static;
+// A camera where the pointer allows to rotate from the current position.
+class FirstPerson {
+    constructor(tr = glmatrix.vec3.fromValues(0, 0, 0), rot = glmatrix.vec3.fromValues(0, 0, 0)) {
+        this.tr = this.baseTr = tr;
+        this.rot = this.baseRot = rot;
+    }
+    transform(camera, start, current) {
+        const { tr, rot } = this.current(start, current);
+        const q = glmatrix.quat.create();
+        glmatrix.quat.fromEuler(q, rot[0], rot[1], rot[2]);
+        const chg = glmatrix.mat4.create();
+        glmatrix.mat4.fromRotationTranslation(chg, q, tr);
+        glmatrix.mat4.mul(camera, camera, chg);
+    }
+    update(start, end) {
+        const { tr, rot } = this.current(start, end);
+        this.tr = tr;
+        this.rot = rot;
+    }
+    reset() {
+        this.tr = this.baseTr;
+        this.rot = this.baseRot;
+    }
+    current(start, end) {
+        const tr = glmatrix.vec3.clone(this.tr);
+        const rot = glmatrix.vec3.clone(this.rot);
+        if (start && end) {
+            if (end.shift) {
+                glmatrix.vec3.add(tr, tr, glmatrix.vec3.fromValues(20 * (end.x - start.x), -20 * (end.y - start.y), 0));
+            }
+            else {
+                glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(30 * Math.PI * (end.y - start.y), 30 * Math.PI * (end.x - start.x), 0));
+            }
+        }
+        return { tr, rot };
+    }
+}
+exports.FirstPerson = FirstPerson;
+
+
+/***/ }),
+
 /***/ "./src/controls.ts":
 /*!*************************!*\
   !*** ./src/controls.ts ***!
@@ -7820,7 +7896,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CtrlBool = exports.exposeBool = exports.CtrlUI = exports.commonStyle = void 0;
+exports.CtrlSelect = exports.CtrlBool = exports.exposeBool = exports.CtrlUI = exports.commonStyle = void 0;
 const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
 const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
 exports.commonStyle = (0, lit_1.css) `
@@ -7852,7 +7928,7 @@ exports.commonStyle = (0, lit_1.css) `
 let CtrlUI = class CtrlUI extends lit_1.LitElement {
     constructor() {
         super(...arguments);
-        this.expanded = true;
+        this.expanded = false;
     }
     static { this.styles = [exports.commonStyle, (0, lit_1.css) `
         :host {
@@ -7927,6 +8003,53 @@ CtrlBool = __decorate([
     (0, decorators_js_1.customElement)('ctrl-bool')
 ], CtrlBool);
 exports.CtrlBool = CtrlBool;
+let CtrlSelect = class CtrlSelect extends lit_1.LitElement {
+    constructor() {
+        super(...arguments);
+        this.field = "";
+        this.values = [];
+    }
+    static { this.styles = [exports.commonStyle]; }
+    render() {
+        const current = this.getValue();
+        return (0, lit_1.html) `
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <select class="value" @change=${this.onChange}>
+                    ${this.values.map(id => (0, lit_1.html) `
+                        <option value=${id} ?selected=${id === current}>${id}</option>
+                    `)}
+                </select>
+            </div>
+        `;
+    }
+    onChange(evt) {
+        const options = evt.target.selectedOptions;
+        if (!options) {
+            return;
+        }
+        this.setValue(options[0].value);
+    }
+    getValue() {
+        return this.obj[this.field] ?? false;
+    }
+    setValue(v) {
+        this.obj[this.field] = v;
+    }
+};
+__decorate([
+    (0, decorators_js_1.property)()
+], CtrlSelect.prototype, "field", void 0);
+__decorate([
+    (0, decorators_js_1.property)({ attribute: false })
+], CtrlSelect.prototype, "obj", void 0);
+__decorate([
+    (0, decorators_js_1.property)({ attribute: false })
+], CtrlSelect.prototype, "values", void 0);
+CtrlSelect = __decorate([
+    (0, decorators_js_1.customElement)('ctrl-select')
+], CtrlSelect);
+exports.CtrlSelect = CtrlSelect;
 
 
 /***/ }),
@@ -9661,6 +9784,7 @@ const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
 const controls = __webpack_require__(/*! ../controls */ "./src/controls.ts");
+const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
 // Number of instances.
 const workgroupWidth = 8;
 const workgroupHeight = 8;
@@ -9730,8 +9854,7 @@ exports.demo = {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
         const a = new ArrayBuffer(instanceArrayDesc.byteSize());
-        const dv = new DataView(a);
-        instanceArrayDesc.dataViewSet(dv, 0, positions);
+        instanceArrayDesc.dataViewSet(new DataView(a), 0, positions);
         params.device.queue.writeBuffer(instancesBuffer, 0, a);
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
@@ -9966,16 +10089,23 @@ exports.demo = {
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
+        // Configuring camera.
+        const camera = new cameras.FirstPerson(cameraOffset);
+        params.setCamera(camera);
         // -- Single frame rendering.
         return async (info) => {
-            glmatrix.mat4.translate(info.camera, info.camera, cameraOffset);
+            const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            params.renderWidth / params.renderHeight, // aspect
+            1.0, // near
+            100.0);
+            camera.transform(viewproj, info.cameraStart, info.cameraCurrent);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
-                camera: Array.from(info.camera),
+                camera: Array.from(viewproj),
             }));
             // -- Do compute pass, to create projection matrices.
             const commandEncoder = params.device.createCommandEncoder();
@@ -9990,6 +10120,276 @@ exports.demo = {
             commandEncoder.popDebugGroup();
             // -- And do the frame rendering.
             commandEncoder.pushDebugGroup('Render cubes');
+            const renderEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                        view: params.context.getCurrentTexture().createView(),
+                        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                        loadOp: 'clear',
+                        storeOp: 'store',
+                    }],
+                depthStencilAttachment: {
+                    view: depthTextureView,
+                    depthClearValue: 1.0,
+                    depthLoadOp: 'clear',
+                    depthStoreOp: 'store',
+                },
+            });
+            const bundles = [renderBundle];
+            if (ctrls.showBoundaries) {
+                bundles.push(boundariesBundle);
+            }
+            if (ctrls.showBasis) {
+                bundles.push(basisBundle);
+            }
+            renderEncoder.executeBundles(bundles);
+            renderEncoder.end();
+            commandEncoder.popDebugGroup();
+            // Submit all the work.
+            commandEncoder.popDebugGroup();
+            params.device.queue.submit([commandEncoder.finish()]);
+        };
+    }
+};
+
+
+/***/ }),
+
+/***/ "./src/demos/plane.ts":
+/*!****************************!*\
+  !*** ./src/demos/plane.ts ***!
+  \****************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+// An infinite plane.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+const controls = __webpack_require__(/*! ../controls */ "./src/controls.ts");
+const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
+// Basic parameters provided to all the shaders.
+const uniformsDesc = new wg.StructType({
+    elapsedMs: { idx: 0, type: wg.F32 },
+    deltaMs: { idx: 1, type: wg.F32 },
+    renderWidth: { idx: 2, type: wg.F32 },
+    renderHeight: { idx: 3, type: wg.F32 },
+    rngSeed: { idx: 4, type: wg.F32 },
+    camera: { idx: 5, type: wg.Mat4x4F32 },
+    revCamera: { idx: 6, type: wg.Mat4x4F32 },
+});
+// Parameters from Javascript to the computer shader
+// for each instance.
+exports.demo = {
+    id: "plane",
+    caption: "An infinite plane",
+    async init(params) {
+        // Setup controls.
+        const ctrls = {
+            showBoundaries: true,
+            showBasis: true,
+        };
+        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
+        params.expose(controls.exposeBool(ctrls, 'showBasis'));
+        const uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // -- Render pipeline.
+        // It takes the projection matrix from the compute output
+        // and create a cube from hard coded vertex coordinates.
+        const depthFormat = "depth24plus";
+        // Inspiration from https://stackoverflow.com/questions/12965161/rendering-infinitely-large-plane
+        // And http://asliceofrendering.com/scene%20helper/2020/01/05/InfiniteGrid/
+        const shader = params.device.createShaderModule(new wg.WGSLModule({
+            label: "vertex shader",
+            code: wg.wgsl `
+                @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+
+                // An XY plane described using 4 triangles.
+                let mesh = array<vec4<f32>, 12>(
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(1.f, 0.f, 0.f, 0.f),
+                    vec4<f32>(0.f, 1.f, 0.f, 0.f),
+
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(0.f, 1.f, 0.f, 0.f),
+                    vec4<f32>(-1.f, 0.f, 0.f, 0.f),
+
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(-1.f, 0.f, 0.f, 0.f),
+                    vec4<f32>(0.f, -1.f, 0.f, 0.f),
+
+                    vec4<f32>(0.f, 0.f, 0.f, 1.f),
+                    vec4<f32>(0.f, -1.f, 0.f, 0.f),
+                    vec4<f32>(1.f, 0.f, 0.f, 0.f),
+                );
+
+                struct VertexOut {
+                    @builtin(position) pos: vec4<f32>;
+                    @location(0) coord: vec4<f32>;
+                };
+
+                @stage(vertex)
+                fn vertex(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> VertexOut {
+                    let pos = mesh[idx];
+
+                    var out : VertexOut;
+                    out.pos = uniforms.camera * pos;
+                    out.coord = pos;
+                    return out;
+                }
+
+                let lineWidth = 0.02;
+                let gridStep = 1.0;
+
+                struct FragOut {
+                    @location(0) color: vec4<f32>;
+                }
+
+                @stage(fragment)
+                fn fragment(vert: VertexOut) -> FragOut {
+                    var out : FragOut;
+
+                    let world = vert.coord / vert.coord.w;
+                    let coord = world / gridStep;
+                    let d = fwidth(coord);
+                    let grid = abs(fract(coord - 0.5) - 0.5) / d;
+                    let line = min(grid.x, grid.y);
+                    let presence = 1.0 - min(line, 1.0);
+                    // Depth is [0..1].
+                    let depth = vert.pos.z;
+
+                    out.color = vec4<f32>(.9, .9, .9, presence * (1.0 - depth));
+                    return out;
+                }
+            `,
+        }).toDesc());
+        const renderPipeline = params.device.createRenderPipeline({
+            label: "rendering pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        label: "render pipeline layout",
+                        entries: [
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                                buffer: { type: 'uniform' },
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: 'vertex',
+                module: shader,
+            },
+            primitive: {
+                topology: 'triangle-list',
+                cullMode: 'none',
+            },
+            depthStencil: {
+                // The grid should not prevent other things to be displayed, so
+                // disable depth writing.
+                depthWriteEnabled: false,
+                depthCompare: 'less',
+                format: depthFormat,
+            },
+            fragment: {
+                entryPoint: 'fragment',
+                module: shader,
+                targets: [{
+                        format: params.renderFormat,
+                        blend: {
+                            // Do alpha blending of the color.
+                            color: {
+                                operation: "add",
+                                srcFactor: "src-alpha",
+                                dstFactor: "one-minus-src-alpha"
+                            },
+                            // State of alpha on the target always ends up at 1.
+                            alpha: {
+                                operation: "add",
+                                srcFactor: "zero",
+                                dstFactor: "one",
+                            },
+                        }
+                    }],
+            },
+        });
+        const renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: { buffer: uniformsBuffer }
+                },
+            ]
+        });
+        const depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: depthFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+        // Prepare the rendering pipeline as a bundle.
+        const renderBundleEncoder = params.device.createRenderBundleEncoder({
+            label: "main render bundle",
+            depthReadOnly: false,
+            stencilReadOnly: false,
+            colorFormats: [params.renderFormat],
+            depthStencilFormat: depthFormat,
+        });
+        renderBundleEncoder.setPipeline(renderPipeline);
+        renderBundleEncoder.setBindGroup(0, renderBindGroup);
+        renderBundleEncoder.draw(12, 1, 0, 0);
+        const renderBundle = renderBundleEncoder.finish();
+        // Orthonormals.
+        const basisBundle = shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            lines: shaderlib.ortholines,
+            mod: uniformsDesc,
+            buffer: uniformsBuffer,
+        });
+        // Cube surrounding the scene.
+        const boundariesBundle = shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            lines: shaderlib.cubelines(1.0),
+            depthCompare: 'less',
+            mod: uniformsDesc,
+            buffer: uniformsBuffer,
+        });
+        // Configuring camera.
+        const camera = new cameras.FirstPerson(glmatrix.vec3.fromValues(0, 0, -5));
+        params.setCamera(camera);
+        // -- Single frame rendering.
+        return async (info) => {
+            const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            params.renderWidth / params.renderHeight, // aspect
+            1.0, // near
+            100.0);
+            camera.transform(viewproj, info.cameraStart, info.cameraCurrent);
+            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
+                elapsedMs: info.elapsedMs,
+                deltaMs: info.deltaMs,
+                renderWidth: params.renderWidth,
+                renderHeight: params.renderHeight,
+                rngSeed: info.rng,
+                camera: Array.from(viewproj),
+                revCamera: Array.from(glmatrix.mat4.invert(glmatrix.mat4.create(), viewproj)),
+            }));
+            const commandEncoder = params.device.createCommandEncoder();
+            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+            commandEncoder.pushDebugGroup('Render');
             const renderEncoder = commandEncoder.beginRenderPass({
                 colorAttachments: [{
                         view: params.context.getCurrentTexture().createView(),
@@ -10082,18 +10482,13 @@ exports.demo = {
             code: wg.wgsl `
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
 
-                struct Input {
-                    @location(0) pos: vec3<f32>;
-                    @location(1) color: vec4<f32>;
-                }
-
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>;
                     @location(0) color: vec4<f32>;
                 };
 
                 @stage(vertex)
-                fn vertex(inp: Input) -> Vertex {
+                fn vertex(inp: ${vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
@@ -10137,13 +10532,7 @@ exports.demo = {
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
-                buffers: [{
-                        arrayStride: verticesDesc.stride,
-                        attributes: [
-                            { shaderLocation: 0, format: "float32x3", offset: 0, },
-                            { shaderLocation: 1, format: "float32x4", offset: 16, },
-                        ],
-                    }],
+                buffers: [verticesDesc.vertexBufferLayout()],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -10196,14 +10585,18 @@ exports.demo = {
         const cameraOffset = glmatrix.vec3.fromValues(0, 0, -4);
         // -- Single frame rendering.
         return async (info) => {
-            glmatrix.mat4.translate(info.camera, info.camera, cameraOffset);
+            const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            params.renderWidth / params.renderHeight, // aspect
+            1.0, // near
+            100.0);
+            glmatrix.mat4.translate(viewproj, viewproj, cameraOffset);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
                 renderWidth: params.renderWidth,
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
-                camera: Array.from(info.camera),
+                camera: Array.from(viewproj),
             }));
             const commandEncoder = params.device.createCommandEncoder();
             commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
@@ -10321,250 +10714,6 @@ function sphereMesh() {
 
 /***/ }),
 
-/***/ "./src/demos/testlibs.ts":
-/*!*******************************!*\
-  !*** ./src/demos/testlibs.ts ***!
-  \*******************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-// Testing ground for the various helper libraries.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { type: wg.F32, idx: 0 },
-    renderWidth: { type: wg.F32, idx: 1 },
-    renderHeight: { type: wg.F32, idx: 2 },
-});
-exports.demo = {
-    id: "testlibs",
-    caption: "Testing the helper libs",
-    async init(params) {
-        const computePipeline = params.device.createComputePipeline({
-            label: "Compute pipeline for projection matrix",
-            layout: params.device.createPipelineLayout({
-                label: "compute pipeline layouts",
-                bindGroupLayouts: [params.device.createBindGroupLayout({
-                        label: "compute pipeline main layout",
-                        entries: [
-                            // Input buffer, which will be coming from JS.
-                            {
-                                binding: 0,
-                                visibility: GPUShaderStage.COMPUTE,
-                                buffer: { type: "uniform" },
-                            },
-                            // Output buffer, to feed the vertex shader.
-                            {
-                                binding: 1,
-                                visibility: GPUShaderStage.COMPUTE,
-                                buffer: { type: "storage" },
-                            },
-                        ]
-                    })],
-            }),
-            compute: {
-                entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "Rendering matrix compute",
-                    // Project & rotations from https://github.com/toji/gl-matrix
-                    code: wg.wgsl `
-                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
-
-                        struct Output {
-                            // ModelViewProjection
-                            mvp: mat4x4<f32>;
-                        };
-                        @group(0) @binding(1) var<storage, write> outp : Output;
-
-                        @stage(compute) @workgroup_size(1)
-                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-                            let TAU = 6.283185;
-                            let c = (uniforms.elapsedMs / 1000.0) % TAU;
-                            let r = vec3<f32>(c, c, c);
-                            outp.mvp =
-                                ${shaderlib.projection.ref("perspective")}(uniforms.renderWidth / uniforms.renderHeight)
-                                * ${shaderlib.tr.ref("translate")}(vec3<f32>(0.0, 0.0, -4.0))
-                                * ${shaderlib.tr.ref("rotateZ")}(r.z)
-                                * ${shaderlib.tr.ref("rotateY")}(r.y)
-                                * ${shaderlib.tr.ref("rotateX")}(r.x);
-                        }
-                    `,
-                }).toDesc()),
-            }
-        });
-        const uniformsBuffer = params.device.createBuffer({
-            label: "Compute uniforms buffer",
-            size: uniformsDesc.byteSize(),
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        const computeResult = params.device.createBuffer({
-            label: "Compute output for vertex shaders",
-            size: wg.Mat4x4F32.byteSize(),
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
-        });
-        const computeBindGroup = params.device.createBindGroup({
-            label: "Bind group for the projection matrix compute",
-            layout: computePipeline.getBindGroupLayout(0),
-            entries: [{
-                    binding: 0,
-                    resource: { buffer: uniformsBuffer }
-                }, {
-                    binding: 1,
-                    resource: { buffer: computeResult }
-                }]
-        });
-        // -- Render pipeline.
-        // It takes the projection matrix from the compute output
-        // and create a cube from hard coded vertex coordinates.
-        const renderPipeline = params.device.createRenderPipeline({
-            label: "Cube rendering pipeline",
-            layout: params.device.createPipelineLayout({
-                label: "render pipeline layouts",
-                bindGroupLayouts: [
-                    params.device.createBindGroupLayout({
-                        label: "render pipeline layout for compute data",
-                        entries: [
-                            // Matrix info coming from compute shader.
-                            {
-                                binding: 0,
-                                visibility: GPUShaderStage.VERTEX,
-                                buffer: {
-                                    type: 'read-only-storage',
-                                },
-                            },
-                        ],
-                    }),
-                ]
-            }),
-            vertex: {
-                entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "cube vertex shader",
-                    // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
-                    code: wg.wgsl `
-                        struct Output {
-                            // ModelViewProjection
-                            mvp: mat4x4<f32>;
-                        };
-                        @group(0) @binding(0) var<storage> outp : Output;
-
-                        struct Out {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec3<f32>;
-                        };
-
-                        @stage(vertex)
-                        fn main(@builtin(vertex_index) idx : u32) -> Out {
-                            let pos = ${shaderlib.cubeMeshStrip.ref("mesh")}[idx];
-                            var out : Out;
-                            out.pos = outp.mvp * vec4<f32>(pos + vec3<f32>(0.0, 0.0, 0.0), 1.0);
-                            out.coord.x = (pos.x + 1.0) / 2.0;
-                            out.coord.y = (pos.y + 1.0) / 2.0;
-                            out.coord.z = (pos.z + 1.0) / 2.0;
-                            return out;
-                        }
-                    `,
-                }).toDesc())
-            },
-            primitive: {
-                topology: 'triangle-strip',
-                cullMode: 'back',
-            },
-            depthStencil: {
-                depthWriteEnabled: true,
-                depthCompare: 'less',
-                format: 'depth24plus',
-            },
-            fragment: {
-                entryPoint: 'main',
-                module: params.device.createShaderModule({
-                    label: "trivial fragment shader",
-                    code: `
-                        @stage(fragment)
-                        fn main(@location(0) coord: vec3<f32>) -> @location(0) vec4<f32> {
-                            return vec4<f32>(coord.x, coord.y, coord.z, 1.0);
-                        }
-                    `,
-                }),
-                targets: [{
-                        format: params.renderFormat,
-                    }],
-            },
-        });
-        const renderBindGroup = params.device.createBindGroup({
-            label: "render pipeline bindgroup",
-            layout: renderPipeline.getBindGroupLayout(0),
-            entries: [
-                {
-                    binding: 0,
-                    resource: {
-                        buffer: computeResult,
-                    }
-                },
-            ]
-        });
-        const depthTextureView = params.device.createTexture({
-            label: "depth view",
-            size: [params.renderWidth, params.renderHeight],
-            format: 'depth24plus',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-        }).createView();
-        // -- Single frame rendering.
-        return async (info) => {
-            // Fill up the uniforms to feed the compute shaders.
-            // Rotation of the cube is just a function of current time,
-            // calculated in the compute shader.
-            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
-                elapsedMs: info.elapsedMs,
-                renderWidth: params.renderWidth,
-                renderHeight: params.renderHeight,
-            }));
-            // -- Do compute pass, to create projection matrices.
-            const commandEncoder = params.device.createCommandEncoder();
-            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
-            commandEncoder.pushDebugGroup('Compute projection');
-            const computeEncoder = commandEncoder.beginComputePass();
-            computeEncoder.setPipeline(computePipeline);
-            computeEncoder.setBindGroup(0, computeBindGroup);
-            // The compute has only a single matrix to compute. More typical compute shaders
-            // would dispatch on NxM elements.
-            computeEncoder.dispatch(1);
-            computeEncoder.end();
-            commandEncoder.popDebugGroup();
-            // -- And do the frame rendering.
-            commandEncoder.pushDebugGroup('Render cube');
-            const renderEncoder = commandEncoder.beginRenderPass({
-                colorAttachments: [{
-                        view: params.context.getCurrentTexture().createView(),
-                        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                        loadOp: 'clear',
-                        storeOp: 'store',
-                    }],
-                depthStencilAttachment: {
-                    view: depthTextureView,
-                    depthClearValue: 1.0,
-                    depthLoadOp: 'clear',
-                    depthStoreOp: 'store',
-                },
-            });
-            renderEncoder.setPipeline(renderPipeline);
-            renderEncoder.setBindGroup(0, renderBindGroup);
-            // Cube mesh as a triangle-strip uses 14 vertices.
-            renderEncoder.draw(14, 1, 0, 0);
-            renderEncoder.end();
-            commandEncoder.popDebugGroup();
-            // Submit all the work.
-            commandEncoder.popDebugGroup();
-            params.device.queue.submit([commandEncoder.finish()]);
-        };
-    }
-};
-
-
-/***/ }),
-
 /***/ "./src/index.ts":
 /*!**********************!*\
   !*** ./src/index.ts ***!
@@ -10583,8 +10732,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppMain = exports.demoByID = exports.allDemos = void 0;
 const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
 const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 const controls = __webpack_require__(/*! ./controls */ "./src/controls.ts");
+const cameras = __webpack_require__(/*! ./cameras */ "./src/cameras.ts");
 const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts");
 const fire = __webpack_require__(/*! ./demos/fire */ "./src/demos/fire.ts");
 const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
@@ -10593,7 +10742,7 @@ const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.
 const cube = __webpack_require__(/*! ./demos/cube */ "./src/demos/cube.ts");
 const multicubes = __webpack_require__(/*! ./demos/multicubes */ "./src/demos/multicubes.ts");
 const sphere = __webpack_require__(/*! ./demos/sphere */ "./src/demos/sphere.ts");
-const testlibs = __webpack_require__(/*! ./demos/testlibs */ "./src/demos/testlibs.ts");
+const plane = __webpack_require__(/*! ./demos/plane */ "./src/demos/plane.ts");
 exports.allDemos = [
     conway2.demo,
     fire.demo,
@@ -10601,9 +10750,9 @@ exports.allDemos = [
     fade.demo,
     minimal.demo,
     cube.demo,
-    testlibs.demo,
     multicubes.demo,
     sphere.demo,
+    plane.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -10614,42 +10763,6 @@ function demoByID(id) {
     return exports.allDemos[0];
 }
 exports.demoByID = demoByID;
-class Camera {
-    constructor() {
-        this.tr = glmatrix.vec3.fromValues(0, 0, 0);
-        this.rot = glmatrix.vec3.fromValues(0, 0, 0);
-    }
-    chain(camera, start, current) {
-        const { tr, rot } = this.current(start, current);
-        const q = glmatrix.quat.create();
-        glmatrix.quat.fromEuler(q, rot[0], rot[1], rot[2]);
-        const chg = glmatrix.mat4.create();
-        glmatrix.mat4.fromRotationTranslation(chg, q, tr);
-        glmatrix.mat4.mul(camera, camera, chg);
-    }
-    update(start, end) {
-        const { tr, rot } = this.current(start, end);
-        this.tr = tr;
-        this.rot = rot;
-    }
-    reset() {
-        this.tr = glmatrix.vec3.fromValues(0, 0, 0);
-        this.rot = glmatrix.vec3.fromValues(0, 0, 0);
-    }
-    current(start, end) {
-        const tr = glmatrix.vec3.clone(this.tr);
-        const rot = glmatrix.vec3.clone(this.rot);
-        if (start && end) {
-            if (end.shift) {
-                glmatrix.vec3.add(tr, tr, glmatrix.vec3.fromValues(20 * (end.x - start.x), -20 * (end.y - start.y), 0));
-            }
-            else {
-                glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(-10 * Math.PI * (end.y - start.y), -10 * Math.PI * (end.x - start.x), 0));
-            }
-        }
-        return { tr, rot };
-    }
-}
 let AppMain = class AppMain extends lit_1.LitElement {
     constructor() {
         super();
@@ -10658,13 +10771,15 @@ let AppMain = class AppMain extends lit_1.LitElement {
         this._limitCanvas = false;
         this.renderWidth = 0;
         this.renderHeight = 0;
+        this.controlsExpanded = true;
         this.extraControls = [];
         this.paused = false;
         this.step = false;
         this.shiftPressed = false;
-        this.camera = new Camera();
+        this.camera = new cameras.Null();
         this.limitCanvas = this.getBoolParam("l", false);
-        this.demoID = this.getStringParam("d", exports.allDemos[0].id);
+        this._demoID = this.getStringParam("d", exports.allDemos[0].id);
+        this.controlsExpanded = this.getBoolParam("c", true);
     }
     static { this.styles = (0, lit_1.css) `
         /* Cover both shadow dom / non shadow dom cases */
@@ -10736,22 +10851,16 @@ let AppMain = class AppMain extends lit_1.LitElement {
         }
     `; }
     render() {
+        const demoValues = exports.allDemos.map(d => d.id);
         return (0, lit_1.html) `
             <div id="display">
                 <canvas id="canvas" tabindex=0></canvas>
             </div>
 
             <div id="overlay">
-                <ctrl-ui>
+                <ctrl-ui ?expanded=${this.controlsExpanded}>
                     <style>${controls.commonStyle}</style>
-                    <div class="labelvalue">
-                        <label>Demo</label>
-                        <select class="value" @change=${(e) => this.demoChange(e)}>
-                            ${exports.allDemos.map(d => (0, lit_1.html) `
-                                <option value=${d.id} ?selected=${d.id === this.demoID}>${d.id}</option>
-                            `)}
-                        </select>
-                    </div>
+                    <ctrl-select .obj=${this} field="demoID" .values=${demoValues}>Demo</ctrl-select>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
                     <ctrl-bool .obj=${this} field="limitCanvas">Limit canvas</ctrl-bool>
@@ -10786,6 +10895,15 @@ let AppMain = class AppMain extends lit_1.LitElement {
         this.updateURL("l", this._limitCanvas);
         this.updateSize();
         this.requestUpdate('limitCanvas', !v);
+    }
+    get demoID() { return this._demoID; }
+    set demoID(v) {
+        if (this._demoID === v) {
+            return;
+        }
+        this._demoID = v;
+        this.updateURL("d", this._demoID);
+        this.rebuild("changed demo");
     }
     firstUpdated(_changedProperties) {
         super.firstUpdated(_changedProperties);
@@ -10823,7 +10941,8 @@ let AppMain = class AppMain extends lit_1.LitElement {
                 if (this.cameraStart) {
                     console.error("missing pointerup");
                 }
-                this.cameraStart = this.getMoveInfo(e);
+                this.cameraStart = this.getCameraMoveInfo(e);
+                this.canvas?.setPointerCapture(e.pointerId);
             }
         });
         eventElement.addEventListener('pointermove', e => {
@@ -10833,7 +10952,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
             if (e.pointerId != this.cameraStart.evt.pointerId) {
                 return;
             }
-            this.cameraCurrent = this.getMoveInfo(e);
+            this.cameraCurrent = this.getCameraMoveInfo(e);
         });
         eventElement.addEventListener('pointerup', e => {
             if (!this.cameraStart) {
@@ -10848,10 +10967,20 @@ let AppMain = class AppMain extends lit_1.LitElement {
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
         });
+        eventElement.addEventListener('pointerout', e => {
+            if (!this.cameraStart) {
+                return;
+            }
+            if (e.pointerId != this.cameraStart.evt.pointerId) {
+                return;
+            }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
         // Make sure keyboard events go to the canvas initially.
         this.canvas.focus();
     }
-    getMoveInfo(evt) {
+    getCameraMoveInfo(evt) {
         return {
             x: evt.x / this.canvas.clientWidth,
             y: evt.y / this.canvas.clientHeight,
@@ -10938,6 +11067,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     },
                 });
                 this.extraControls = [];
+                this.camera = new cameras.Null();
                 const renderer = await demoByID(this.demoID).init({
                     context: context,
                     adapter: adapter,
@@ -10945,6 +11075,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
                     renderFormat: renderFormat,
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight,
+                    setCamera: (c) => { this.camera = c; },
                     expose: (t) => { this.extraControls.push(t); },
                 });
                 if (this.error) {
@@ -10970,17 +11101,12 @@ let AppMain = class AppMain extends lit_1.LitElement {
                         deltaMs = 0;
                     }
                     this.step = false;
-                    const camera = glmatrix.mat4.create();
-                    glmatrix.mat4.perspective(camera, 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
-                    this.renderWidth / this.renderHeight, // aspect
-                    1.0, // near
-                    100.0);
-                    this.camera.chain(camera, this.cameraStart, this.cameraCurrent);
                     await renderer({
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),
-                        camera: camera,
+                        cameraStart: this.cameraStart,
+                        cameraCurrent: this.cameraCurrent,
                     });
                     if (this.error) {
                         throw new Error("frame failed");
@@ -11003,19 +11129,6 @@ let AppMain = class AppMain extends lit_1.LitElement {
                 }
             }
         }
-    }
-    demoChange(evt) {
-        const options = evt.target.selectedOptions;
-        if (!options) {
-            return;
-        }
-        const v = options[0].value;
-        if (this.demoID === v) {
-            return;
-        }
-        this.demoID = v;
-        this.updateURL("d", this.demoID);
-        this.rebuild("changed demo");
     }
     updateURL(k, v) {
         if (typeof v == "boolean") {
@@ -11053,7 +11166,7 @@ __decorate([
 ], AppMain.prototype, "error", void 0);
 __decorate([
     (0, decorators_js_1.property)()
-], AppMain.prototype, "demoID", void 0);
+], AppMain.prototype, "_demoID", void 0);
 AppMain = __decorate([
     (0, decorators_js_1.customElement)('app-main')
 ], AppMain);
@@ -11516,8 +11629,6 @@ class WGSLRef {
     }
 }
 exports.WGSLRef = WGSLRef;
-// https://gpuweb.github.io/gpuweb/wgsl/#identifiers
-const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
 // WGSLCode holds a snippet of code, without parsing.
 // This is used to allow mixing actual text representation of WGSL but also
 // Javascript references to other module - that are interpretated differently
@@ -11552,6 +11663,11 @@ function wgsl(strings, ...keys) {
     return new WGSLCode(tokens);
 }
 exports.wgsl = wgsl;
+// https://gpuweb.github.io/gpuweb/wgsl/#identifiers
+const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
+// Split the content of a string containing WGSL code to extract all identifiers
+// prefixed with @@. Those identifiers can then be replaced as needed within the
+// module rendering.
 function wgslSplit(s) {
     const tokens = [];
     let prevIndex = 0;
@@ -11647,6 +11763,22 @@ const wgsl = lang.wgsl;
 // Basic class to represent info about a given WGSL type. The template parameter
 // is the type of the value it maps to in javascript.
 class WGSLType {
+    // Return the GPUVertexFormat associated to this type.
+    // If no vertex format exists, throw an exception.
+    vertexFormat() {
+        throw new Error("type with no vertex format");
+    }
+    // Return the list of GPUVertexAttribute for this type, suitable for a
+    // GPUVertexFormat. Can throw an error if that type does not support being
+    // used as vertex attribute.
+    // By default, just use the vertexFormat of this type.
+    vertexAttributes() {
+        return [{
+                shaderLocation: 0,
+                offset: 0,
+                format: this.vertexFormat(),
+            }];
+    }
     // Create a javascript Array read to be sent to the GPU with the provided
     // content.
     createArray(values) {
@@ -11705,6 +11837,9 @@ class Vec3f32Type extends WGSLType {
     typename() {
         return wgsl `vec3<f32>`;
     }
+    vertexFormat() {
+        return "float32x3";
+    }
 }
 exports.Vec3f32 = new Vec3f32Type();
 // Info about WGSL `vec4<f32>` type.
@@ -11719,6 +11854,9 @@ class Vec4f32Type extends WGSLType {
     }
     typename() {
         return wgsl `vec4<f32>`;
+    }
+    vertexFormat() {
+        return "float32x4";
     }
 }
 exports.Vec4f32 = new Vec4f32Type();
@@ -11755,6 +11893,14 @@ class ArrayType extends WGSLType {
     }
     typename() {
         return wgsl `array<${this.etype.typename()}, ${this.count.toString()}>`;
+    }
+    // Creates a vertex buffer layout matching this array, suitable for a
+    // createRenderPipeline call.
+    vertexBufferLayout() {
+        return {
+            arrayStride: this.stride,
+            attributes: this.etype.vertexAttributes(),
+        };
     }
 }
 exports.ArrayType = ArrayType;
@@ -11821,22 +11967,52 @@ class StructType extends WGSLType {
     // Refer to that structure type in a WGSL fragment. It will take care of
     // creating a name and inserting the struct declaration as needed.
     typename() {
-        if (!this.mod) {
-            const lines = [
-                wgsl `// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
-                wgsl `struct @@structname {\n`,
-            ];
-            for (const member of this.byIndex) {
-                lines.push(wgsl `  // offset: ${member.offset.toString()} sizeOf: ${member.sizeOf.toString()} ; alignOf: ${member.alignOf.toString()}\n`);
-                lines.push(wgsl `  ${member.name}: ${member.type.typename()};\n`);
+        if (!this.typemod) {
+            this.typemod = this.genModule("buffer struct", false);
+        }
+        return wgsl `${new lang.WGSLRef(this.typemod, "structname")}`;
+    }
+    // Refer to that structure in a WGSL fragment. Similar to typename(), but it
+    // will als insert the appropriate `location` info, making it suitable to
+    // use for vertex buffer representation.
+    // Location is mapped to the index of the fields.
+    vertexType() {
+        if (!this.vertexmod) {
+            this.vertexmod = this.genModule("vertex struct", true);
+        }
+        return wgsl `${new lang.WGSLRef(this.vertexmod, "structname")}`;
+    }
+    genModule(label, locations) {
+        const lines = [
+            wgsl `// sizeOf: ${this.byteSize().toString()} ; alignOf: ${this.alignOf().toString()}\n`,
+            wgsl `struct @@structname {\n`,
+        ];
+        for (const member of this.byIndex) {
+            lines.push(wgsl `  // offset: ${member.offset.toString()} sizeOf: ${member.sizeOf.toString()} ; alignOf: ${member.alignOf.toString()}\n`);
+            let location = "";
+            if (locations) {
+                location = `@location(${member.idx}) `;
             }
-            lines.push(wgsl `};\n`);
-            this.mod = new lang.WGSLModule({
-                label: "buffer struct declaration",
-                code: wgsl `${lines}`,
+            lines.push(wgsl `  ${location}${member.name}: ${member.type.typename()};\n`);
+        }
+        lines.push(wgsl `};\n`);
+        return new lang.WGSLModule({
+            label: label,
+            code: wgsl `${lines}`,
+        });
+    }
+    // Return a list of vertex attribute, suitable for a GPUVertexBufferLayout.
+    // Location is mapped to the index of the fields.
+    vertexAttributes() {
+        const attrs = [];
+        for (const m of this.byIndex) {
+            attrs.push({
+                shaderLocation: m.idx,
+                format: m.type.vertexFormat(),
+                offset: m.offset,
             });
         }
-        return wgsl `${new lang.WGSLRef(this.mod, "structname")}`;
+        return attrs;
     }
 }
 exports.StructType = StructType;
