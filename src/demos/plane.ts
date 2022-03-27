@@ -103,8 +103,11 @@ export const demo = {
                     let d = fwidth(coord);
                     let grid = abs(fract(coord - 0.5) - 0.5) / d;
                     let line = min(grid.x, grid.y);
-                    var presence = 1.0 - min(line, 1.0);
-                    out.color = vec4<f32>(.8, .8, .8, presence);
+                    let presence = 1.0 - min(line, 1.0);
+                    // Depth is [0..1].
+                    let depth = vert.pos.z;
+
+                    out.color = vec4<f32>(.9, .9, .9, presence * (1.0 - depth));
                     return out;
                 }
             `,
