@@ -47,6 +47,7 @@ export const demo = {
         const depthFormat = "depth24plus";
 
         // Inspiration from https://stackoverflow.com/questions/12965161/rendering-infinitely-large-plane
+        // And http://asliceofrendering.com/scene%20helper/2020/01/05/InfiniteGrid/
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
@@ -71,16 +72,16 @@ export const demo = {
                     vec4<f32>(1.f, 0.f, 0.f, 0.f),
                 );
 
-                struct Vertex {
+                struct VertexOut {
                     @builtin(position) pos: vec4<f32>;
                     @location(0) coord: vec4<f32>;
                 };
 
                 @stage(vertex)
-                fn vertex(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> Vertex {
+                fn vertex(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> VertexOut {
                     let pos = mesh[idx];
 
-                    var out : Vertex;
+                    var out : VertexOut;
                     out.pos = uniforms.camera * pos;
                     out.coord = pos;
                     return out;
@@ -89,13 +90,22 @@ export const demo = {
                 let lineWidth = 0.02;
                 let gridStep = 1.0;
 
+                struct FragOut {
+                    @location(0) color: vec4<f32>;
+                }
+
                 @stage(fragment)
-                fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                fn fragment(vert: VertexOut) -> FragOut {
+                    var out : FragOut;
+
                     let world = vert.coord / vert.coord.w;
-                    let isOnX = step(fract((world.x + lineWidth / 2.) / gridStep), lineWidth);
-                    let isOnY = step(fract((world.y + lineWidth / 2.) / gridStep), lineWidth);
-                    let color = min(1.0, isOnX + isOnY);
-                    return vec4<f32>(color, color, color, 1.0);
+                    let coord = world / gridStep;
+                    let d = fwidth(coord);
+                    let grid = abs(fract(coord - 0.5) - 0.5) / d;
+                    let line = min(grid.x, grid.y);
+                    var presence = 1.0 - min(line, 1.0);
+                    out.color = vec4<f32>(presence, .0, .0, 1.);
+                    return out;
                 }
             `,
         }).toDesc());
@@ -126,7 +136,9 @@ export const demo = {
                 cullMode: 'none',
             },
             depthStencil: {
-                depthWriteEnabled: true,
+                // The grid should not prevent other things to be displayed, so
+                // disable depth writing.
+                depthWriteEnabled: false,
                 depthCompare: 'less',
                 format: depthFormat,
             },
