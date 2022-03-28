@@ -220,7 +220,7 @@ export const demo = {
         });
 
         // Configuring camera.
-        const camera = new cameras.FirstPerson(glmatrix.vec3.fromValues(0, 0, -5));
+        const camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 5));
         params.setCamera(camera);
 
         // -- Single frame rendering.

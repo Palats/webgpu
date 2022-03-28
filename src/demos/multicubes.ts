@@ -19,7 +19,7 @@ const instances = instancesWidth * instancesHeight
 
 // Space parameters.
 const boxSize = 20;
-const cameraOffset = glmatrix.vec3.fromValues(0, 0, -25);
+const cameraOffset = glmatrix.vec3.fromValues(0, 0, 25);
 const spaceLimit = boxSize / 2.0;
 
 // Basic parameters provided to all the shaders.
@@ -336,7 +336,7 @@ export const demo = {
         });
 
         // Configuring camera.
-        const camera = new cameras.FirstPerson(cameraOffset)
+        const camera = new cameras.ArcBall(cameraOffset)
         params.setCamera(camera);
 
         // -- Single frame rendering.

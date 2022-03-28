@@ -5,6 +5,7 @@ import * as glmatrix from 'gl-matrix';
 export type MoveInfo = {
     // Position of the cursor / click.
     // Screen coordinate from [0, 1].
+    // X left to right. Y top to bottom.
     x: number;
     y: number;
     // Was shift pressed?
@@ -58,57 +59,58 @@ export class Static {
 
 
 // A camera where the pointer allows to rotate from the current position.
-export class FirstPerson {
-    private tr;
-    private rot;
-    private baseTr;
-    private baseRot;
+// Inspiration from http://asliceofrendering.com/camera/2019/11/30/ArcballCamera/
+export class ArcBall {
+    private eye!: glmatrix.vec3;
+    private up!: glmatrix.vec3;
+    private right!: glmatrix.vec3;
 
-    constructor(tr: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0), rot: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0)) {
-        this.tr = this.baseTr = tr;
-        this.rot = this.baseRot = rot;
-    }
+    private lookAt: glmatrix.vec3;
+    private startEye: glmatrix.vec3;
 
-    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
-        const { tr, rot } = this.current(start, current);
 
-        const q = glmatrix.quat.create();
-        glmatrix.quat.fromEuler(q, rot[0], rot[1], rot[2]);
-        const chg = glmatrix.mat4.create();
-        glmatrix.mat4.fromRotationTranslation(chg, q, tr);
-        glmatrix.mat4.mul(camera, camera, chg);
-    }
-
-    update(start: MoveInfo, end: MoveInfo) {
-        const { tr, rot } = this.current(start, end);
-        this.tr = tr;
-        this.rot = rot;
+    constructor(eye: glmatrix.vec3, lookAt: glmatrix.vec3 = glmatrix.vec3.fromValues(0, 0, 0)) {
+        this.lookAt = lookAt;
+        this.startEye = eye;
+        this.reset();
     }
 
     reset() {
-        this.tr = this.baseTr;
-        this.rot = this.baseRot;
+        this.eye = this.startEye;
+        this.up = glmatrix.vec3.fromValues(0, 1, 0);
+        this.right = glmatrix.vec3.fromValues(1, 0, 0);
     }
 
-    private current(start?: MoveInfo, end?: MoveInfo) {
-        const tr = glmatrix.vec3.clone(this.tr);
-        const rot = glmatrix.vec3.clone(this.rot);
-        if (start && end) {
-            if (end.shift) {
-                glmatrix.vec3.add(tr, tr, glmatrix.vec3.fromValues(
-                    20 * (end.x - start.x),
-                    -20 * (end.y - start.y),
-                    0,
-                ));
-            } else {
-                glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(
-                    30 * Math.PI * (end.y - start.y),
-                    30 * Math.PI * (end.x - start.x),
-                    0,
-                ));
-            }
+    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
+        const [eye, up, _] = this.currentEye(start, current);
+        const view = glmatrix.mat4.lookAt(glmatrix.mat4.create(), eye, this.lookAt, up);
+        glmatrix.mat4.mul(camera, camera, view);
+    }
+
+    update(start: MoveInfo, end: MoveInfo) {
+        [this.eye, this.up, this.right] = this.currentEye(start, end);
+    }
+
+    // Return eye, up, right.
+    private currentEye(start?: MoveInfo, end?: MoveInfo): [glmatrix.vec3, glmatrix.vec3, glmatrix.vec3] {
+        if (!start || !end) {
+            return [this.eye, this.up, this.right];
         }
-        return { tr, rot };
+        const eye = glmatrix.vec3.clone(this.eye);
+        const up = glmatrix.vec3.clone(this.up);
+        const right = glmatrix.vec3.clone(this.right);
+
+        const angx = - (end.x - start.x) * 2 * Math.PI;
+        const angy = - (end.y - start.y) * Math.PI;
+        const r = glmatrix.mat4.fromRotation(glmatrix.mat4.create(), angx, up);
+        glmatrix.mat4.rotate(r, r, angy, right);
+        glmatrix.vec3.transformMat4(eye, eye, r);
+
+        // This accumulate rotations on up & right, which will lead to errors.
+        // Needs a better computation here.
+        glmatrix.vec3.transformMat4(up, up, r);
+        glmatrix.vec3.transformMat4(right, right, r);
+        return [eye, up, right];
     }
 }
 
