@@ -6,23 +6,21 @@ export type MoveInfo = {
     // Position of the cursor / click.
     // Screen coordinate from [0, 1].
     // X left to right. Y top to bottom.
-    x: number;
-    y: number;
+    deltaX?: number;
+    deltaY?: number;
     // Was shift pressed?
     shift: boolean;
-    // The event that triggered this move.
-    evt: PointerEvent;
 }
 
 export interface Camera {
     // Apply the transformations of this camera on the provided matrix,
     // including potential active pointer movement.
     // This does not update the state of this Camera object.
-    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo): void;
+    transform(camera: glmatrix.mat4, mvt?: MoveInfo): void;
 
     // Update the state of this Camera object when the pointer operation is
     // finished.
-    update(start: MoveInfo, end: MoveInfo): void;
+    update(mvt: MoveInfo): void;
 
     // Reset camera to initial stance.
     reset(): void;
@@ -30,8 +28,8 @@ export interface Camera {
 
 // A null camera, doing nothing.
 export class Null {
-    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) { }
-    update(start: MoveInfo, end: MoveInfo) { }
+    transform(camera: glmatrix.mat4, mvt?: MoveInfo) { }
+    update(mvt: MoveInfo) { }
     reset() { }
 }
 
@@ -45,7 +43,7 @@ export class Static {
         this.rot = rot;
     }
 
-    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
+    transform(camera: glmatrix.mat4, mvt?: MoveInfo) {
         const q = glmatrix.quat.create();
         glmatrix.quat.fromEuler(q, this.rot[0], this.rot[1], this.rot[2]);
         const chg = glmatrix.mat4.create();
@@ -53,7 +51,7 @@ export class Static {
         glmatrix.mat4.mul(camera, camera, chg);
     }
 
-    update(start: MoveInfo, end: MoveInfo) { }
+    update(mvt: MoveInfo) { }
     reset() { }
 }
 
@@ -79,19 +77,19 @@ export class ArcBall {
         this.up = glmatrix.vec3.fromValues(0, 1, 0);
     }
 
-    transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
-        const [eye, up] = this.currentEye(start, current);
+    transform(camera: glmatrix.mat4, mvt?: MoveInfo) {
+        const [eye, up] = this.currentEye(mvt);
         const view = glmatrix.mat4.lookAt(glmatrix.mat4.create(), eye, this.lookAt, up);
         glmatrix.mat4.mul(camera, camera, view);
     }
 
-    update(start: MoveInfo, end: MoveInfo) {
-        [this.eye, this.up] = this.currentEye(start, end);
+    update(mvt: MoveInfo) {
+        [this.eye, this.up] = this.currentEye(mvt);
     }
 
     // Return eye & up.
-    private currentEye(start?: MoveInfo, end?: MoveInfo): [glmatrix.vec3, glmatrix.vec3] {
-        if (!start || !end) {
+    private currentEye(mvt?: MoveInfo): [glmatrix.vec3, glmatrix.vec3] {
+        if (!mvt || !mvt.deltaX || !mvt.deltaY) {
             return [this.eye, this.up];
         }
         const eye = glmatrix.vec3.clone(this.eye);
@@ -100,8 +98,8 @@ export class ArcBall {
         const right = glmatrix.vec3.sub(glmatrix.vec3.create(), this.lookAt, this.eye);
         glmatrix.vec3.cross(right, right, up);
 
-        const angx = - (end.x - start.x) * 2 * Math.PI;
-        const angy = - (end.y - start.y) * Math.PI;
+        const angx = - mvt.deltaX * 2 * Math.PI;
+        const angy = - mvt.deltaY * Math.PI;
         const r = glmatrix.mat4.fromRotation(glmatrix.mat4.create(), angx, up);
         glmatrix.mat4.rotate(r, r, angy, right);
         glmatrix.vec3.transformMat4(eye, eye, r);

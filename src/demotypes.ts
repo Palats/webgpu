@@ -43,8 +43,5 @@ export interface FrameInfo {
     rng: number;
     // There is a camera movement in progress - typically, it means that the
     // pointer is currently held to move the camera.
-    // cameraStart indicates where that started and cameraCurrent where it is
-    // for this frame.
-    cameraStart?: cameras.MoveInfo;
-    cameraCurrent?: cameras.MoveInfo;
+    cameraMvt?: cameras.MoveInfo;
 }

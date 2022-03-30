@@ -192,9 +192,9 @@ export class AppMain extends LitElement {
 
     // -- Camera parameters.
     // When the camera is being moved, start event.
-    private cameraStart?: cameras.MoveInfo;
+    private cameraStart?: PointerEvent;
     // Last move event, when the camera is being moved.
-    private cameraCurrent?: cameras.MoveInfo;
+    private cameraCurrent?: PointerEvent;
     private camera: cameras.Camera = new cameras.Null();
 
     constructor() {
@@ -239,27 +239,27 @@ export class AppMain extends LitElement {
                 if (this.cameraStart) {
                     console.error("missing pointerup");
                 }
-                this.cameraStart = this.getCameraMoveInfo(e);
+                this.cameraStart = e;
                 this.canvas?.setPointerCapture(e.pointerId);
             }
         });
         eventElement.addEventListener('pointermove', e => {
             if (!this.cameraStart) { return; }
-            if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
-            this.cameraCurrent = this.getCameraMoveInfo(e);
+            if (e.pointerId != this.cameraStart.pointerId) { return; }
+            this.cameraCurrent = e;
         });
         eventElement.addEventListener('pointerup', e => {
             if (!this.cameraStart) { return; }
-            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) { return; }
+            if (e.button != this.cameraStart.button || e.pointerId != this.cameraStart.pointerId) { return; }
             if (this.cameraStart && this.cameraCurrent) {
-                this.camera.update(this.cameraStart, this.cameraCurrent);
+                this.camera.update(this.getCameraMoveInfo());
             }
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
         });
         eventElement.addEventListener('pointerout', e => {
             if (!this.cameraStart) { return; }
-            if (e.pointerId != this.cameraStart.evt.pointerId) { return; }
+            if (e.pointerId != this.cameraStart.pointerId) { return; }
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
         });
@@ -268,13 +268,15 @@ export class AppMain extends LitElement {
         this.canvas.focus();
     }
 
-    getCameraMoveInfo(evt: PointerEvent): cameras.MoveInfo {
-        return {
-            x: evt.x / this.canvas!.clientWidth,
-            y: evt.y / this.canvas!.clientHeight,
+    getCameraMoveInfo(): cameras.MoveInfo {
+        const mvt: cameras.MoveInfo = {
             shift: this.shiftPressed,
-            evt: evt,
         }
+        if (this.cameraStart && this.cameraCurrent) {
+            mvt.deltaX = (this.cameraCurrent!.x - this.cameraStart!.x) / this.canvas!.clientWidth;
+            mvt.deltaY = (this.cameraCurrent!.y - this.cameraStart!.y) / this.canvas!.clientHeight;
+        }
+        return mvt;
     }
 
     updateSize() {
@@ -403,8 +405,7 @@ export class AppMain extends LitElement {
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),
-                        cameraStart: this.cameraStart,
-                        cameraCurrent: this.cameraCurrent,
+                        cameraMvt: this.getCameraMoveInfo(),
                     });
 
                     if (this.error) {

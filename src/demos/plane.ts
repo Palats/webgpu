@@ -232,7 +232,7 @@ export const demo = {
                 1.0, // near
                 100.0, // far
             );
-            camera.transform(viewproj, info.cameraStart, info.cameraCurrent);
+            camera.transform(viewproj, info.cameraMvt);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
