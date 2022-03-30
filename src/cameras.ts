@@ -8,6 +8,9 @@ export type MoveInfo = {
     // X left to right. Y top to bottom.
     deltaX?: number;
     deltaY?: number;
+    // Changes in zoom (mouse wheel), normalized to display height.
+    // Negative when zooming, positive when unzooming.
+    deltaZoom?: number;
     // Was shift pressed?
     shift: boolean;
 }
@@ -89,24 +92,31 @@ export class ArcBall {
 
     // Return eye & up.
     private currentEye(mvt?: MoveInfo): [glmatrix.vec3, glmatrix.vec3] {
-        if (!mvt || !mvt.deltaX || !mvt.deltaY) {
+        if (!mvt) {
             return [this.eye, this.up];
         }
         const eye = glmatrix.vec3.clone(this.eye);
         const up = glmatrix.vec3.clone(this.up);
 
-        const right = glmatrix.vec3.sub(glmatrix.vec3.create(), this.lookAt, this.eye);
-        glmatrix.vec3.cross(right, right, up);
+        const lookVec = glmatrix.vec3.sub(glmatrix.vec3.create(), this.lookAt, this.eye);
+        glmatrix.vec3.normalize(lookVec, lookVec);
+        const right = glmatrix.vec3.cross(glmatrix.vec3.create(), lookVec, up);
 
-        const angx = - mvt.deltaX * 2 * Math.PI;
-        const angy = - mvt.deltaY * Math.PI;
-        const r = glmatrix.mat4.fromRotation(glmatrix.mat4.create(), angx, up);
-        glmatrix.mat4.rotate(r, r, angy, right);
+        const r = glmatrix.mat4.create();
+        if (mvt.deltaX) {
+            const angx = -mvt.deltaX * 2 * Math.PI;
+            glmatrix.mat4.rotate(r, r, angx, up);
+        }
+        if (mvt.deltaY) {
+            const angy = -mvt.deltaY * Math.PI;
+            glmatrix.mat4.rotate(r, r, angy, right);
+        }
         glmatrix.vec3.transformMat4(eye, eye, r);
-
+        if (mvt.deltaZoom) {
+            glmatrix.vec3.add(eye, eye, glmatrix.vec3.scale(glmatrix.vec3.create(), lookVec, -10 * mvt.deltaZoom))
+        }
         // This accumulate rotations on `up`, which likely leads to errors.
         glmatrix.vec3.transformMat4(up, up, r);
-        glmatrix.vec3.transformMat4(right, right, r);
         return [eye, up];
     }
 }

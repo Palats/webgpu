@@ -263,6 +263,12 @@ export class AppMain extends LitElement {
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
         });
+        eventElement.addEventListener('wheel', e => {
+            this.camera.update({
+                deltaZoom: e.deltaY / this.canvas!.clientHeight,
+                shift: this.shiftPressed,
+            })
+        });
 
         // Make sure keyboard events go to the canvas initially.
         this.canvas.focus();
