@@ -63,7 +63,6 @@ export class Static {
 export class ArcBall {
     private eye!: glmatrix.vec3;
     private up!: glmatrix.vec3;
-    private right!: glmatrix.vec3;
 
     private lookAt: glmatrix.vec3;
     private startEye: glmatrix.vec3;
@@ -78,27 +77,28 @@ export class ArcBall {
     reset() {
         this.eye = this.startEye;
         this.up = glmatrix.vec3.fromValues(0, 1, 0);
-        this.right = glmatrix.vec3.fromValues(1, 0, 0);
     }
 
     transform(camera: glmatrix.mat4, start?: MoveInfo, current?: MoveInfo) {
-        const [eye, up, _] = this.currentEye(start, current);
+        const [eye, up] = this.currentEye(start, current);
         const view = glmatrix.mat4.lookAt(glmatrix.mat4.create(), eye, this.lookAt, up);
         glmatrix.mat4.mul(camera, camera, view);
     }
 
     update(start: MoveInfo, end: MoveInfo) {
-        [this.eye, this.up, this.right] = this.currentEye(start, end);
+        [this.eye, this.up] = this.currentEye(start, end);
     }
 
-    // Return eye, up, right.
-    private currentEye(start?: MoveInfo, end?: MoveInfo): [glmatrix.vec3, glmatrix.vec3, glmatrix.vec3] {
+    // Return eye & up.
+    private currentEye(start?: MoveInfo, end?: MoveInfo): [glmatrix.vec3, glmatrix.vec3] {
         if (!start || !end) {
-            return [this.eye, this.up, this.right];
+            return [this.eye, this.up];
         }
         const eye = glmatrix.vec3.clone(this.eye);
         const up = glmatrix.vec3.clone(this.up);
-        const right = glmatrix.vec3.clone(this.right);
+
+        const right = glmatrix.vec3.sub(glmatrix.vec3.create(), this.lookAt, this.eye);
+        glmatrix.vec3.cross(right, right, up);
 
         const angx = - (end.x - start.x) * 2 * Math.PI;
         const angy = - (end.y - start.y) * Math.PI;
@@ -106,11 +106,10 @@ export class ArcBall {
         glmatrix.mat4.rotate(r, r, angy, right);
         glmatrix.vec3.transformMat4(eye, eye, r);
 
-        // This accumulate rotations on up & right, which will lead to errors.
-        // Needs a better computation here.
+        // This accumulate rotations on `up`, which likely leads to errors.
         glmatrix.vec3.transformMat4(up, up, r);
         glmatrix.vec3.transformMat4(right, right, r);
-        return [eye, up, right];
+        return [eye, up];
     }
 }
 
