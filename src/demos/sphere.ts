@@ -5,6 +5,7 @@ import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
+import * as cameras from '../cameras';
 
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
@@ -170,7 +171,9 @@ export const demo = {
         renderBundleEncoder.drawIndexed(mesh.indices.length);
         bundles.push(renderBundleEncoder.finish());
 
-        const cameraOffset = glmatrix.vec3.fromValues(0, 0, -4);
+        // Configuring camera.
+        const camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        params.setCamera(camera);
 
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
@@ -181,7 +184,7 @@ export const demo = {
                 1.0, // near
                 100.0, // far
             );
-            glmatrix.mat4.translate(viewproj, viewproj, cameraOffset);
+            camera.transform(viewproj, info.cameraMvt);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
