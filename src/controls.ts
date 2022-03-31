@@ -117,6 +117,15 @@ declare global {
 // Type of the values of a CtrlSelect.
 export type CtrlSelectType = string | number;
 
+export type exposeSelectDesc = {
+    caption?: string;
+    values: CtrlSelectType[];
+}
+
+export function exposeSelect<T extends { [k in K]: string }, K extends string | number | symbol>(obj: T, field: K, desc: exposeSelectDesc): TemplateResult {
+    return html`<ctrl-select .obj=${obj} .field=${field} .values=${desc.values}>${desc.caption}</ctrl-select>`;
+}
+
 @customElement('ctrl-select')
 export class CtrlSelect extends LitElement {
     static styles = [commonStyle];

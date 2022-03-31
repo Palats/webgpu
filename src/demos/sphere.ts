@@ -6,6 +6,7 @@ import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
+import * as controls from '../controls';
 
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
@@ -32,6 +33,14 @@ export const demo = {
     caption: "A sphere",
 
     async init(params: demotypes.InitParams) {
+        // Setup controls.
+        const ctrls = {
+            _model: "sphere",
+            get model(): string { return this._model; },
+            set model(s: string) { this._model = s; console.log(s); },
+        };
+        params.expose(controls.exposeSelect(ctrls, 'model', { values: ["sphere", "cube"] }));
+
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
