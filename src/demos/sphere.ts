@@ -39,7 +39,7 @@ export const demo = {
             get model(): string { return this._model; },
             set model(s: string) { this._model = s; console.log(s); },
         };
-        params.expose(controls.exposeSelect(ctrls, 'model', { values: ["sphere", "cube"] }));
+        params.expose(controls.exposeSelect({ obj: ctrls, field: "model", values: ["sphere", "cube"] }));
 
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",

@@ -32,8 +32,8 @@ export const demo = {
             showBoundaries: true,
             showBasis: true,
         };
-        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
-        params.expose(controls.exposeBool(ctrls, 'showBasis'));
+        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBasis' }));
 
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",

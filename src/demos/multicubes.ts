@@ -54,8 +54,8 @@ export const demo = {
             showBoundaries: true,
             showBasis: false,
         };
-        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
-        params.expose(controls.exposeBool(ctrls, 'showBasis'));
+        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBasis' }));
 
         // Setup some initial positions for the cubes.
         const positions = [];

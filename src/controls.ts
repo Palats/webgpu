@@ -72,12 +72,18 @@ declare global {
     }
 }
 
-export type exposeBoolDesc = {
+export type FieldKey = string | number | symbol;
+
+export interface BaseOptionDesc<T extends { [k in K]: any }, K extends FieldKey> {
+    obj: T,
+    field: K,
     caption?: string;
 }
 
-export function exposeBool<T extends { [k in K]: boolean }, K extends string | number | symbol>(obj: T, field: K, desc: exposeBoolDesc = {}): TemplateResult {
-    return html`<ctrl-bool .obj=${obj} .field=${field}>${desc.caption}</ctrl-bool>`;
+export interface ExposeBoolDesc<T extends { [k in K]: boolean }, K extends FieldKey> extends BaseOptionDesc<T, K> { }
+
+export function exposeBool<T extends { [k in K]: boolean }, K extends FieldKey>(desc: ExposeBoolDesc<T, K>): TemplateResult {
+    return html`<ctrl-bool .obj=${desc.obj} .field=${desc.field}>${desc.caption}</ctrl-bool>`;
 }
 
 @customElement('ctrl-bool')
@@ -117,13 +123,15 @@ declare global {
 // Type of the values of a CtrlSelect.
 export type CtrlSelectType = string | number;
 
-export type exposeSelectDesc = {
+export interface ExposeSelectDesc<T extends { [k in K]: string }, K extends FieldKey> extends BaseOptionDesc<T, K> {
+    obj: T,
+    field: K,
     caption?: string;
     values: CtrlSelectType[];
 }
 
-export function exposeSelect<T extends { [k in K]: string }, K extends string | number | symbol>(obj: T, field: K, desc: exposeSelectDesc): TemplateResult {
-    return html`<ctrl-select .obj=${obj} .field=${field} .values=${desc.values}>${desc.caption}</ctrl-select>`;
+export function exposeSelect<T extends { [k in K]: string }, K extends FieldKey>(desc: ExposeSelectDesc<T, K>): TemplateResult {
+    return html`<ctrl-select .obj=${desc.obj} .field=${desc.field} .values=${desc.values}>${desc.caption}</ctrl-select>`;
 }
 
 @customElement('ctrl-select')
