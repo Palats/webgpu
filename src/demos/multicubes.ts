@@ -7,7 +7,7 @@ import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
-import * as controls from '../controls';
+import * as controls from '../varpanel';
 import * as cameras from '../cameras';
 
 // Number of instances.
@@ -54,8 +54,8 @@ export const demo = {
             showBoundaries: true,
             showBasis: false,
         };
-        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBoundaries' }));
-        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBasis' }));
+        params.expose(controls.newBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(controls.newBool({ obj: ctrls, field: 'showBasis' }));
 
         // Setup some initial positions for the cubes.
         const positions = [];

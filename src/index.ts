@@ -4,7 +4,7 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as demotypes from './demotypes';
 import * as glmatrix from 'gl-matrix';
-import * as controls from './controls';
+import * as controls from './varpanel';
 import * as cameras from './cameras';
 
 import * as conway from './demos/conway';
@@ -119,17 +119,17 @@ export class AppMain extends LitElement {
             </div>
 
             <div id="overlay">
-                <ctrl-ui ?expanded=${this.controlsExpanded}>
+                <var-panel ?expanded=${this.controlsExpanded}>
                     <style>${controls.commonStyle}</style>
-                    <ctrl-select .obj=${this} field="demoID" .values=${demoValues}>Demo</ctrl-select>
+                    <vp-select .obj=${this} field="demoID" .values=${demoValues}>Demo</vp-select>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-                    <ctrl-bool .obj=${this} field="limitCanvas">Limit canvas</ctrl-bool>
+                    <vp-bool .obj=${this} field="limitCanvas">Limit canvas</vp-bool>
                     <div class="doc">
                         Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
                     </div>
                     ${this.extraControls}
-                </ctrl-ui>
+                </var-panel>
                 ${(!this.webGPUpresent || this.error) ? html`
                 <div id="errors">
                     ${this.webGPUpresent ? '' : html`

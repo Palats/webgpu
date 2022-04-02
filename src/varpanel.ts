@@ -28,8 +28,8 @@ export const commonStyle = css`
     }
 `;
 
-@customElement('ctrl-ui')
-export class CtrlUI extends LitElement {
+@customElement('var-panel')
+export class VarPanel extends LitElement {
     static styles = [commonStyle, css`
         :host {
             background-color: #d6d6d6f0;
@@ -68,30 +68,30 @@ export class CtrlUI extends LitElement {
 
 declare global {
     interface HTMLElementTagNameMap {
-        "ctrl-ui": CtrlUI,
+        "var-panel": VarPanel,
     }
 }
 
 export type FieldKey = string | number | symbol;
 
-export interface BaseOptionDesc<T extends { [k in K]: any }, K extends FieldKey> {
+export interface BaseOptionDesc<T extends Record<K, any>, K extends FieldKey> {
     obj: T,
     field: K,
     caption?: string;
 }
 
-export interface ExposeBoolDesc<T extends { [k in K]: boolean }, K extends FieldKey> extends BaseOptionDesc<T, K> { }
+export interface BoolDesc<T extends Record<K, boolean>, K extends FieldKey> extends BaseOptionDesc<T, K> { }
 
-export function exposeBool<T extends { [k in K]: boolean }, K extends FieldKey>(desc: ExposeBoolDesc<T, K>): TemplateResult {
-    return html`<ctrl-bool .obj=${desc.obj} .field=${desc.field}>${desc.caption}</ctrl-bool>`;
+export function newBool<T extends Record<K, boolean>, K extends FieldKey>(desc: BoolDesc<T, K>): TemplateResult {
+    return html`<vp-bool .obj=${desc.obj} .field=${desc.field}>${desc.caption}</vp-bool>`;
 }
 
-@customElement('ctrl-bool')
-export class CtrlBool extends LitElement {
+@customElement('vp-bool')
+export class BoolElement extends LitElement {
     static styles = [commonStyle];
 
     @property()
-    field: string | number | symbol = "";
+    field: FieldKey = "";
 
     @property()
     obj: any;
@@ -116,36 +116,36 @@ export class CtrlBool extends LitElement {
 
 declare global {
     interface HTMLElementTagNameMap {
-        "ctrl-bool": CtrlBool,
+        "vp-bool": BoolElement,
     }
 }
 
-// Type of the values of a CtrlSelect.
-export type CtrlSelectType = string | number;
+// Type of the values a SelectElement can set.
+export type SelectType = string | number;
 
-export interface ExposeSelectDesc<T extends { [k in K]: string }, K extends FieldKey> extends BaseOptionDesc<T, K> {
+export interface SelectDesc<T extends Record<K, SelectType>, K extends FieldKey> extends BaseOptionDesc<T, K> {
     obj: T,
     field: K,
     caption?: string;
-    values: CtrlSelectType[];
+    values: SelectType[];
 }
 
-export function exposeSelect<T extends { [k in K]: string }, K extends FieldKey>(desc: ExposeSelectDesc<T, K>): TemplateResult {
-    return html`<ctrl-select .obj=${desc.obj} .field=${desc.field} .values=${desc.values}>${desc.caption}</ctrl-select>`;
+export function newSelect<T extends Record<K, SelectType>, K extends FieldKey>(desc: SelectDesc<T, K>): TemplateResult {
+    return html`<vp-select .obj=${desc.obj} .field=${desc.field} .values=${desc.values}>${desc.caption}</vp-select>`;
 }
 
-@customElement('ctrl-select')
-export class CtrlSelect extends LitElement {
+@customElement('vp-select')
+export class SelectElement extends LitElement {
     static styles = [commonStyle];
 
     @property()
-    field: string | number | symbol = "";
+    field: FieldKey = "";
 
     @property({ attribute: false })
     obj: any;
 
     @property({ attribute: false })
-    values: CtrlSelectType[] = [];
+    values: SelectType[] = [];
 
     render() {
         const current = this.getValue();
@@ -169,17 +169,17 @@ export class CtrlSelect extends LitElement {
         this.setValue(options[0].value);
     }
 
-    getValue(): CtrlSelectType {
+    getValue(): SelectType {
         return this.obj[this.field] ?? false;
     }
 
-    setValue(v: CtrlSelectType) {
+    setValue(v: SelectType) {
         this.obj[this.field] = v;
     }
 }
 
 declare global {
     interface HTMLElementTagNameMap {
-        "ctrl-select": CtrlSelect,
+        "vp-select": SelectElement,
     }
 }

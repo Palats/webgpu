@@ -5,7 +5,7 @@ import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
-import * as controls from '../controls';
+import * as controls from '../varpanel';
 import * as cameras from '../cameras';
 
 // Basic parameters provided to all the shaders.
@@ -32,8 +32,8 @@ export const demo = {
             showBoundaries: true,
             showBasis: true,
         };
-        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBoundaries' }));
-        params.expose(controls.exposeBool({ obj: ctrls, field: 'showBasis' }));
+        params.expose(controls.newBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(controls.newBool({ obj: ctrls, field: 'showBasis' }));
 
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
