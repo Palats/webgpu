@@ -3,8 +3,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as demotypes from './demotypes';
-import * as glmatrix from 'gl-matrix';
-import * as controls from './varpanel';
+import * as varpanel from './varpanel';
 import * as cameras from './cameras';
 
 import * as conway from './demos/conway';
@@ -120,7 +119,7 @@ export class AppMain extends LitElement {
 
             <div id="overlay">
                 <var-panel ?expanded=${this.controlsExpanded}>
-                    <style>${controls.commonStyle}</style>
+                    <style>${varpanel.commonStyle}</style>
                     <vp-select .obj=${this} field="demoID" .values=${demoValues}>Demo</vp-select>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
