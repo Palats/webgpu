@@ -44,11 +44,14 @@ class Demo {
 
     _model = "sphere"
     get model(): string { return this._model; }
-    set model(s: string) { this._model = s; console.log(s); }
+    set model(s: string) {
+        this._model = s;
+        if (s === "cube") this.setMesh(new models.GPUMesh(this.params, models.cubeMesh()))
+        else this.setMesh(new models.GPUMesh(this.params, models.sphereMesh()));
+    }
 
     constructor(params: demotypes.InitParams) {
         this.params = params;
-
         params.expose(varpanel.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
 
         this.uniformsBuffer = params.device.createBuffer({
