@@ -47,26 +47,6 @@ export const demo = {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-        // -- Prepare mesh.
-        const mesh = sphereMesh();
-
-        const vertexCount = mesh.vertices.length;
-        const verticesDesc = new wg.ArrayType(vertexDesc, vertexCount);
-        const vertexBuffer = params.device.createBuffer({
-            label: `vertex buffer`,
-            size: verticesDesc.byteSize(),
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        });
-        params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
-
-        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
-        const indexBuffer = params.device.createBuffer({
-            label: `index buffer`,
-            size: indexDesc.byteSize(),
-            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        });
-        params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
-
         // -- Render pipeline.
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
@@ -125,7 +105,7 @@ export const demo = {
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
-                buffers: [verticesDesc.vertexBufferLayout()],
+                buffers: [vertexDesc.vertexBufferLayout()],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -162,6 +142,26 @@ export const demo = {
             format: depthFormat,
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
+
+        // -- Prepare mesh.
+        const mesh = sphereMesh();
+
+        const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
+
+        const vertexBuffer = params.device.createBuffer({
+            label: `vertex buffer`,
+            size: verticesDesc.byteSize(),
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
+
+        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+        const indexBuffer = params.device.createBuffer({
+            label: `index buffer`,
+            size: indexDesc.byteSize(),
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
 
         // Prepare the rendering pipeline as a bundle.
         const bundles: GPURenderBundle[] = [];

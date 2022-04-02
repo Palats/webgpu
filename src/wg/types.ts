@@ -21,6 +21,11 @@ abstract class WGSLType<T> {
     // https://gpuweb.github.io/gpuweb/wgsl/#alignment
     abstract alignOf(): number;
 
+    // Return the stride of this type when used in an array.
+    stride(): number {
+        return this.alignOf() * Math.ceil(this.byteSize() / this.alignOf());
+    }
+
     // Return the GPUVertexFormat associated to this type.
     // If no vertex format exists, throw an exception.
     vertexFormat(): GPUVertexFormat {
@@ -168,22 +173,19 @@ export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]
     readonly count: number;
     readonly etype: T;
 
-    readonly stride: number;
-
     constructor(etype: T, count: number) {
         super();
         this.etype = etype;
         this.count = count;
-        this.stride = this.etype.alignOf() * Math.ceil(this.etype.byteSize() / this.etype.alignOf());
     }
 
-    byteSize() { return this.count * this.stride; }
+    byteSize() { return this.count * this.etype.stride(); }
     alignOf() { return this.etype.alignOf(); }
 
     dataViewSet(dv: DataView, offset: number, v: WGSLJSType<T>[]) {
         for (let i = 0; i < this.count; i++) {
             this.etype.dataViewSet(dv, offset, v[i]);
-            offset += this.stride;
+            offset += this.etype.stride();
         }
     }
 
@@ -195,7 +197,7 @@ export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]
     // createRenderPipeline call.
     vertexBufferLayout(): GPUVertexBufferLayout {
         return {
-            arrayStride: this.stride,
+            arrayStride: this.stride(),
             attributes: this.etype.vertexAttributes(),
         }
     }
@@ -360,6 +362,16 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
             });
         }
         return attrs;
+    }
+
+    // Creates a vertex buffer layout for this struct, suitable for a
+    // createRenderPipeline call. This assume that this struct will be layed out
+    // in a simple array to represent the vertex buffer.
+    vertexBufferLayout(): GPUVertexBufferLayout {
+        return {
+            arrayStride: this.stride(),
+            attributes: this.vertexAttributes(),
+        }
     }
 }
 
