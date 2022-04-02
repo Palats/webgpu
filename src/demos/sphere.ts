@@ -9,6 +9,18 @@ import * as cameras from '../cameras';
 import * as varpanel from '../varpanel';
 import * as models from '../models';
 
+
+export const demo = {
+    id: "sphere",
+    caption: "A sphere",
+
+    async init(params: demotypes.InitParams) {
+        const d = new Demo(params);
+        // await d.init(params);
+        return (f: demotypes.FrameInfo) => d.draw(f);
+    }
+}
+
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
     elapsedMs: { idx: 0, type: wg.F32 },
@@ -19,20 +31,27 @@ const uniformsDesc = new wg.StructType({
     camera: { idx: 5, type: wg.Mat4x4F32 },
 })
 
-export const demo = {
-    id: "sphere",
-    caption: "A sphere",
+const depthFormat = "depth24plus";
 
-    async init(params: demotypes.InitParams) {
-        // Setup controls.
-        const ctrls = {
-            _model: "sphere",
-            get model(): string { return this._model; },
-            set model(s: string) { this._model = s; console.log(s); },
-        };
-        params.expose(varpanel.newSelect({ obj: ctrls, field: "model", values: ["sphere", "cube"] }));
+class Demo {
+    params: demotypes.InitParams;
+    depthTextureView: GPUTextureView;
+    uniformsBuffer: GPUBuffer;
+    camera: cameras.ArcBall;
+    bundles: GPURenderBundle[] = [];
+    renderPipeline: GPURenderPipeline;
+    renderBindGroup: GPUBindGroup;
 
-        const uniformsBuffer = params.device.createBuffer({
+    _model = "sphere"
+    get model(): string { return this._model; }
+    set model(s: string) { this._model = s; console.log(s); }
+
+    constructor(params: demotypes.InitParams) {
+        this.params = params;
+
+        params.expose(varpanel.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
+
+        this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -74,9 +93,7 @@ export const demo = {
             `,
         }).toDesc());
 
-        const depthFormat = "depth24plus";
-
-        const renderPipeline = params.device.createRenderPipeline({
+        this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
             layout: params.device.createPipelineLayout({
                 label: "render pipeline layouts",
@@ -116,92 +133,90 @@ export const demo = {
             },
         });
 
-        const renderBindGroup = params.device.createBindGroup({
+        this.renderBindGroup = params.device.createBindGroup({
             label: "render pipeline bindgroup",
-            layout: renderPipeline.getBindGroupLayout(0),
+            layout: this.renderPipeline.getBindGroupLayout(0),
             entries: [
                 {
                     binding: 0,
-                    resource: { buffer: uniformsBuffer }
+                    resource: { buffer: this.uniformsBuffer }
                 },
             ]
         });
 
-        const depthTextureView = params.device.createTexture({
+        this.depthTextureView = params.device.createTexture({
             label: "depth view",
             size: [params.renderWidth, params.renderHeight],
             format: depthFormat,
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
 
-        // -- Prepare mesh.
-        const gpuMesh = new models.GPUMesh(params, models.sphereMesh());
+        // Configuring camera.
+        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        params.setCamera(this.camera);
 
-        // Prepare the rendering pipeline as a bundle.
-        const bundles: GPURenderBundle[] = [];
+        this.setMesh(new models.GPUMesh(params, models.sphereMesh()));
+    }
 
-        const renderBundleEncoder = params.device.createRenderBundleEncoder({
+    setMesh(gpuMesh: models.GPUMesh) {
+        const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
             label: "main render bundle",
             depthReadOnly: false,
             stencilReadOnly: false,
-            colorFormats: [params.renderFormat],
+            colorFormats: [this.params.renderFormat],
             depthStencilFormat: depthFormat,
         });
-        renderBundleEncoder.setPipeline(renderPipeline);
-        renderBundleEncoder.setBindGroup(0, renderBindGroup);
+        renderBundleEncoder.setPipeline(this.renderPipeline);
+        renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
         gpuMesh.draw(renderBundleEncoder);
-        bundles.push(renderBundleEncoder.finish());
+        this.bundles = [renderBundleEncoder.finish()];
+    }
 
-        // Configuring camera.
-        const camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
-        params.setCamera(camera);
+    // -- Single frame rendering.
+    async draw(info: demotypes.FrameInfo) {
+        const viewproj = glmatrix.mat4.perspective(
+            glmatrix.mat4.create(),
+            2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            this.params.renderWidth / this.params.renderHeight, // aspect
+            1.0, // near
+            100.0, // far
+        );
+        this.camera.transform(viewproj, info.cameraMvt);
+        this.params.device.queue.writeBuffer(this.uniformsBuffer, 0, uniformsDesc.createArray({
+            elapsedMs: info.elapsedMs,
+            deltaMs: info.deltaMs,
+            renderWidth: this.params.renderWidth,
+            renderHeight: this.params.renderHeight,
+            rngSeed: info.rng,
+            camera: Array.from(viewproj),
+        }));
 
-        // -- Single frame rendering.
-        return async (info: demotypes.FrameInfo) => {
-            const viewproj = glmatrix.mat4.perspective(
-                glmatrix.mat4.create(),
-                2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
-                params.renderWidth / params.renderHeight, // aspect
-                1.0, // near
-                100.0, // far
-            );
-            camera.transform(viewproj, info.cameraMvt);
-            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
-                elapsedMs: info.elapsedMs,
-                deltaMs: info.deltaMs,
-                renderWidth: params.renderWidth,
-                renderHeight: params.renderHeight,
-                rngSeed: info.rng,
-                camera: Array.from(viewproj),
-            }));
+        const commandEncoder = this.params.device.createCommandEncoder();
+        commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
 
-            const commandEncoder = params.device.createCommandEncoder();
-            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+        // -- Frame rendering.
+        commandEncoder.pushDebugGroup('Render cubes');
+        const renderEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: this.params.context.getCurrentTexture().createView(),
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            }],
+            depthStencilAttachment: {
+                view: this.depthTextureView,
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            },
+        });
+        renderEncoder.executeBundles(this.bundles);
+        renderEncoder.end();
+        commandEncoder.popDebugGroup();
 
-            // -- Frame rendering.
-            commandEncoder.pushDebugGroup('Render cubes');
-            const renderEncoder = commandEncoder.beginRenderPass({
-                colorAttachments: [{
-                    view: params.context.getCurrentTexture().createView(),
-                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                    loadOp: 'clear',
-                    storeOp: 'store',
-                }],
-                depthStencilAttachment: {
-                    view: depthTextureView,
-                    depthClearValue: 1.0,
-                    depthLoadOp: 'clear',
-                    depthStoreOp: 'store',
-                },
-            });
-            renderEncoder.executeBundles(bundles);
-            renderEncoder.end();
-            commandEncoder.popDebugGroup();
-
-            // Submit all the work.
-            commandEncoder.popDebugGroup();
-            params.device.queue.submit([commandEncoder.finish()]);
-        };
+        // Submit all the work.
+        commandEncoder.popDebugGroup();
+        this.params.device.queue.submit([commandEncoder.finish()]);
     }
 }
 
