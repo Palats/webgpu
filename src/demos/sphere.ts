@@ -28,6 +28,39 @@ type Mesh = {
     indices: number[];
 }
 
+class GPUMesh {
+    private vertexBuffer: GPUBuffer;
+    private indexBuffer: GPUBuffer;
+    private indicesCount: number;
+
+    constructor(params: demotypes.InitParams, mesh: Mesh) {
+        const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
+
+        this.vertexBuffer = params.device.createBuffer({
+            label: `vertex buffer`,
+            size: verticesDesc.byteSize(),
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(this.vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
+
+        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+        this.indexBuffer = params.device.createBuffer({
+            label: `index buffer`,
+            size: indexDesc.byteSize(),
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(this.indexBuffer, 0, indexDesc.createArray(mesh.indices));
+
+        this.indicesCount = mesh.indices.length;
+    }
+
+    draw(encoder: GPURenderEncoderBase) {
+        encoder.setIndexBuffer(this.indexBuffer, 'uint16');
+        encoder.setVertexBuffer(0, this.vertexBuffer);
+        encoder.drawIndexed(this.indicesCount);
+    }
+}
+
 export const demo = {
     id: "sphere",
     caption: "A sphere",
@@ -144,24 +177,7 @@ export const demo = {
         }).createView();
 
         // -- Prepare mesh.
-        const mesh = sphereMesh();
-
-        const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
-
-        const vertexBuffer = params.device.createBuffer({
-            label: `vertex buffer`,
-            size: verticesDesc.byteSize(),
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        });
-        params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
-
-        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
-        const indexBuffer = params.device.createBuffer({
-            label: `index buffer`,
-            size: indexDesc.byteSize(),
-            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        });
-        params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
+        const gpuMesh = new GPUMesh(params, sphereMesh());
 
         // Prepare the rendering pipeline as a bundle.
         const bundles: GPURenderBundle[] = [];
@@ -174,10 +190,8 @@ export const demo = {
             depthStencilFormat: depthFormat,
         });
         renderBundleEncoder.setPipeline(renderPipeline);
-        renderBundleEncoder.setIndexBuffer(indexBuffer, 'uint16');
-        renderBundleEncoder.setVertexBuffer(0, vertexBuffer);
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
-        renderBundleEncoder.drawIndexed(mesh.indices.length);
+        gpuMesh.draw(renderBundleEncoder);
         bundles.push(renderBundleEncoder.finish());
 
         // Configuring camera.
