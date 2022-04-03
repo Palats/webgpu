@@ -223,7 +223,7 @@ export function buildLineBundle(lineDesc: LineDesc) {
         }),
         vertex: {
             buffers: [{
-                arrayStride: arrayDesc.stride(),
+                arrayStride: pointDesc.stride(),
                 attributes: [
                     { shaderLocation: 0, format: "float32x3", offset: 0, },
                     { shaderLocation: 1, format: "float32x4", offset: 16, },
