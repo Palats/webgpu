@@ -41,10 +41,12 @@ function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.
 }
 
 const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh> } = {
-    "builtin sphere": async params => new models.GPUMesh(params, models.sphereMesh()),
-    "builtin cube": async params => new models.GPUMesh(params, models.cubeMesh()),
-    "gltf cube": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
-    "gltf triangle": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
+    "sphere/builtin": async params => new models.GPUMesh(params, models.sphereMesh()),
+    "cube/builtin": async params => new models.GPUMesh(params, models.cubeMesh()),
+    "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
+    "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
+    "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
+    "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
 }
 
 class Demo {
@@ -58,7 +60,7 @@ class Demo {
     showBasis = true;
     basisBundle: GPURenderBundle;
 
-    _model = "gltf cube"
+    _model = "cube/gltf"
     get model(): string { return this._model; }
     set model(s: string) {
         this._model = s;
