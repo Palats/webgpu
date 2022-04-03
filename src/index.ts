@@ -15,6 +15,7 @@ import * as cube from './demos/cube';
 import * as multicubes from './demos/multicubes';
 import * as sphere from './demos/sphere';
 import * as plane from './demos/plane';
+import * as viewer from './demos/viewer';
 
 export const allDemos: demotypes.Demo[] = [
     conway2.demo,
@@ -26,6 +27,7 @@ export const allDemos: demotypes.Demo[] = [
     multicubes.demo,
     sphere.demo,
     plane.demo,
+    viewer.demo,
 ];
 
 export function demoByID(id: string): demotypes.Demo {
