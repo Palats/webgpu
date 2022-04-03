@@ -56,7 +56,7 @@ class Demo {
     renderPipeline: GPURenderPipeline;
     renderBindGroup: GPUBindGroup;
     showBasis = true;
-    // basisBundle: GPURenderBundle;
+    basisBundle: GPURenderBundle;
 
     _model = "gltf cube"
     get model(): string { return this._model; }
@@ -171,14 +171,14 @@ class Demo {
         }).createView();
 
         // Orthonormals.
-        /*this.basisBundle = shaderlib.buildLineBundle({
+        this.basisBundle = shaderlib.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
             lines: shaderlib.ortholines,
             mod: uniformsDesc,
             buffer: this.uniformsBuffer,
-        });*/
+        });
 
         // Configuring camera.
         this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
@@ -201,7 +201,7 @@ class Demo {
         renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
         gpuMesh.draw(renderBundleEncoder);
         this.bundles = [renderBundleEncoder.finish()];
-        // if (this.showBasis) { this.bundles.push(this.basisBundle); }
+        if (this.showBasis) { this.bundles.push(this.basisBundle); }
     }
 
     // -- Single frame rendering.
