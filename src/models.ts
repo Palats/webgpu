@@ -12,14 +12,20 @@ export const vertexDesc = new wg.StructType({
 export type Mesh = {
     vertices: wg.types.WGSLJSType<typeof vertexDesc>[];
     indices: number[];
+    min?: [number, number, number];
+    max?: [number, number, number];
 }
 
 export class GPUMesh {
     private vertexBuffer: GPUBuffer;
     private indexBuffer: GPUBuffer;
     private indicesCount: number;
+    min?: glmatrix.ReadonlyVec3;
+    max?: glmatrix.ReadonlyVec3;
 
     constructor(params: demotypes.InitParams, mesh: Mesh) {
+        this.min = mesh.min;
+        this.max = mesh.max;
         const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
 
         this.vertexBuffer = params.device.createBuffer({
@@ -195,6 +201,9 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     if (vertAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${vertAcc.type}`); }
     if (vertAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${vertAcc.componentType}`); }
 
+    const min = vertAcc.min ? vertAcc.min as [number, number, number] : undefined;
+    const max = vertAcc.max ? vertAcc.max as [number, number, number] : undefined;
+
     // accessorData return the full bufferView, not just specific accessorData.
     const posBufferView = await asset.accessorData(vertAccIndex);
     const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
@@ -221,5 +230,7 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     return {
         vertices,
         indices,
+        min,
+        max,
     }
 }
