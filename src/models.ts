@@ -29,13 +29,16 @@ export class GPUMesh {
         params.device.queue.writeBuffer(this.vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
 
         const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+        // Writing to buffer must be multiple of 4.
+        const indexSize = Math.ceil(indexDesc.byteSize() / 4) * 4;
         this.indexBuffer = params.device.createBuffer({
             label: `index buffer`,
-            size: indexDesc.byteSize(),
+            size: indexSize,
             usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         });
-        params.device.queue.writeBuffer(this.indexBuffer, 0, indexDesc.createArray(mesh.indices));
-
+        const indexArray = new ArrayBuffer(indexSize);
+        indexDesc.dataViewSet(new DataView(indexArray), 0, mesh.indices);
+        params.device.queue.writeBuffer(this.indexBuffer, 0, indexArray, 0, indexSize);
         this.indicesCount = mesh.indices.length;
     }
 
