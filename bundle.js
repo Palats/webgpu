@@ -1,5 +1,4 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
 /***/ "./node_modules/gl-matrix/esm/common.js":
@@ -8,6 +7,7 @@
   \**********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "ARRAY_TYPE": () => (/* binding */ ARRAY_TYPE),
@@ -76,6 +76,7 @@ if (!Math.hypot) Math.hypot = function () {
   \*********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "glMatrix": () => (/* reexport module object */ _common_js__WEBPACK_IMPORTED_MODULE_0__),
@@ -119,6 +120,7 @@ __webpack_require__.r(__webpack_exports__);
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "LDU": () => (/* binding */ LDU),
@@ -590,6 +592,7 @@ var sub = subtract;
   \*********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -1114,6 +1117,7 @@ var sub = subtract;
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -1937,6 +1941,7 @@ var sub = subtract;
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -3911,6 +3916,7 @@ var sub = subtract;
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -4676,6 +4682,7 @@ var setAxes = function () {
   \*********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -5565,6 +5572,7 @@ function equals(a, b) {
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -6247,6 +6255,7 @@ var forEach = function () {
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -7095,6 +7104,7 @@ var forEach = function () {
   \********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "add": () => (/* binding */ add),
@@ -7806,20 +7816,32 @@ var forEach = function () {
 
 /***/ }),
 
+/***/ "./node_modules/gltf-loader-ts/lib/gltf-loader.js":
+/*!********************************************************!*\
+  !*** ./node_modules/gltf-loader-ts/lib/gltf-loader.js ***!
+  \********************************************************/
+/***/ ((module) => {
+
+module.exports=function(e){var t={};function r(i){if(t[i])return t[i].exports;var s=t[i]={i:i,l:!1,exports:{}};return e[i].call(s.exports,s,s.exports,r),s.l=!0,s.exports}return r.m=e,r.c=t,r.d=function(e,t,i){r.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:i})},r.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},r.t=function(e,t){if(1&t&&(e=r(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var i=Object.create(null);if(r.r(i),Object.defineProperty(i,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var s in e)r.d(i,s,function(t){return e[t]}.bind(null,s));return i},r.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return r.d(t,"a",t),t},r.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},r.p="",r(r.s=7)}([function(e,t,r){"use strict";Object.defineProperty(t,"__esModule",{value:!0});t.LoadingManager=class{constructor(){this.urlModifier=void 0,this.onStart=void 0,this.onProgress=void 0,this.onLoad=void 0,this.onError=void 0,this.isLoading=!1,this.itemsLoaded=0,this.itemsTotal=0}itemStart(e){this.itemsTotal++,!this.isLoading&&this.onStart&&this.onStart(e,this.itemsLoaded,this.itemsTotal),this.isLoading=!0}itemEnd(e){this.itemsLoaded++,this.onProgress&&this.onProgress(e,this.itemsLoaded,this.itemsTotal),this.itemsLoaded===this.itemsTotal&&(this.isLoading=!1,this.onLoad&&this.onLoad())}itemError(e){this.onError&&this.onError(e)}resolveURL(e){return this.urlModifier?this.urlModifier(e):e}}},function(e,t,r){"use strict";var i=this&&this.__awaiter||function(e,t,r,i){return new(r||(r=Promise))(function(s,n){function o(e){try{u(i.next(e))}catch(e){n(e)}}function a(e){try{u(i.throw(e))}catch(e){n(e)}}function u(e){e.done?s(e.value):new r(function(t){t(e.value)}).then(o,a)}u((i=i.apply(e,t||[])).next())})};Object.defineProperty(t,"__esModule",{value:!0});const s=r(3),n=r(0);t.GLTF_COMPONENT_TYPE_ARRAYS={5120:Int8Array,5121:Uint8Array,5122:Int16Array,5123:Uint16Array,5125:Uint32Array,5126:Float32Array},t.GLTF_ELEMENTS_PER_TYPE={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT2:4,MAT3:9,MAT4:16};t.GltfAsset=class{constructor(e,t,r,i=new n.LoadingManager){this.gltf=e,this.glbData=r,this.bufferData=new o(this,t,i),this.imageData=new a(this,t,i)}bufferViewData(e){return i(this,void 0,void 0,function*(){if(!this.gltf.bufferViews)throw new Error("No buffer views found.");const t=this.gltf.bufferViews[e],r=yield this.bufferData.get(t.buffer),i=t.byteLength||0,s=t.byteOffset||0,n=r.buffer,o=r.byteOffset;return new Uint8Array(n,o+s,i)})}accessorData(e){return i(this,void 0,void 0,function*(){if(!this.gltf.accessors)throw new Error("No accessors views found.");const r=this.gltf.accessors[e],i=t.GLTF_ELEMENTS_PER_TYPE[r.type];let s;if(void 0!==r.bufferView)s=yield this.bufferViewData(r.bufferView);else{const e=t.GLTF_COMPONENT_TYPE_ARRAYS[r.componentType].BYTES_PER_ELEMENT*i*r.count;s=new Uint8Array(e)}if(r.sparse){const{count:e,indices:n,values:o}=r.sparse;let a=t.GLTF_COMPONENT_TYPE_ARRAYS[n.componentType],u=yield this.bufferViewData(n.bufferView);const f=new a(u.buffer,u.byteOffset+(n.byteOffset||0),e);a=t.GLTF_COMPONENT_TYPE_ARRAYS[r.componentType],u=yield this.bufferViewData(o.bufferView);const c=new a((yield this.bufferViewData(o.bufferView)).buffer,u.byteOffset+(o.byteOffset||0),e*i);r.bufferView&&(s=new Uint8Array(s));const h=new t.GLTF_COMPONENT_TYPE_ARRAYS[r.componentType](s.buffer);for(let t=0;t<e;t++)for(let e=0;e<i;e++)h[i*f[t]+e]=c[i*t+e]}return s})}preFetchAll(){return i(this,void 0,void 0,function*(){return Promise.all([this.bufferData.preFetchAll(),this.imageData.preFetchAll()])})}};class o{constructor(e,t,r){this.bufferCache=[],this.asset=e,this.baseUri=t,this.manager=r,this.loader=new s.FileLoader(r),this.loader.responseType="arraybuffer"}get(e){return i(this,void 0,void 0,function*(){if(void 0!==this.bufferCache[e])return this.bufferCache[e];const t=this.asset.gltf;if(!t.buffers)throw new Error("No buffers found.");const r=t.buffers[e];if(void 0===r.uri){if(0!==e)throw new Error("GLB container is required to be the first buffer");if(void 0===this.asset.glbData)throw new Error("invalid gltf: buffer has no uri nor is there a GLB buffer");return this.asset.glbData.binaryChunk}const i=u(r.uri,this.baseUri),s=yield this.loader.load(i),n=new Uint8Array(s);return this.bufferCache[e]=n,n})}preFetchAll(){return i(this,void 0,void 0,function*(){const e=this.asset.gltf.buffers;return e?Promise.all(e.map((e,t)=>this.get(t))):[]})}}t.BufferData=o;class a{constructor(e,t,r){this.crossOrigin="anonymous",this.imageCache=[],this.asset=e,this.baseUri=t,this.manager=r}get(e){return i(this,void 0,void 0,function*(){if(void 0!==this.imageCache[e])return this.imageCache[e];const t=this.asset.gltf;if(!t.images)throw new Error("No images found.");const r=t.images[e];let i,s=!1;if(void 0!==r.bufferView){const e=yield this.asset.bufferViewData(r.bufferView);s=!0;const t=new Blob([e],{type:r.mimeType});i=URL.createObjectURL(t)}else{if(void 0===r.uri)throw new Error("Invalid glTF: image must either have a `uri` or a `bufferView`");i=this.manager.resolveURL(u(r.uri,this.baseUri))}const n=new Image;return n.crossOrigin=this.crossOrigin,new Promise((t,r)=>{n.onerror=(()=>{r(`Failed to load ${i}`),this.manager.itemEnd(i),this.manager.itemError(i)}),n.onload=(()=>{s&&URL.revokeObjectURL(i),this.imageCache[e]=n,t(n),this.manager.itemEnd(i)}),n.src=i,this.manager.itemStart(i)})})}preFetchAll(){return i(this,void 0,void 0,function*(){const e=this.asset.gltf.images;return e?Promise.all(e.map((e,t)=>this.get(t))):[]})}}function u(e,t){return"string"!=typeof e||""===e?"":/^(https?:)?\/\//i.test(e)?e:/^data:.*,.*$/i.test(e)?e:/^blob:.*$/i.test(e)?e:t+e}t.ImageData=a,t.resolveURL=u},function(e,t,r){"use strict";Object.defineProperty(t,"__esModule",{value:!0});t.LoaderUtils=class{static decodeText(e){if("undefined"!=typeof TextDecoder)return(new TextDecoder).decode(e);let t="";for(const r of e)t+=String.fromCharCode(r);return decodeURIComponent(escape(t))}static extractUrlBase(e){const t=e.split("/");return 1===t.length?"./":(t.pop(),t.join("/")+"/")}}},function(e,t,r){"use strict";Object.defineProperty(t,"__esModule",{value:!0});t.FileLoader=class{constructor(e){this.runningRequests={},this.manager=e}load(e,t){if(void 0!==this.path&&(e=this.path+e),e=this.manager.resolveURL(e),this.runningRequests[e])return this.runningRequests[e];const r=new Promise((r,i)=>{const s=new XMLHttpRequest;s.open("GET",e,!0);const n=this;s.onload=function(t){const o=this.response;0===this.status?(console.warn("FileLoader: HTTP Status 0 received."),r(o),n.manager.itemEnd(e)):200===this.status?(r(o),n.manager.itemEnd(e)):(i({url:e,status:this.status,statusText:s.statusText}),n.manager.itemEnd(e),n.manager.itemError(e)),delete n.runningRequests[e]},s.onprogress=(e=>{t&&t(e)}),s.onerror=function(t){i({url:e,status:this.status,statusText:s.statusText}),n.manager.itemEnd(e),n.manager.itemError(e),delete n.runningRequests[e]},this.responseType&&(s.responseType=this.responseType),this.withCredentials&&(s.withCredentials=this.withCredentials),this.mimeType&&s.overrideMimeType&&s.overrideMimeType(void 0!==this.mimeType?this.mimeType:"text/plain");for(const e in this.requestHeaders)s.setRequestHeader(e,this.requestHeaders[e]);s.send(null),this.manager.itemStart(e)});return this.runningRequests[e]=r,r}setRequestHeader(e,t){return this.requestHeaders[e]=t,this}}},function(e,t,r){"use strict";Object.defineProperty(t,"__esModule",{value:!0})},function(e,t,r){"use strict";Object.defineProperty(t,"__esModule",{value:!0});const i=r(2);t.BINARY_HEADER_MAGIC="glTF";const s=12,n={JSON:1313821514,BIN:5130562};t.GLTFBinaryData=class{constructor(e){const r=new DataView(e,0,s),o=i.LoaderUtils.decodeText(new Uint8Array(e,0,4)),a=r.getUint32(4,!0);if(r.getUint32(8,!0),o!==t.BINARY_HEADER_MAGIC)throw new Error("Unsupported glTF-Binary header.");if(a<2)throw new Error("Unsupported legacy binary file detected.");const u=new DataView(e,s);let f=0;for(;f<u.byteLength;){const t=u.getUint32(f,!0);f+=4;const r=u.getUint32(f,!0);if(f+=4,r===n.JSON){const r=new Uint8Array(e,s+f,t);this.json=i.LoaderUtils.decodeText(r)}else if(r===n.BIN){const r=s+f;this.binaryChunk=new Uint8Array(e,r,t)}f+=t}if(null===this.json)throw new Error("glTF-Binary: JSON content not found.")}}},function(e,t,r){"use strict";var i=this&&this.__awaiter||function(e,t,r,i){return new(r||(r=Promise))(function(s,n){function o(e){try{u(i.next(e))}catch(e){n(e)}}function a(e){try{u(i.throw(e))}catch(e){n(e)}}function u(e){e.done?s(e.value):new r(function(t){t(e.value)}).then(o,a)}u((i=i.apply(e,t||[])).next())})};function s(e){for(var r in e)t.hasOwnProperty(r)||(t[r]=e[r])}Object.defineProperty(t,"__esModule",{value:!0});const n=r(3),o=r(5),a=r(1),u=r(2),f=r(0),c=r(4);t.gltf=c,s(r(1)),s(r(0));t.GltfLoader=class{constructor(e){this.manager=e||new f.LoadingManager}load(e,t){return i(this,void 0,void 0,function*(){const r=u.LoaderUtils.extractUrlBase(e),i=new n.FileLoader(this.manager);i.responseType="arraybuffer";const s=yield i.load(e,t);return yield this.parse(s,r)})}loadFromFiles(e){return i(this,void 0,void 0,function*(){let t,r;for(const[i,s]of e)s.name.match(/\.(gltf|glb)$/)&&(t=s,r=i.replace(s.name,""));if(!t)throw new Error("No .gltf or .glb asset found.");const i="string"==typeof t?t:URL.createObjectURL(t),s=u.LoaderUtils.extractUrlBase(i),n=[];this.manager.urlModifier=(t=>{const i=r+t.replace(s,"").replace(/^(\.?\/)/,"");if(e.has(i)){const t=e.get(i),r=URL.createObjectURL(t);return n.push(r),r}return t});const o=yield this.load(i);return yield o.preFetchAll(),URL.revokeObjectURL(i),n.forEach(URL.revokeObjectURL),o})}parse(e,t){return i(this,void 0,void 0,function*(){let r,i=void 0;r="string"==typeof e?e:u.LoaderUtils.decodeText(new Uint8Array(e,0,4))===o.BINARY_HEADER_MAGIC?(i=new o.GLTFBinaryData(e)).json:u.LoaderUtils.decodeText(new Uint8Array(e));const s=JSON.parse(r);if(void 0===s.asset||s.asset.version[0]<2)throw new Error("Unsupported asset. glTF versions >=2.0 are supported.");return new a.GltfAsset(s,t,i,this.manager)})}}},function(e,t,r){e.exports=r(6)}]);
+//# sourceMappingURL=gltf-loader.js.map
+
+/***/ }),
+
 /***/ "./src/cameras.ts":
 /*!************************!*\
   !*** ./src/cameras.ts ***!
   \************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FirstPerson = exports.Static = exports.Null = void 0;
+exports.ArcBall = exports.Static = exports.Null = void 0;
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 // A null camera, doing nothing.
 class Null {
-    transform(camera, start, current) { }
-    update(start, end) { }
+    transform(camera, mvt) { }
+    update(mvt) { }
     reset() { }
 }
 exports.Null = Null;
@@ -7829,227 +7851,66 @@ class Static {
         this.tr = tr;
         this.rot = rot;
     }
-    transform(camera, start, current) {
+    transform(camera, mvt) {
         const q = glmatrix.quat.create();
         glmatrix.quat.fromEuler(q, this.rot[0], this.rot[1], this.rot[2]);
         const chg = glmatrix.mat4.create();
         glmatrix.mat4.fromRotationTranslation(chg, q, this.tr);
         glmatrix.mat4.mul(camera, camera, chg);
     }
-    update(start, end) { }
+    update(mvt) { }
     reset() { }
 }
 exports.Static = Static;
 // A camera where the pointer allows to rotate from the current position.
-class FirstPerson {
-    constructor(tr = glmatrix.vec3.fromValues(0, 0, 0), rot = glmatrix.vec3.fromValues(0, 0, 0)) {
-        this.tr = this.baseTr = tr;
-        this.rot = this.baseRot = rot;
-    }
-    transform(camera, start, current) {
-        const { tr, rot } = this.current(start, current);
-        const q = glmatrix.quat.create();
-        glmatrix.quat.fromEuler(q, rot[0], rot[1], rot[2]);
-        const chg = glmatrix.mat4.create();
-        glmatrix.mat4.fromRotationTranslation(chg, q, tr);
-        glmatrix.mat4.mul(camera, camera, chg);
-    }
-    update(start, end) {
-        const { tr, rot } = this.current(start, end);
-        this.tr = tr;
-        this.rot = rot;
+// Inspiration from http://asliceofrendering.com/camera/2019/11/30/ArcballCamera/
+class ArcBall {
+    constructor(eye, lookAt = glmatrix.vec3.fromValues(0, 0, 0)) {
+        this.lookAt = lookAt;
+        this.startEye = eye;
+        this.reset();
     }
     reset() {
-        this.tr = this.baseTr;
-        this.rot = this.baseRot;
+        this.eye = this.startEye;
+        this.up = glmatrix.vec3.fromValues(0, 1, 0);
     }
-    current(start, end) {
-        const tr = glmatrix.vec3.clone(this.tr);
-        const rot = glmatrix.vec3.clone(this.rot);
-        if (start && end) {
-            if (end.shift) {
-                glmatrix.vec3.add(tr, tr, glmatrix.vec3.fromValues(20 * (end.x - start.x), -20 * (end.y - start.y), 0));
-            }
-            else {
-                glmatrix.vec3.add(rot, rot, glmatrix.vec3.fromValues(30 * Math.PI * (end.y - start.y), 30 * Math.PI * (end.x - start.x), 0));
-            }
+    transform(camera, mvt) {
+        const [eye, up] = this.currentEye(mvt);
+        const view = glmatrix.mat4.lookAt(glmatrix.mat4.create(), eye, this.lookAt, up);
+        glmatrix.mat4.mul(camera, camera, view);
+    }
+    update(mvt) {
+        [this.eye, this.up] = this.currentEye(mvt);
+    }
+    // Return eye & up.
+    currentEye(mvt) {
+        if (!mvt) {
+            return [this.eye, this.up];
         }
-        return { tr, rot };
+        const eye = glmatrix.vec3.clone(this.eye);
+        const up = glmatrix.vec3.clone(this.up);
+        const lookVec = glmatrix.vec3.sub(glmatrix.vec3.create(), this.lookAt, this.eye);
+        glmatrix.vec3.normalize(lookVec, lookVec);
+        const right = glmatrix.vec3.cross(glmatrix.vec3.create(), lookVec, up);
+        const r = glmatrix.mat4.create();
+        if (mvt.deltaX) {
+            const angx = -mvt.deltaX * 2 * Math.PI;
+            glmatrix.mat4.rotate(r, r, angx, up);
+        }
+        if (mvt.deltaY) {
+            const angy = -mvt.deltaY * Math.PI;
+            glmatrix.mat4.rotate(r, r, angy, right);
+        }
+        glmatrix.vec3.transformMat4(eye, eye, r);
+        if (mvt.deltaZoom) {
+            glmatrix.vec3.add(eye, eye, glmatrix.vec3.scale(glmatrix.vec3.create(), lookVec, -10 * mvt.deltaZoom));
+        }
+        // This accumulate rotations on `up`, which likely leads to errors.
+        glmatrix.vec3.transformMat4(up, up, r);
+        return [eye, up];
     }
 }
-exports.FirstPerson = FirstPerson;
-
-
-/***/ }),
-
-/***/ "./src/controls.ts":
-/*!*************************!*\
-  !*** ./src/controls.ts ***!
-  \*************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.CtrlSelect = exports.CtrlBool = exports.exposeBool = exports.CtrlUI = exports.commonStyle = void 0;
-const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
-const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
-exports.commonStyle = (0, lit_1.css) `
-    .labelvalue {
-        display: grid;
-        grid-template-columns: 8em 100fr;
-        grid-template-rows: 100fr;
-
-        border-top: 1px solid #4d4d4d;
-        padding: 2px 1px 2px 1px;
-        font: 11px 'Lucida Grande', sans-serif;
-    }
-
-    .labelvalue select, .labelvalue input {
-        font: 11px 'Lucida Grande', sans-serif;
-        margin: 0;
-    }
-
-    .labelvalue label {
-        grid-column-start: 1;
-        grid-column-end: 2;
-    }
-
-    .value {
-        grid-column-start: 2;
-        grid-column-end: 3;
-    }
-`;
-let CtrlUI = class CtrlUI extends lit_1.LitElement {
-    constructor() {
-        super(...arguments);
-        this.expanded = false;
-    }
-    static { this.styles = [exports.commonStyle, (0, lit_1.css) `
-        :host {
-            background-color: #d6d6d6f0;
-            border: #8b8b8b 1px solid;
-            font-size: 11px;
-        }
-
-        .line {
-            border-top: 1px solid #4d4d4d;
-            display: flex;
-            justify-content: center;
-        }
-
-        .line button {
-            flex-grow: 1;
-            font: italic 11px 'Lucida Grande', sans-serif;
-            border: none;
-            background-color: transparent;
-        }
-    `]; }
-    render() {
-        return (0, lit_1.html) `
-            ${this.expanded ? (0, lit_1.html) `<slot></slot>` : ``}
-            <div class="line">
-                <button @click="${() => { this.expanded = !this.expanded; }}">
-                    ${this.expanded ? 'Close' : 'Open'} controls
-                </button>
-            </div>
-        `;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)({ type: Boolean })
-], CtrlUI.prototype, "expanded", void 0);
-CtrlUI = __decorate([
-    (0, decorators_js_1.customElement)('ctrl-ui')
-], CtrlUI);
-exports.CtrlUI = CtrlUI;
-function exposeBool(obj, field, desc = {}) {
-    return (0, lit_1.html) `<ctrl-bool .obj=${obj} .field=${field}>${desc.caption}</ctrl-bool>`;
-}
-exports.exposeBool = exposeBool;
-let CtrlBool = class CtrlBool extends lit_1.LitElement {
-    constructor() {
-        super(...arguments);
-        this.field = "";
-    }
-    static { this.styles = [exports.commonStyle]; }
-    render() {
-        return (0, lit_1.html) `
-            <div class="labelvalue">
-                <label><slot>${this.field}</slot></label>
-                <input class="value" type=checkbox ?checked=${this.getValue()} @change=${(e) => { this.setValue(e.target.checked); }}></input>
-            </div>
-        `;
-    }
-    getValue() {
-        return this.obj[this.field] ?? false;
-    }
-    setValue(v) {
-        this.obj[this.field] = v;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)()
-], CtrlBool.prototype, "field", void 0);
-__decorate([
-    (0, decorators_js_1.property)()
-], CtrlBool.prototype, "obj", void 0);
-CtrlBool = __decorate([
-    (0, decorators_js_1.customElement)('ctrl-bool')
-], CtrlBool);
-exports.CtrlBool = CtrlBool;
-let CtrlSelect = class CtrlSelect extends lit_1.LitElement {
-    constructor() {
-        super(...arguments);
-        this.field = "";
-        this.values = [];
-    }
-    static { this.styles = [exports.commonStyle]; }
-    render() {
-        const current = this.getValue();
-        return (0, lit_1.html) `
-            <div class="labelvalue">
-                <label><slot>${this.field}</slot></label>
-                <select class="value" @change=${this.onChange}>
-                    ${this.values.map(id => (0, lit_1.html) `
-                        <option value=${id} ?selected=${id === current}>${id}</option>
-                    `)}
-                </select>
-            </div>
-        `;
-    }
-    onChange(evt) {
-        const options = evt.target.selectedOptions;
-        if (!options) {
-            return;
-        }
-        this.setValue(options[0].value);
-    }
-    getValue() {
-        return this.obj[this.field] ?? false;
-    }
-    setValue(v) {
-        this.obj[this.field] = v;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)()
-], CtrlSelect.prototype, "field", void 0);
-__decorate([
-    (0, decorators_js_1.property)({ attribute: false })
-], CtrlSelect.prototype, "obj", void 0);
-__decorate([
-    (0, decorators_js_1.property)({ attribute: false })
-], CtrlSelect.prototype, "values", void 0);
-CtrlSelect = __decorate([
-    (0, decorators_js_1.customElement)('ctrl-select')
-], CtrlSelect);
-exports.CtrlSelect = CtrlSelect;
+exports.ArcBall = ArcBall;
 
 
 /***/ }),
@@ -8060,6 +7921,7 @@ exports.CtrlSelect = CtrlSelect;
   \*****************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // A basic game of life.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -8380,6 +8242,7 @@ exports.demo = {
   \******************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 // A conway game of life with indirect rendering.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -8740,6 +8603,7 @@ exports.demo = {
   \***************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 // A rotating cube, with rotation on GPU.
 //
@@ -9068,6 +8932,7 @@ exports.demo = {
   \***************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // A minimal effect which works on a buffer and make it evolve over time.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -9355,6 +9220,7 @@ exports.demo = {
   \***************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // A classic fire effect.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -9668,6 +9534,7 @@ exports.demo = {
   \******************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 // Minimal effect, with only a basic render pass.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -9774,6 +9641,7 @@ exports.demo = {
   \*********************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // Multiple rotating cubes.
 //
@@ -9783,7 +9651,7 @@ exports.demo = void 0;
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const controls = __webpack_require__(/*! ../controls */ "./src/controls.ts");
+const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
 const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
 // Number of instances.
 const workgroupWidth = 8;
@@ -9793,7 +9661,7 @@ const instancesHeight = 1 * workgroupHeight;
 const instances = instancesWidth * instancesHeight;
 // Space parameters.
 const boxSize = 20;
-const cameraOffset = glmatrix.vec3.fromValues(0, 0, -25);
+const cameraOffset = glmatrix.vec3.fromValues(0, 0, 25);
 const spaceLimit = boxSize / 2.0;
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
@@ -9822,8 +9690,8 @@ exports.demo = {
             showBoundaries: true,
             showBasis: false,
         };
-        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
-        params.expose(controls.exposeBool(ctrls, 'showBasis'));
+        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBasis' }));
         // Setup some initial positions for the cubes.
         const positions = [];
         for (let y = 0; y < instancesHeight; y++) {
@@ -10090,7 +9958,7 @@ exports.demo = {
             buffer: uniformsBuffer,
         });
         // Configuring camera.
-        const camera = new cameras.FirstPerson(cameraOffset);
+        const camera = new cameras.ArcBall(cameraOffset);
         params.setCamera(camera);
         // -- Single frame rendering.
         return async (info) => {
@@ -10098,7 +9966,7 @@ exports.demo = {
             params.renderWidth / params.renderHeight, // aspect
             1.0, // near
             100.0);
-            camera.transform(viewproj, info.cameraStart, info.cameraCurrent);
+            camera.transform(viewproj, info.cameraMvt);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
@@ -10160,6 +10028,7 @@ exports.demo = {
   \****************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // An infinite plane.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -10167,7 +10036,7 @@ exports.demo = void 0;
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const controls = __webpack_require__(/*! ../controls */ "./src/controls.ts");
+const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
 const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
@@ -10190,8 +10059,8 @@ exports.demo = {
             showBoundaries: true,
             showBasis: true,
         };
-        params.expose(controls.exposeBool(ctrls, 'showBoundaries'));
-        params.expose(controls.exposeBool(ctrls, 'showBasis'));
+        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBasis' }));
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
@@ -10369,7 +10238,7 @@ exports.demo = {
             buffer: uniformsBuffer,
         });
         // Configuring camera.
-        const camera = new cameras.FirstPerson(glmatrix.vec3.fromValues(0, 0, -5));
+        const camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 5));
         params.setCamera(camera);
         // -- Single frame rendering.
         return async (info) => {
@@ -10377,7 +10246,7 @@ exports.demo = {
             params.renderWidth / params.renderHeight, // aspect
             1.0, // near
             100.0);
-            camera.transform(viewproj, info.cameraStart, info.cameraCurrent);
+            camera.transform(viewproj, info.cameraMvt);
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 elapsedMs: info.elapsedMs,
                 deltaMs: info.deltaMs,
@@ -10430,6 +10299,7 @@ exports.demo = {
   \*****************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // Draw a sphere.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -10437,6 +10307,18 @@ exports.demo = void 0;
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
 const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
+const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
+const models = __webpack_require__(/*! ../models */ "./src/models.ts");
+exports.demo = {
+    id: "sphere",
+    caption: "A sphere",
+    async init(params) {
+        const d = new Demo(params);
+        // await d.init(params);
+        return (f) => d.draw(f);
+    }
+};
 // Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
     elapsedMs: { idx: 0, type: wg.F32 },
@@ -10446,36 +10328,18 @@ const uniformsDesc = new wg.StructType({
     rngSeed: { idx: 4, type: wg.F32 },
     camera: { idx: 5, type: wg.Mat4x4F32 },
 });
-const vertexDesc = new wg.StructType({
-    pos: { type: wg.Vec3f32, idx: 0 },
-    color: { type: wg.Vec4f32, idx: 1 },
-});
-exports.demo = {
-    id: "sphere",
-    caption: "A sphere",
-    async init(params) {
-        const uniformsBuffer = params.device.createBuffer({
+const depthFormat = "depth24plus";
+class Demo {
+    constructor(params) {
+        this.bundles = [];
+        this._model = "sphere";
+        this.params = params;
+        params.expose(varpanel.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
+        this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
-        // -- Prepare mesh.
-        const mesh = sphereMesh();
-        const vertexCount = mesh.vertices.length;
-        const verticesDesc = new wg.ArrayType(vertexDesc, vertexCount);
-        const vertexBuffer = params.device.createBuffer({
-            label: `vertex buffer`,
-            size: verticesDesc.byteSize(),
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        });
-        params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
-        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
-        const indexBuffer = params.device.createBuffer({
-            label: `index buffer`,
-            size: indexDesc.byteSize(),
-            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-        });
-        params.device.queue.writeBuffer(indexBuffer, 0, indexDesc.createArray(mesh.indices));
         // -- Render pipeline.
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
@@ -10488,7 +10352,7 @@ exports.demo = {
                 };
 
                 @stage(vertex)
-                fn vertex(inp: ${vertexDesc.vertexType()}) -> Vertex {
+                fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
@@ -10511,8 +10375,7 @@ exports.demo = {
                 }
             `,
         }).toDesc());
-        const depthFormat = "depth24plus";
-        const renderPipeline = params.device.createRenderPipeline({
+        this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
             layout: params.device.createPipelineLayout({
                 label: "render pipeline layouts",
@@ -10532,7 +10395,7 @@ exports.demo = {
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
-                buffers: [verticesDesc.vertexBufferLayout()],
+                buffers: [models.vertexDesc.vertexBufferLayout()],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -10551,163 +10414,410 @@ exports.demo = {
                     }],
             },
         });
-        const renderBindGroup = params.device.createBindGroup({
+        this.renderBindGroup = params.device.createBindGroup({
             label: "render pipeline bindgroup",
-            layout: renderPipeline.getBindGroupLayout(0),
+            layout: this.renderPipeline.getBindGroupLayout(0),
             entries: [
                 {
                     binding: 0,
-                    resource: { buffer: uniformsBuffer }
+                    resource: { buffer: this.uniformsBuffer }
                 },
             ]
         });
-        const depthTextureView = params.device.createTexture({
+        this.depthTextureView = params.device.createTexture({
             label: "depth view",
             size: [params.renderWidth, params.renderHeight],
             format: depthFormat,
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
-        // Prepare the rendering pipeline as a bundle.
-        const bundles = [];
-        const renderBundleEncoder = params.device.createRenderBundleEncoder({
+        // Configuring camera.
+        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        params.setCamera(this.camera);
+        this.setMesh(new models.GPUMesh(params, models.sphereMesh()));
+    }
+    get model() { return this._model; }
+    set model(s) {
+        this._model = s;
+        if (s === "cube")
+            this.setMesh(new models.GPUMesh(this.params, models.cubeMesh()));
+        else
+            this.setMesh(new models.GPUMesh(this.params, models.sphereMesh()));
+    }
+    setMesh(gpuMesh) {
+        const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
             label: "main render bundle",
             depthReadOnly: false,
             stencilReadOnly: false,
-            colorFormats: [params.renderFormat],
+            colorFormats: [this.params.renderFormat],
             depthStencilFormat: depthFormat,
         });
-        renderBundleEncoder.setPipeline(renderPipeline);
-        renderBundleEncoder.setIndexBuffer(indexBuffer, 'uint16');
-        renderBundleEncoder.setVertexBuffer(0, vertexBuffer);
-        renderBundleEncoder.setBindGroup(0, renderBindGroup);
-        renderBundleEncoder.drawIndexed(mesh.indices.length);
-        bundles.push(renderBundleEncoder.finish());
-        const cameraOffset = glmatrix.vec3.fromValues(0, 0, -4);
-        // -- Single frame rendering.
-        return async (info) => {
-            const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
-            params.renderWidth / params.renderHeight, // aspect
-            1.0, // near
-            100.0);
-            glmatrix.mat4.translate(viewproj, viewproj, cameraOffset);
-            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
-                elapsedMs: info.elapsedMs,
-                deltaMs: info.deltaMs,
-                renderWidth: params.renderWidth,
-                renderHeight: params.renderHeight,
-                rngSeed: info.rng,
-                camera: Array.from(viewproj),
-            }));
-            const commandEncoder = params.device.createCommandEncoder();
-            commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
-            // -- Frame rendering.
-            commandEncoder.pushDebugGroup('Render cubes');
-            const renderEncoder = commandEncoder.beginRenderPass({
-                colorAttachments: [{
-                        view: params.context.getCurrentTexture().createView(),
-                        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                        loadOp: 'clear',
-                        storeOp: 'store',
-                    }],
-                depthStencilAttachment: {
-                    view: depthTextureView,
-                    depthClearValue: 1.0,
-                    depthLoadOp: 'clear',
-                    depthStoreOp: 'store',
-                },
-            });
-            renderEncoder.executeBundles(bundles);
-            renderEncoder.end();
-            commandEncoder.popDebugGroup();
-            // Submit all the work.
-            commandEncoder.popDebugGroup();
-            params.device.queue.submit([commandEncoder.finish()]);
-        };
+        renderBundleEncoder.setPipeline(this.renderPipeline);
+        renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
+        gpuMesh.draw(renderBundleEncoder);
+        this.bundles = [renderBundleEncoder.finish()];
+    }
+    // -- Single frame rendering.
+    async draw(info) {
+        const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+        this.params.renderWidth / this.params.renderHeight, // aspect
+        1.0, // near
+        100.0);
+        this.camera.transform(viewproj, info.cameraMvt);
+        this.params.device.queue.writeBuffer(this.uniformsBuffer, 0, uniformsDesc.createArray({
+            elapsedMs: info.elapsedMs,
+            deltaMs: info.deltaMs,
+            renderWidth: this.params.renderWidth,
+            renderHeight: this.params.renderHeight,
+            rngSeed: info.rng,
+            camera: Array.from(viewproj),
+        }));
+        const commandEncoder = this.params.device.createCommandEncoder();
+        commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+        // -- Frame rendering.
+        commandEncoder.pushDebugGroup('Render cubes');
+        const renderEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                    view: this.params.context.getCurrentTexture().createView(),
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                }],
+            depthStencilAttachment: {
+                view: this.depthTextureView,
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            },
+        });
+        renderEncoder.executeBundles(this.bundles);
+        renderEncoder.end();
+        commandEncoder.popDebugGroup();
+        // Submit all the work.
+        commandEncoder.popDebugGroup();
+        this.params.device.queue.submit([commandEncoder.finish()]);
+    }
+}
+
+
+/***/ }),
+
+/***/ "./src/demos/viewer.ts":
+/*!*****************************!*\
+  !*** ./src/demos/viewer.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+// Load gltf models.
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.demo = void 0;
+const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
+const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
+const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
+const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
+const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
+const models = __webpack_require__(/*! ../models */ "./src/models.ts");
+const gltfloader = __webpack_require__(/*! gltf-loader-ts */ "./node_modules/gltf-loader-ts/lib/gltf-loader.js");
+exports.demo = {
+    id: "viewer",
+    caption: "A gltf viewer",
+    async init(params) {
+        const d = new Demo(params);
+        return (f) => d.draw(f);
     }
 };
-function cubeMesh() {
-    const r = 0.5;
-    return {
-        vertices: [
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1] },
-            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
-            { pos: [r, -r, r], color: [1, 0, 1, 1] },
-            { pos: [r, r, r], color: [1, 1, 1, 1] },
-            { pos: [-r, r, r], color: [0, 1, 1, 1] },
-        ],
-        indices: [
-            0, 3, 1,
-            1, 3, 2,
-            5, 1, 6,
-            6, 1, 2,
-            0, 7, 3,
-            0, 4, 7,
-            7, 4, 5,
-            5, 6, 7,
-            3, 7, 6,
-            6, 2, 3,
-            4, 0, 5,
-            5, 0, 1,
-        ]
+// Basic parameters provided to all the shaders.
+const uniformsDesc = new wg.StructType({
+    elapsedMs: { idx: 0, type: wg.F32 },
+    deltaMs: { idx: 1, type: wg.F32 },
+    renderWidth: { idx: 2, type: wg.F32 },
+    renderHeight: { idx: 3, type: wg.F32 },
+    rngSeed: { idx: 4, type: wg.F32 },
+    camera: { idx: 5, type: wg.Mat4x4F32 },
+});
+const depthFormat = "depth24plus";
+function loadToGPU(u) {
+    return async (params) => {
+        const mesh = await loadGLTF(u);
+        return new models.GPUMesh(params, mesh);
     };
 }
-// Inspired from https://github.com/caosdoar/spheres/blob/master/src/spheres.cpp
-const faces = [
-    { idx: 0, origin: glmatrix.vec3.fromValues(-1, -1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 1, origin: glmatrix.vec3.fromValues(1, -1, -1), right: glmatrix.vec3.fromValues(0, 0, 2), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 2, origin: glmatrix.vec3.fromValues(1, -1, 1), right: glmatrix.vec3.fromValues(-2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 3, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(0, 0, -2), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 4, origin: glmatrix.vec3.fromValues(-1, 1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, 2) },
-    { idx: 5, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, -2) },
-];
-function sphereMesh() {
+const allModels = {
+    "sphere/builtin": async (params) => new models.GPUMesh(params, models.sphereMesh()),
+    "cube/builtin": async (params) => new models.GPUMesh(params, models.cubeMesh()),
+    "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
+    "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
+    "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
+    "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
+};
+class Demo {
+    constructor(params) {
+        this.bundles = [];
+        this.showBasis = true;
+        this._model = "cube/gltf";
+        this.params = params;
+        params.expose(varpanel.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
+        params.expose(varpanel.newBool({ obj: this, field: 'showBasis' }));
+        this.uniformsBuffer = params.device.createBuffer({
+            label: "Compute uniforms buffer",
+            size: uniformsDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        // -- Render pipeline.
+        const shader = params.device.createShaderModule(new wg.WGSLModule({
+            label: "vertex shader",
+            code: wg.wgsl `
+                @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+
+                struct Vertex {
+                    @builtin(position) pos: vec4<f32>;
+                    @location(0) color: vec4<f32>;
+                };
+
+                @stage(vertex)
+                fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
+                    let TAU = 6.283185;
+                    let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                    let r = vec3<f32>(c, c, c);
+
+                    var out : Vertex;
+                    out.pos =
+                        uniforms.camera
+                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                        * ${shaderlib.tr.ref("rotateY")}(r.y)
+                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * vec4<f32>(inp.pos, 1.0);
+                    // out.color = inp.color;
+                    out.color = vec4<f32>(0.5 * (inp.pos + vec3<f32>(1., 1., 1.)), 1.0);
+                    return out;
+                }
+
+                @stage(fragment)
+                fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                    return vert.color;
+                }
+            `,
+        }).toDesc());
+        this.renderPipeline = params.device.createRenderPipeline({
+            label: "Rendering pipeline",
+            layout: params.device.createPipelineLayout({
+                label: "render pipeline layouts",
+                bindGroupLayouts: [
+                    params.device.createBindGroupLayout({
+                        label: "render pipeline layout",
+                        entries: [
+                            {
+                                binding: 0,
+                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                                buffer: { type: 'uniform' },
+                            },
+                        ],
+                    }),
+                ]
+            }),
+            vertex: {
+                entryPoint: 'vertex',
+                module: shader,
+                buffers: [models.vertexDesc.vertexBufferLayout()],
+            },
+            primitive: {
+                topology: 'triangle-list',
+                cullMode: 'back',
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: depthFormat,
+            },
+            fragment: {
+                entryPoint: 'fragment',
+                module: shader,
+                targets: [{
+                        format: params.renderFormat,
+                    }],
+            },
+        });
+        this.renderBindGroup = params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: this.renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: { buffer: this.uniformsBuffer }
+                },
+            ]
+        });
+        this.depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: depthFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+        // Orthonormals.
+        this.basisBundle = shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            lines: shaderlib.ortholines,
+            mod: uniformsDesc,
+            buffer: this.uniformsBuffer,
+        });
+        // Configuring camera.
+        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        params.setCamera(this.camera);
+        // Force loading the initial model.
+        this.model = this.model;
+        // this.setMesh(new models.GPUMesh(params, models.sphereMesh()));
+    }
+    get model() { return this._model; }
+    set model(s) {
+        this._model = s;
+        allModels[s](this.params).then(mesh => this.setMesh(mesh));
+    }
+    setMesh(gpuMesh) {
+        const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
+            label: "main render bundle",
+            depthReadOnly: false,
+            stencilReadOnly: false,
+            colorFormats: [this.params.renderFormat],
+            depthStencilFormat: depthFormat,
+        });
+        renderBundleEncoder.setPipeline(this.renderPipeline);
+        renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
+        gpuMesh.draw(renderBundleEncoder);
+        this.bundles = [renderBundleEncoder.finish()];
+        if (this.showBasis) {
+            this.bundles.push(this.basisBundle);
+        }
+    }
+    // -- Single frame rendering.
+    async draw(info) {
+        const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+        this.params.renderWidth / this.params.renderHeight, // aspect
+        1.0, // near
+        100.0);
+        this.camera.transform(viewproj, info.cameraMvt);
+        this.params.device.queue.writeBuffer(this.uniformsBuffer, 0, uniformsDesc.createArray({
+            elapsedMs: info.elapsedMs,
+            deltaMs: info.deltaMs,
+            renderWidth: this.params.renderWidth,
+            renderHeight: this.params.renderHeight,
+            rngSeed: info.rng,
+            camera: Array.from(viewproj),
+        }));
+        const commandEncoder = this.params.device.createCommandEncoder();
+        commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
+        // -- Frame rendering.
+        commandEncoder.pushDebugGroup('Render cubes');
+        const renderEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                    view: this.params.context.getCurrentTexture().createView(),
+                    clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                }],
+            depthStencilAttachment: {
+                view: this.depthTextureView,
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            },
+        });
+        renderEncoder.executeBundles(this.bundles);
+        renderEncoder.end();
+        commandEncoder.popDebugGroup();
+        // Submit all the work.
+        commandEncoder.popDebugGroup();
+        this.params.device.queue.submit([commandEncoder.finish()]);
+    }
+}
+// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_mesh_primitive_mode
+var GLTFPrimitiveMode;
+(function (GLTFPrimitiveMode) {
+    GLTFPrimitiveMode[GLTFPrimitiveMode["POINTS"] = 0] = "POINTS";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["LINES"] = 1] = "LINES";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["LINE_LOOP"] = 2] = "LINE_LOOP";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["LINE_STRIP"] = 3] = "LINE_STRIP";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLES"] = 4] = "TRIANGLES";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
+})(GLTFPrimitiveMode || (GLTFPrimitiveMode = {}));
+;
+// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#accessor-data-types
+var GLTFAccessorType;
+(function (GLTFAccessorType) {
+    GLTFAccessorType["SCALAR"] = "SCALAR";
+    GLTFAccessorType["VEC2"] = "VEC2";
+    GLTFAccessorType["VEC3"] = "VEC3";
+    GLTFAccessorType["VEC4"] = "VEC4";
+    GLTFAccessorType["MAT2"] = "MAT2";
+    GLTFAccessorType["MAT3"] = "MAT3";
+    GLTFAccessorType["MAT4"] = "MAT4";
+})(GLTFAccessorType || (GLTFAccessorType = {}));
+;
+var GLTFAccessorComponentType;
+(function (GLTFAccessorComponentType) {
+    GLTFAccessorComponentType[GLTFAccessorComponentType["S8"] = 5120] = "S8";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["U8"] = 5121] = "U8";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["S16"] = 5122] = "S16";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["U16"] = 5123] = "U16";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["U32"] = 5125] = "U32";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["F32"] = 5126] = "F32";
+})(GLTFAccessorComponentType || (GLTFAccessorComponentType = {}));
+;
+async function loadGLTF(u) {
+    const loader = new gltfloader.GltfLoader();
+    const asset = await loader.load(u);
+    const content = asset.gltf;
+    if (!content.meshes) {
+        throw new Error("no meshes");
+    }
+    const rawMesh = content.meshes[0];
+    const primitive = rawMesh.primitives[0];
+    if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) {
+        throw new Error(`only triangles; got ${primitive.mode}`);
+    }
+    if (!content.accessors) {
+        throw new Error("no accessors");
+    }
+    // Load vertices.
+    const vertAccIndex = primitive.attributes["POSITION"];
+    const vertAcc = content.accessors[vertAccIndex];
+    if (vertAcc.type != GLTFAccessorType.VEC3) {
+        throw new Error(`wrong type: ${vertAcc.type}`);
+    }
+    if (vertAcc.componentType != GLTFAccessorComponentType.F32) {
+        throw new Error(`wrong component type ${vertAcc.componentType}`);
+    }
+    // accessorData return the full bufferView, not just specific accessorData.
+    const posBufferView = await asset.accessorData(vertAccIndex);
+    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
     const vertices = [];
-    const indices = [];
-    const divisions = 4;
-    const step = 1 / divisions;
-    for (const face of faces) {
-        for (let j = 0; j <= divisions; j++) {
-            for (let i = 0; i <= divisions; i++) {
-                const p = glmatrix.vec3.fromValues(face.origin[0] + step * (i * face.right[0] + j * face.up[0]), face.origin[1] + step * (i * face.right[1] + j * face.up[1]), face.origin[2] + step * (i * face.right[2] + j * face.up[2]));
-                const p2 = glmatrix.vec3.multiply(glmatrix.vec3.create(), p, p);
-                vertices.push({
-                    pos: [
-                        p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
-                        p[1] * Math.sqrt(1 - 0.5 * (p2[2] + p2[0]) + p2[2] * p2[0] / 3),
-                        p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
-                    ],
-                    color: [j / divisions, i / divisions, 0, 1],
-                });
-            }
-        }
+    for (let i = 0; i < vertAcc.count; i++) {
+        vertices.push({
+            pos: [f32[i * 3], f32[i * 3 + 1], f32[i * 3 + 2]],
+            color: [1, 0, 1, 1],
+        });
     }
-    const k = divisions + 1;
-    for (const face of faces) {
-        for (let j = 0; j < divisions; j++) {
-            const bottom = j < (divisions / 2);
-            for (let i = 0; i < divisions; i++) {
-                const left = i < (divisions / 2);
-                const a = (face.idx * k + j) * k + i;
-                const b = (face.idx * k + j) * k + i + 1;
-                const c = (face.idx * k + j + 1) * k + i;
-                const d = (face.idx * k + j + 1) * k + i + 1;
-                if ((!bottom && !left) || (bottom && left)) {
-                    indices.push(...[a, c, d, a, d, b]);
-                    // indices.push(...[a, c, b, c, d, b]);
-                }
-                else {
-                    // indices.push(...[a, c, d, a, d, b]);
-                    indices.push(...[a, c, b, c, d, b]);
-                }
-            }
-        }
+    // Load indices
+    if (primitive.indices === undefined) {
+        throw new Error("no indices");
     }
+    const idxAccIndex = primitive.indices;
+    const idxAcc = content.accessors[idxAccIndex];
+    if (idxAcc.type != GLTFAccessorType.SCALAR) {
+        throw new Error(`wrong type: ${idxAcc.type}`);
+    }
+    if (idxAcc.componentType != GLTFAccessorComponentType.U16) {
+        throw new Error(`wrong component type ${idxAcc.componentType}`);
+    }
+    const indicesData = await asset.accessorData(idxAccIndex);
+    const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
+    const indices = Array.from(u16);
     return {
-        vertices: vertices,
-        indices: indices,
+        vertices,
+        indices,
     };
 }
 
@@ -10720,6 +10830,7 @@ function sphereMesh() {
   \**********************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
+"use strict";
 
 /// <reference types="@webgpu/types" />
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10732,7 +10843,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppMain = exports.demoByID = exports.allDemos = void 0;
 const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
 const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
-const controls = __webpack_require__(/*! ./controls */ "./src/controls.ts");
+const varpanel = __webpack_require__(/*! ./varpanel */ "./src/varpanel.ts");
 const cameras = __webpack_require__(/*! ./cameras */ "./src/cameras.ts");
 const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts");
 const fire = __webpack_require__(/*! ./demos/fire */ "./src/demos/fire.ts");
@@ -10743,6 +10854,7 @@ const cube = __webpack_require__(/*! ./demos/cube */ "./src/demos/cube.ts");
 const multicubes = __webpack_require__(/*! ./demos/multicubes */ "./src/demos/multicubes.ts");
 const sphere = __webpack_require__(/*! ./demos/sphere */ "./src/demos/sphere.ts");
 const plane = __webpack_require__(/*! ./demos/plane */ "./src/demos/plane.ts");
+const viewer = __webpack_require__(/*! ./demos/viewer */ "./src/demos/viewer.ts");
 exports.allDemos = [
     conway2.demo,
     fire.demo,
@@ -10753,6 +10865,7 @@ exports.allDemos = [
     multicubes.demo,
     sphere.demo,
     plane.demo,
+    viewer.demo,
 ];
 function demoByID(id) {
     for (const d of exports.allDemos) {
@@ -10858,17 +10971,17 @@ let AppMain = class AppMain extends lit_1.LitElement {
             </div>
 
             <div id="overlay">
-                <ctrl-ui ?expanded=${this.controlsExpanded}>
-                    <style>${controls.commonStyle}</style>
-                    <ctrl-select .obj=${this} field="demoID" .values=${demoValues}>Demo</ctrl-select>
+                <var-panel ?expanded=${this.controlsExpanded}>
+                    <style>${varpanel.commonStyle}</style>
+                    <vp-select .obj=${this} field="demoID" .values=${demoValues}>Demo</vp-select>
                     <div class="doc">${demoByID(this.demoID).caption}</div>
                     <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-                    <ctrl-bool .obj=${this} field="limitCanvas">Limit canvas</ctrl-bool>
+                    <vp-bool .obj=${this} field="limitCanvas">Limit canvas</vp-bool>
                     <div class="doc">
                         Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
                     </div>
                     ${this.extraControls}
-                </ctrl-ui>
+                </var-panel>
                 ${(!this.webGPUpresent || this.error) ? (0, lit_1.html) `
                 <div id="errors">
                     ${this.webGPUpresent ? '' : (0, lit_1.html) `
@@ -10941,7 +11054,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
                 if (this.cameraStart) {
                     console.error("missing pointerup");
                 }
-                this.cameraStart = this.getCameraMoveInfo(e);
+                this.cameraStart = e;
                 this.canvas?.setPointerCapture(e.pointerId);
             }
         });
@@ -10949,20 +11062,20 @@ let AppMain = class AppMain extends lit_1.LitElement {
             if (!this.cameraStart) {
                 return;
             }
-            if (e.pointerId != this.cameraStart.evt.pointerId) {
+            if (e.pointerId != this.cameraStart.pointerId) {
                 return;
             }
-            this.cameraCurrent = this.getCameraMoveInfo(e);
+            this.cameraCurrent = e;
         });
         eventElement.addEventListener('pointerup', e => {
             if (!this.cameraStart) {
                 return;
             }
-            if (e.button != this.cameraStart.evt.button || e.pointerId != this.cameraStart.evt.pointerId) {
+            if (e.button != this.cameraStart.button || e.pointerId != this.cameraStart.pointerId) {
                 return;
             }
             if (this.cameraStart && this.cameraCurrent) {
-                this.camera.update(this.cameraStart, this.cameraCurrent);
+                this.camera.update(this.getCameraMoveInfo());
             }
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
@@ -10971,22 +11084,30 @@ let AppMain = class AppMain extends lit_1.LitElement {
             if (!this.cameraStart) {
                 return;
             }
-            if (e.pointerId != this.cameraStart.evt.pointerId) {
+            if (e.pointerId != this.cameraStart.pointerId) {
                 return;
             }
             this.cameraStart = undefined;
             this.cameraCurrent = undefined;
         });
+        eventElement.addEventListener('wheel', e => {
+            this.camera.update({
+                deltaZoom: e.deltaY / this.canvas.clientHeight,
+                shift: this.shiftPressed,
+            });
+        });
         // Make sure keyboard events go to the canvas initially.
         this.canvas.focus();
     }
-    getCameraMoveInfo(evt) {
-        return {
-            x: evt.x / this.canvas.clientWidth,
-            y: evt.y / this.canvas.clientHeight,
+    getCameraMoveInfo() {
+        const mvt = {
             shift: this.shiftPressed,
-            evt: evt,
         };
+        if (this.cameraStart && this.cameraCurrent) {
+            mvt.deltaX = (this.cameraCurrent.x - this.cameraStart.x) / this.canvas.clientWidth;
+            mvt.deltaY = (this.cameraCurrent.y - this.cameraStart.y) / this.canvas.clientHeight;
+        }
+        return mvt;
     }
     updateSize() {
         if (!this.canvas) {
@@ -11105,8 +11226,7 @@ let AppMain = class AppMain extends lit_1.LitElement {
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),
-                        cameraStart: this.cameraStart,
-                        cameraCurrent: this.cameraCurrent,
+                        cameraMvt: this.getCameraMoveInfo(),
                     });
                     if (this.error) {
                         throw new Error("frame failed");
@@ -11182,12 +11302,149 @@ document.body.appendChild(document.createElement("app-main"));
 
 /***/ }),
 
+/***/ "./src/models.ts":
+/*!***********************!*\
+  !*** ./src/models.ts ***!
+  \***********************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sphereMesh = exports.cubeMesh = exports.GPUMesh = exports.vertexDesc = void 0;
+const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
+const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
+exports.vertexDesc = new wg.StructType({
+    pos: { type: wg.Vec3f32, idx: 0 },
+    color: { type: wg.Vec4f32, idx: 1 },
+});
+class GPUMesh {
+    constructor(params, mesh) {
+        const verticesDesc = new wg.ArrayType(exports.vertexDesc, mesh.vertices.length);
+        this.vertexBuffer = params.device.createBuffer({
+            label: `vertex buffer`,
+            size: verticesDesc.byteSize(),
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        params.device.queue.writeBuffer(this.vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
+        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+        // Writing to buffer must be multiple of 4.
+        const indexSize = Math.ceil(indexDesc.byteSize() / 4) * 4;
+        this.indexBuffer = params.device.createBuffer({
+            label: `index buffer`,
+            size: indexSize,
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        });
+        const indexArray = new ArrayBuffer(indexSize);
+        indexDesc.dataViewSet(new DataView(indexArray), 0, mesh.indices);
+        params.device.queue.writeBuffer(this.indexBuffer, 0, indexArray, 0, indexSize);
+        this.indicesCount = mesh.indices.length;
+    }
+    draw(encoder) {
+        encoder.setIndexBuffer(this.indexBuffer, 'uint16');
+        encoder.setVertexBuffer(0, this.vertexBuffer);
+        encoder.drawIndexed(this.indicesCount);
+    }
+}
+exports.GPUMesh = GPUMesh;
+function cubeMesh() {
+    const r = 0.5;
+    return {
+        vertices: [
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1] },
+            { pos: [r, r, r], color: [1, 1, 1, 1] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1] },
+        ],
+        indices: [
+            0, 3, 1,
+            1, 3, 2,
+            5, 1, 6,
+            6, 1, 2,
+            0, 7, 3,
+            0, 4, 7,
+            7, 4, 5,
+            5, 6, 7,
+            3, 7, 6,
+            6, 2, 3,
+            4, 0, 5,
+            5, 0, 1,
+        ]
+    };
+}
+exports.cubeMesh = cubeMesh;
+// Inspired from https://github.com/caosdoar/spheres/blob/master/src/spheres.cpp
+const faces = [
+    { idx: 0, origin: glmatrix.vec3.fromValues(-1, -1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 1, origin: glmatrix.vec3.fromValues(1, -1, -1), right: glmatrix.vec3.fromValues(0, 0, 2), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 2, origin: glmatrix.vec3.fromValues(1, -1, 1), right: glmatrix.vec3.fromValues(-2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 3, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(0, 0, -2), up: glmatrix.vec3.fromValues(0, 2, 0) },
+    { idx: 4, origin: glmatrix.vec3.fromValues(-1, 1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, 2) },
+    { idx: 5, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, -2) },
+];
+function sphereMesh() {
+    const vertices = [];
+    const indices = [];
+    const divisions = 4;
+    const step = 1 / divisions;
+    for (const face of faces) {
+        for (let j = 0; j <= divisions; j++) {
+            for (let i = 0; i <= divisions; i++) {
+                const p = glmatrix.vec3.fromValues(face.origin[0] + step * (i * face.right[0] + j * face.up[0]), face.origin[1] + step * (i * face.right[1] + j * face.up[1]), face.origin[2] + step * (i * face.right[2] + j * face.up[2]));
+                const p2 = glmatrix.vec3.multiply(glmatrix.vec3.create(), p, p);
+                vertices.push({
+                    pos: [
+                        p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
+                        p[1] * Math.sqrt(1 - 0.5 * (p2[2] + p2[0]) + p2[2] * p2[0] / 3),
+                        p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
+                    ],
+                    color: [j / divisions, i / divisions, 0, 1],
+                });
+            }
+        }
+    }
+    const k = divisions + 1;
+    for (const face of faces) {
+        for (let j = 0; j < divisions; j++) {
+            const bottom = j < (divisions / 2);
+            for (let i = 0; i < divisions; i++) {
+                const left = i < (divisions / 2);
+                const a = (face.idx * k + j) * k + i;
+                const b = (face.idx * k + j) * k + i + 1;
+                const c = (face.idx * k + j + 1) * k + i;
+                const d = (face.idx * k + j + 1) * k + i + 1;
+                if ((!bottom && !left) || (bottom && left)) {
+                    indices.push(...[a, c, d, a, d, b]);
+                    // indices.push(...[a, c, b, c, d, b]);
+                }
+                else {
+                    // indices.push(...[a, c, d, a, d, b]);
+                    indices.push(...[a, c, b, c, d, b]);
+                }
+            }
+        }
+    }
+    return {
+        vertices: vertices,
+        indices: indices,
+    };
+}
+exports.sphereMesh = sphereMesh;
+
+
+/***/ }),
+
 /***/ "./src/shaderlib.ts":
 /*!**************************!*\
   !*** ./src/shaderlib.ts ***!
   \**************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.cubelines = exports.ortholines = exports.buildLineBundle = exports.rand = exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
@@ -11381,7 +11638,7 @@ function buildLineBundle(lineDesc) {
         }),
         vertex: {
             buffers: [{
-                    arrayStride: arrayDesc.stride,
+                    arrayStride: pointDesc.stride(),
                     attributes: [
                         { shaderLocation: 0, format: "float32x3", offset: 0, },
                         { shaderLocation: 1, format: "float32x4", offset: 16, },
@@ -11473,12 +11730,190 @@ exports.cubelines = cubelines;
 
 /***/ }),
 
+/***/ "./src/varpanel.ts":
+/*!*************************!*\
+  !*** ./src/varpanel.ts ***!
+  \*************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SelectElement = exports.newSelect = exports.BoolElement = exports.newBool = exports.VarPanel = exports.commonStyle = void 0;
+const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
+const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
+exports.commonStyle = (0, lit_1.css) `
+    .labelvalue {
+        display: grid;
+        grid-template-columns: 8em 100fr;
+        grid-template-rows: 100fr;
+
+        border-top: 1px solid #4d4d4d;
+        padding: 2px 1px 2px 1px;
+        font: 11px 'Lucida Grande', sans-serif;
+    }
+
+    .labelvalue select, .labelvalue input {
+        font: 11px 'Lucida Grande', sans-serif;
+        margin: 0;
+    }
+
+    .labelvalue label {
+        grid-column-start: 1;
+        grid-column-end: 2;
+    }
+
+    .value {
+        grid-column-start: 2;
+        grid-column-end: 3;
+    }
+`;
+let VarPanel = class VarPanel extends lit_1.LitElement {
+    constructor() {
+        super(...arguments);
+        this.expanded = false;
+    }
+    static { this.styles = [exports.commonStyle, (0, lit_1.css) `
+        :host {
+            background-color: #d6d6d6f0;
+            border: #8b8b8b 1px solid;
+            font-size: 11px;
+        }
+
+        .line {
+            border-top: 1px solid #4d4d4d;
+            display: flex;
+            justify-content: center;
+        }
+
+        .line button {
+            flex-grow: 1;
+            font: italic 11px 'Lucida Grande', sans-serif;
+            border: none;
+            background-color: transparent;
+        }
+    `]; }
+    render() {
+        return (0, lit_1.html) `
+            ${this.expanded ? (0, lit_1.html) `<slot></slot>` : ``}
+            <div class="line">
+                <button @click="${() => { this.expanded = !this.expanded; }}">
+                    ${this.expanded ? 'Close' : 'Open'} controls
+                </button>
+            </div>
+        `;
+    }
+};
+__decorate([
+    (0, decorators_js_1.property)({ type: Boolean })
+], VarPanel.prototype, "expanded", void 0);
+VarPanel = __decorate([
+    (0, decorators_js_1.customElement)('var-panel')
+], VarPanel);
+exports.VarPanel = VarPanel;
+function newBool(desc) {
+    return (0, lit_1.html) `<vp-bool .obj=${desc.obj} .field=${desc.field}>${desc.caption}</vp-bool>`;
+}
+exports.newBool = newBool;
+let BoolElement = class BoolElement extends lit_1.LitElement {
+    constructor() {
+        super(...arguments);
+        this.field = "";
+    }
+    static { this.styles = [exports.commonStyle]; }
+    render() {
+        return (0, lit_1.html) `
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <input class="value" type=checkbox ?checked=${this.getValue()} @change=${(e) => { this.setValue(e.target.checked); }}></input>
+            </div>
+        `;
+    }
+    getValue() {
+        return this.obj[this.field] ?? false;
+    }
+    setValue(v) {
+        this.obj[this.field] = v;
+    }
+};
+__decorate([
+    (0, decorators_js_1.property)()
+], BoolElement.prototype, "field", void 0);
+__decorate([
+    (0, decorators_js_1.property)()
+], BoolElement.prototype, "obj", void 0);
+BoolElement = __decorate([
+    (0, decorators_js_1.customElement)('vp-bool')
+], BoolElement);
+exports.BoolElement = BoolElement;
+function newSelect(desc) {
+    return (0, lit_1.html) `<vp-select .obj=${desc.obj} .field=${desc.field} .values=${desc.values}>${desc.caption}</vp-select>`;
+}
+exports.newSelect = newSelect;
+let SelectElement = class SelectElement extends lit_1.LitElement {
+    constructor() {
+        super(...arguments);
+        this.field = "";
+        this.values = [];
+    }
+    static { this.styles = [exports.commonStyle]; }
+    render() {
+        const current = this.getValue();
+        return (0, lit_1.html) `
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <select class="value" @change=${this.onChange}>
+                    ${this.values.map(id => (0, lit_1.html) `
+                        <option value=${id} ?selected=${id === current}>${id}</option>
+                    `)}
+                </select>
+            </div>
+        `;
+    }
+    onChange(evt) {
+        const options = evt.target.selectedOptions;
+        if (!options) {
+            return;
+        }
+        this.setValue(options[0].value);
+    }
+    getValue() {
+        return this.obj[this.field] ?? false;
+    }
+    setValue(v) {
+        this.obj[this.field] = v;
+    }
+};
+__decorate([
+    (0, decorators_js_1.property)()
+], SelectElement.prototype, "field", void 0);
+__decorate([
+    (0, decorators_js_1.property)({ attribute: false })
+], SelectElement.prototype, "obj", void 0);
+__decorate([
+    (0, decorators_js_1.property)({ attribute: false })
+], SelectElement.prototype, "values", void 0);
+SelectElement = __decorate([
+    (0, decorators_js_1.customElement)('vp-select')
+], SelectElement);
+exports.SelectElement = SelectElement;
+
+
+/***/ }),
+
 /***/ "./src/wg.ts":
 /*!*******************!*\
   !*** ./src/wg.ts ***!
   \*******************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // A WebGPU helper libraries. For now, providers:
 //   - WGSLModule: A way to import / manage a library of reusable WGSL code.
@@ -11510,6 +11945,7 @@ Object.defineProperty(exports, "Vec4f32", ({ enumerable: true, get: function () 
   \************************/
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 
 // The following providing a kind of WGSL import system.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -11751,6 +12187,7 @@ function testWGSLModules() {
   \*************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
+"use strict";
 
 // The following contains an attempt at making it easier to manipulate basic
 // uniforms - i.e., maintaing a buffer content with structured data from
@@ -11763,6 +12200,10 @@ const wgsl = lang.wgsl;
 // Basic class to represent info about a given WGSL type. The template parameter
 // is the type of the value it maps to in javascript.
 class WGSLType {
+    // Return the stride of this type when used in an array.
+    stride() {
+        return this.alignOf() * Math.ceil(this.byteSize() / this.alignOf());
+    }
     // Return the GPUVertexFormat associated to this type.
     // If no vertex format exists, throw an exception.
     vertexFormat() {
@@ -11881,14 +12322,13 @@ class ArrayType extends WGSLType {
         super();
         this.etype = etype;
         this.count = count;
-        this.stride = this.etype.alignOf() * Math.ceil(this.etype.byteSize() / this.etype.alignOf());
     }
-    byteSize() { return this.count * this.stride; }
+    byteSize() { return this.count * this.etype.stride(); }
     alignOf() { return this.etype.alignOf(); }
     dataViewSet(dv, offset, v) {
         for (let i = 0; i < this.count; i++) {
             this.etype.dataViewSet(dv, offset, v[i]);
-            offset += this.stride;
+            offset += this.etype.stride();
         }
     }
     typename() {
@@ -11898,7 +12338,7 @@ class ArrayType extends WGSLType {
     // createRenderPipeline call.
     vertexBufferLayout() {
         return {
-            arrayStride: this.stride,
+            arrayStride: this.stride(),
             attributes: this.etype.vertexAttributes(),
         };
     }
@@ -12014,6 +12454,15 @@ class StructType extends WGSLType {
         }
         return attrs;
     }
+    // Creates a vertex buffer layout for this struct, suitable for a
+    // createRenderPipeline call. This assume that this struct will be layed out
+    // in a simple array to represent the vertex buffer.
+    vertexBufferLayout() {
+        return {
+            arrayStride: this.stride(),
+            attributes: this.vertexAttributes(),
+        };
+    }
 }
 exports.StructType = StructType;
 //-----------------------------------------------
@@ -12051,6 +12500,7 @@ function testBuffer() {
   \*******************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "CSSResult": () => (/* binding */ CSSResult),
@@ -12188,6 +12638,7 @@ const getCompatibleStyle = supportsAdoptingStyleSheets
   \***************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "decorateProperty": () => (/* binding */ decorateProperty),
@@ -12268,6 +12719,7 @@ const decorateProperty = ({ finisher, descriptor, }) => (protoOrDescriptor, name
   \*************************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "customElement": () => (/* binding */ customElement)
@@ -12325,6 +12777,7 @@ const customElement = (tagName) => (classOrDescriptor) => typeof classOrDescript
   \************************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "eventOptions": () => (/* binding */ eventOptions)
@@ -12383,6 +12836,7 @@ function eventOptions(options) {
   \*******************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "property": () => (/* binding */ property)
@@ -12488,6 +12942,7 @@ function property(options) {
   \********************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "queryAll": () => (/* binding */ queryAll)
@@ -12545,6 +13000,7 @@ function queryAll(selector) {
   \**********************************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "queryAssignedElements": () => (/* binding */ queryAssignedElements)
@@ -12629,6 +13085,7 @@ function queryAssignedElements(options) {
   \*******************************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "queryAssignedNodes": () => (/* binding */ queryAssignedNodes)
@@ -12691,6 +13148,7 @@ function queryAssignedNodes(slotOrOptions, flatten, selector) {
   \**********************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "queryAsync": () => (/* binding */ queryAsync)
@@ -12762,6 +13220,7 @@ function queryAsync(selector) {
   \****************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "query": () => (/* binding */ query)
@@ -12833,6 +13292,7 @@ function query(selector, cache) {
   \****************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "state": () => (/* binding */ state)
@@ -12876,6 +13336,7 @@ function state(options) {
   \****************************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "CSSResult": () => (/* reexport safe */ _css_tag_js__WEBPACK_IMPORTED_MODULE_0__.CSSResult),
@@ -13918,6 +14379,7 @@ if (DEV_MODE && globalThis.reactiveElementVersions.length > 1) {
   \*************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "CSSResult": () => (/* reexport safe */ _lit_reactive_element__WEBPACK_IMPORTED_MODULE_0__.CSSResult),
@@ -14209,6 +14671,7 @@ if (DEV_MODE && globalThis.litElementVersions.length > 1) {
   \*******************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "INTERNAL": () => (/* binding */ INTERNAL),
@@ -15675,6 +16138,7 @@ if (DEV_MODE && globalThis.litHtmlVersions.length > 1) {
   \****************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "customElement": () => (/* reexport safe */ _lit_reactive_element_decorators_custom_element_js__WEBPACK_IMPORTED_MODULE_0__.customElement),
@@ -15708,6 +16172,7 @@ __webpack_require__.r(__webpack_exports__);
   \***********************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "CSSResult": () => (/* reexport safe */ lit_element_lit_element_js__WEBPACK_IMPORTED_MODULE_2__.CSSResult),
