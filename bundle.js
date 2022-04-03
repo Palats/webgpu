@@ -10518,7 +10518,6 @@ const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
 const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
 const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
 const models = __webpack_require__(/*! ../models */ "./src/models.ts");
-const gltfloader = __webpack_require__(/*! gltf-loader-ts */ "./node_modules/gltf-loader-ts/lib/gltf-loader.js");
 exports.demo = {
     id: "viewer",
     caption: "A gltf viewer",
@@ -10535,11 +10534,12 @@ const uniformsDesc = new wg.StructType({
     renderHeight: { idx: 3, type: wg.F32 },
     rngSeed: { idx: 4, type: wg.F32 },
     camera: { idx: 5, type: wg.Mat4x4F32 },
+    modelTransform: { idx: 6, type: wg.Mat4x4F32 },
 });
 const depthFormat = "depth24plus";
 function loadToGPU(u) {
     return async (params) => {
-        const mesh = await loadGLTF(u);
+        const mesh = await models.loadGLTF(u);
         return new models.GPUMesh(params, mesh);
     };
 }
@@ -10550,6 +10550,7 @@ const allModels = {
     "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
     "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
+    "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
 };
 class Demo {
     constructor(params) {
@@ -10557,6 +10558,7 @@ class Demo {
         this.showBasis = true;
         this._model = "cube/gltf";
         this.params = params;
+        this.modelTransform = glmatrix.mat4.create();
         params.expose(varpanel.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
         params.expose(varpanel.newBool({ obj: this, field: 'showBasis' }));
         this.uniformsBuffer = params.device.createBuffer({
@@ -10581,15 +10583,16 @@ class Demo {
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
+                    let pos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
+
                     var out : Vertex;
                     out.pos =
                         uniforms.camera
                         * ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * vec4<f32>(inp.pos, 1.0);
-                    // out.color = inp.color;
-                    out.color = vec4<f32>(0.5 * (inp.pos + vec3<f32>(1., 1., 1.)), 1.0);
+                        * pos;
+                    out.color = vec4<f32>(0.5 * (pos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
                 }
 
@@ -10668,7 +10671,6 @@ class Demo {
         params.setCamera(this.camera);
         // Force loading the initial model.
         this.model = this.model;
-        // this.setMesh(new models.GPUMesh(params, models.sphereMesh()));
     }
     get model() { return this._model; }
     set model(s) {
@@ -10690,6 +10692,22 @@ class Demo {
         if (this.showBasis) {
             this.bundles.push(this.basisBundle);
         }
+        if (gpuMesh.min && gpuMesh.max) {
+            const diff = glmatrix.vec3.sub(glmatrix.vec3.create(), gpuMesh.max, gpuMesh.min);
+            const maxDiff = Math.max(diff[0], diff[1], diff[2]);
+            // Make it of size 2 - i.e., fitting it in a box from -1 to +1, as
+            // it is rotating around the origin.
+            const scale = 2 / maxDiff;
+            const scaleVec = glmatrix.vec3.fromValues(scale, scale, scale);
+            const tr = glmatrix.vec3.clone(gpuMesh.min);
+            glmatrix.vec3.scaleAndAdd(tr, tr, diff, 0.5);
+            glmatrix.vec3.scale(tr, tr, -1);
+            glmatrix.mat4.fromScaling(this.modelTransform, scaleVec);
+            glmatrix.mat4.translate(this.modelTransform, this.modelTransform, tr);
+        }
+        else {
+            glmatrix.mat4.identity(this.modelTransform);
+        }
     }
     // -- Single frame rendering.
     async draw(info) {
@@ -10705,6 +10723,7 @@ class Demo {
             renderHeight: this.params.renderHeight,
             rngSeed: info.rng,
             camera: Array.from(viewproj),
+            modelTransform: Array.from(this.modelTransform),
         }));
         const commandEncoder = this.params.device.createCommandEncoder();
         commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
@@ -10731,94 +10750,6 @@ class Demo {
         commandEncoder.popDebugGroup();
         this.params.device.queue.submit([commandEncoder.finish()]);
     }
-}
-// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_mesh_primitive_mode
-var GLTFPrimitiveMode;
-(function (GLTFPrimitiveMode) {
-    GLTFPrimitiveMode[GLTFPrimitiveMode["POINTS"] = 0] = "POINTS";
-    GLTFPrimitiveMode[GLTFPrimitiveMode["LINES"] = 1] = "LINES";
-    GLTFPrimitiveMode[GLTFPrimitiveMode["LINE_LOOP"] = 2] = "LINE_LOOP";
-    GLTFPrimitiveMode[GLTFPrimitiveMode["LINE_STRIP"] = 3] = "LINE_STRIP";
-    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLES"] = 4] = "TRIANGLES";
-    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
-    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
-})(GLTFPrimitiveMode || (GLTFPrimitiveMode = {}));
-;
-// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#accessor-data-types
-var GLTFAccessorType;
-(function (GLTFAccessorType) {
-    GLTFAccessorType["SCALAR"] = "SCALAR";
-    GLTFAccessorType["VEC2"] = "VEC2";
-    GLTFAccessorType["VEC3"] = "VEC3";
-    GLTFAccessorType["VEC4"] = "VEC4";
-    GLTFAccessorType["MAT2"] = "MAT2";
-    GLTFAccessorType["MAT3"] = "MAT3";
-    GLTFAccessorType["MAT4"] = "MAT4";
-})(GLTFAccessorType || (GLTFAccessorType = {}));
-;
-var GLTFAccessorComponentType;
-(function (GLTFAccessorComponentType) {
-    GLTFAccessorComponentType[GLTFAccessorComponentType["S8"] = 5120] = "S8";
-    GLTFAccessorComponentType[GLTFAccessorComponentType["U8"] = 5121] = "U8";
-    GLTFAccessorComponentType[GLTFAccessorComponentType["S16"] = 5122] = "S16";
-    GLTFAccessorComponentType[GLTFAccessorComponentType["U16"] = 5123] = "U16";
-    GLTFAccessorComponentType[GLTFAccessorComponentType["U32"] = 5125] = "U32";
-    GLTFAccessorComponentType[GLTFAccessorComponentType["F32"] = 5126] = "F32";
-})(GLTFAccessorComponentType || (GLTFAccessorComponentType = {}));
-;
-async function loadGLTF(u) {
-    const loader = new gltfloader.GltfLoader();
-    const asset = await loader.load(u);
-    const content = asset.gltf;
-    if (!content.meshes) {
-        throw new Error("no meshes");
-    }
-    const rawMesh = content.meshes[0];
-    const primitive = rawMesh.primitives[0];
-    if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) {
-        throw new Error(`only triangles; got ${primitive.mode}`);
-    }
-    if (!content.accessors) {
-        throw new Error("no accessors");
-    }
-    // Load vertices.
-    const vertAccIndex = primitive.attributes["POSITION"];
-    const vertAcc = content.accessors[vertAccIndex];
-    if (vertAcc.type != GLTFAccessorType.VEC3) {
-        throw new Error(`wrong type: ${vertAcc.type}`);
-    }
-    if (vertAcc.componentType != GLTFAccessorComponentType.F32) {
-        throw new Error(`wrong component type ${vertAcc.componentType}`);
-    }
-    // accessorData return the full bufferView, not just specific accessorData.
-    const posBufferView = await asset.accessorData(vertAccIndex);
-    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
-    const vertices = [];
-    for (let i = 0; i < vertAcc.count; i++) {
-        vertices.push({
-            pos: [f32[i * 3], f32[i * 3 + 1], f32[i * 3 + 2]],
-            color: [1, 0, 1, 1],
-        });
-    }
-    // Load indices
-    if (primitive.indices === undefined) {
-        throw new Error("no indices");
-    }
-    const idxAccIndex = primitive.indices;
-    const idxAcc = content.accessors[idxAccIndex];
-    if (idxAcc.type != GLTFAccessorType.SCALAR) {
-        throw new Error(`wrong type: ${idxAcc.type}`);
-    }
-    if (idxAcc.componentType != GLTFAccessorComponentType.U16) {
-        throw new Error(`wrong component type ${idxAcc.componentType}`);
-    }
-    const indicesData = await asset.accessorData(idxAccIndex);
-    const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-    const indices = Array.from(u16);
-    return {
-        vertices,
-        indices,
-    };
 }
 
 
@@ -11311,15 +11242,18 @@ document.body.appendChild(document.createElement("app-main"));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sphereMesh = exports.cubeMesh = exports.GPUMesh = exports.vertexDesc = void 0;
+exports.loadGLTF = exports.GLTFAccessorComponentType = exports.GLTFAccessorType = exports.GLTFPrimitiveMode = exports.sphereMesh = exports.cubeMesh = exports.GPUMesh = exports.vertexDesc = void 0;
 const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
+const gltfloader = __webpack_require__(/*! gltf-loader-ts */ "./node_modules/gltf-loader-ts/lib/gltf-loader.js");
 exports.vertexDesc = new wg.StructType({
     pos: { type: wg.Vec3f32, idx: 0 },
     color: { type: wg.Vec4f32, idx: 1 },
 });
 class GPUMesh {
     constructor(params, mesh) {
+        this.min = mesh.min;
+        this.max = mesh.max;
         const verticesDesc = new wg.ArrayType(exports.vertexDesc, mesh.vertices.length);
         this.vertexBuffer = params.device.createBuffer({
             label: `vertex buffer`,
@@ -11434,6 +11368,99 @@ function sphereMesh() {
     };
 }
 exports.sphereMesh = sphereMesh;
+// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_mesh_primitive_mode
+var GLTFPrimitiveMode;
+(function (GLTFPrimitiveMode) {
+    GLTFPrimitiveMode[GLTFPrimitiveMode["POINTS"] = 0] = "POINTS";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["LINES"] = 1] = "LINES";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["LINE_LOOP"] = 2] = "LINE_LOOP";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["LINE_STRIP"] = 3] = "LINE_STRIP";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLES"] = 4] = "TRIANGLES";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
+    GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
+})(GLTFPrimitiveMode = exports.GLTFPrimitiveMode || (exports.GLTFPrimitiveMode = {}));
+;
+// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#accessor-data-types
+var GLTFAccessorType;
+(function (GLTFAccessorType) {
+    GLTFAccessorType["SCALAR"] = "SCALAR";
+    GLTFAccessorType["VEC2"] = "VEC2";
+    GLTFAccessorType["VEC3"] = "VEC3";
+    GLTFAccessorType["VEC4"] = "VEC4";
+    GLTFAccessorType["MAT2"] = "MAT2";
+    GLTFAccessorType["MAT3"] = "MAT3";
+    GLTFAccessorType["MAT4"] = "MAT4";
+})(GLTFAccessorType = exports.GLTFAccessorType || (exports.GLTFAccessorType = {}));
+;
+var GLTFAccessorComponentType;
+(function (GLTFAccessorComponentType) {
+    GLTFAccessorComponentType[GLTFAccessorComponentType["S8"] = 5120] = "S8";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["U8"] = 5121] = "U8";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["S16"] = 5122] = "S16";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["U16"] = 5123] = "U16";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["U32"] = 5125] = "U32";
+    GLTFAccessorComponentType[GLTFAccessorComponentType["F32"] = 5126] = "F32";
+})(GLTFAccessorComponentType = exports.GLTFAccessorComponentType || (exports.GLTFAccessorComponentType = {}));
+;
+async function loadGLTF(u) {
+    const loader = new gltfloader.GltfLoader();
+    const asset = await loader.load(u);
+    const content = asset.gltf;
+    if (!content.meshes) {
+        throw new Error("no meshes");
+    }
+    const rawMesh = content.meshes[0];
+    const primitive = rawMesh.primitives[0];
+    if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) {
+        throw new Error(`only triangles; got ${primitive.mode}`);
+    }
+    if (!content.accessors) {
+        throw new Error("no accessors");
+    }
+    // Load vertices.
+    const vertAccIndex = primitive.attributes["POSITION"];
+    const vertAcc = content.accessors[vertAccIndex];
+    if (vertAcc.type != GLTFAccessorType.VEC3) {
+        throw new Error(`wrong type: ${vertAcc.type}`);
+    }
+    if (vertAcc.componentType != GLTFAccessorComponentType.F32) {
+        throw new Error(`wrong component type ${vertAcc.componentType}`);
+    }
+    const min = vertAcc.min ? vertAcc.min : undefined;
+    const max = vertAcc.max ? vertAcc.max : undefined;
+    // accessorData return the full bufferView, not just specific accessorData.
+    const posBufferView = await asset.accessorData(vertAccIndex);
+    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
+    const vertices = [];
+    for (let i = 0; i < vertAcc.count; i++) {
+        vertices.push({
+            pos: [f32[i * 3], f32[i * 3 + 1], f32[i * 3 + 2]],
+            color: [1, 0, 1, 1],
+        });
+    }
+    // Load indices
+    if (primitive.indices === undefined) {
+        throw new Error("no indices");
+    }
+    const idxAccIndex = primitive.indices;
+    const idxAcc = content.accessors[idxAccIndex];
+    if (idxAcc.type != GLTFAccessorType.SCALAR) {
+        throw new Error(`wrong type: ${idxAcc.type}`);
+    }
+    if (idxAcc.componentType != GLTFAccessorComponentType.U16) {
+        throw new Error(`wrong component type ${idxAcc.componentType}`);
+    }
+    const indicesData = await asset.accessorData(idxAccIndex);
+    const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
+    const indices = Array.from(u16);
+    return {
+        vertices,
+        indices,
+        min,
+        max,
+    };
+}
+exports.loadGLTF = loadGLTF;
 
 
 /***/ }),
