@@ -8,7 +8,6 @@ import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
 import * as varpanel from '../varpanel';
 import * as models from '../models';
-import * as gltfloader from 'gltf-loader-ts';
 
 
 export const demo = {
@@ -35,7 +34,7 @@ const depthFormat = "depth24plus";
 
 function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh> {
     return async params => {
-        const mesh = await loadGLTF(u);
+        const mesh = await models.loadGLTF(u);
         return new models.GPUMesh(params, mesh);
     }
 }
@@ -47,6 +46,7 @@ const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models
     "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
     "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
+    "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
 }
 
 class Demo {
@@ -254,79 +254,3 @@ class Demo {
     }
 }
 
-// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_mesh_primitive_mode
-enum GLTFPrimitiveMode {
-    POINTS = 0,
-    LINES = 1,
-    LINE_LOOP = 2,
-    LINE_STRIP = 3,
-    TRIANGLES = 4,
-    TRIANGLE_STRIP = 5,
-    TRIANGLE_FAN = 6,
-};
-
-// https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#accessor-data-types
-enum GLTFAccessorType {
-    SCALAR = "SCALAR",
-    VEC2 = "VEC2",
-    VEC3 = "VEC3",
-    VEC4 = "VEC4",
-    MAT2 = "MAT2",
-    MAT3 = "MAT3",
-    MAT4 = "MAT4",
-};
-
-enum GLTFAccessorComponentType {
-    S8 = 5120,
-    U8 = 5121,
-    S16 = 5122,
-    U16 = 5123,
-    U32 = 5125,
-    F32 = 5126,
-};
-
-async function loadGLTF(u: string): Promise<models.Mesh> {
-    const loader = new gltfloader.GltfLoader();
-    const asset: gltfloader.GltfAsset = await loader.load(u);
-    const content = asset.gltf;
-    if (!content.meshes) { throw new Error("no meshes"); }
-    const rawMesh = content.meshes[0];
-    const primitive = rawMesh.primitives[0];
-
-    if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
-    if (!content.accessors) { throw new Error("no accessors"); }
-
-    // Load vertices.
-    const vertAccIndex = primitive.attributes["POSITION"];
-    const vertAcc = content.accessors[vertAccIndex];
-    if (vertAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${vertAcc.type}`); }
-    if (vertAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${vertAcc.componentType}`); }
-
-    // accessorData return the full bufferView, not just specific accessorData.
-    const posBufferView = await asset.accessorData(vertAccIndex);
-    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
-
-    const vertices: wg.types.WGSLJSType<typeof models.vertexDesc>[] = [];
-
-    for (let i = 0; i < vertAcc.count; i++) {
-        vertices.push({
-            pos: [f32[i * 3], f32[i * 3 + 1], f32[i * 3 + 2]],
-            color: [1, 0, 1, 1],
-        });
-    }
-
-    // Load indices
-    if (primitive.indices === undefined) { throw new Error("no indices"); }
-    const idxAccIndex = primitive.indices;
-    const idxAcc = content.accessors[idxAccIndex];
-    if (idxAcc.type != GLTFAccessorType.SCALAR) { throw new Error(`wrong type: ${idxAcc.type}`); }
-    if (idxAcc.componentType != GLTFAccessorComponentType.U16) { throw new Error(`wrong component type ${idxAcc.componentType}`); }
-    const indicesData = await asset.accessorData(idxAccIndex);
-    const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-    const indices = Array.from(u16);
-
-    return {
-        vertices,
-        indices,
-    }
-}
