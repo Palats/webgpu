@@ -6,7 +6,7 @@ import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
-import * as varpanel from '../varpanel';
+import * as varpanel from '@palats/varpanel';
 import * as models from '../models';
 
 

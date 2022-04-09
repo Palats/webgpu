@@ -3,7 +3,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as demotypes from './demotypes';
-import * as varpanel from './varpanel';
+import * as varpanel from '@palats/varpanel';
 import * as cameras from './cameras';
 
 import * as conway from './demos/conway';

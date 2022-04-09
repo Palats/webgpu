@@ -7,7 +7,7 @@ import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../wg';
 import * as shaderlib from '../shaderlib';
-import * as varpanel from '../varpanel';
+import * as varpanel from '@palats/varpanel';
 import * as cameras from '../cameras';
 
 // Number of instances.
