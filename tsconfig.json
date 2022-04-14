@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/tsout",
+        "outDir": "./dist/demos/tsout",
         "target": "es2019",
         "module": "esnext",
         "declaration": true,

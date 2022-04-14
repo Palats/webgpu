@@ -7,6 +7,7 @@ import * as gltfloader from 'gltf-loader-ts';
 export const vertexDesc = new wg.StructType({
     pos: { type: wg.Vec3f32, idx: 0 },
     color: { type: wg.Vec4f32, idx: 1 },
+    normal: { type: wg.Vec3f32, idx: 2 },
 });
 
 export type Mesh = {
@@ -61,14 +62,14 @@ export function cubeMesh(): Mesh {
 
     return {
         vertices: [
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1] },
-            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
-            { pos: [r, -r, r], color: [1, 0, 1, 1] },
-            { pos: [r, r, r], color: [1, 1, 1, 1] },
-            { pos: [-r, r, r], color: [0, 1, 1, 1] },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, 0, 0] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [0, 0, 0] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 0, 0] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 0, 0] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, 0, 0] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [0, 0, 0] },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 0, 0] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 0, 0] },
         ],
         indices: [
             0, 3, 1, // back
@@ -120,6 +121,7 @@ export function sphereMesh(): Mesh {
                         p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
                     ],
                     color: [j / divisions, i / divisions, 0, 1],
+                    normal: [0, 0, 0],
                 });
             }
         }
@@ -196,24 +198,40 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     if (!content.accessors) { throw new Error("no accessors"); }
 
     // Load vertices.
-    const vertAccIndex = primitive.attributes["POSITION"];
-    const vertAcc = content.accessors[vertAccIndex];
-    if (vertAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${vertAcc.type}`); }
-    if (vertAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${vertAcc.componentType}`); }
+    const posAccIndex = primitive.attributes["POSITION"];
+    const posAcc = content.accessors[posAccIndex];
+    if (posAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${posAcc.type}`); }
+    if (posAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${posAcc.componentType}`); }
 
-    const min = vertAcc.min ? vertAcc.min as [number, number, number] : undefined;
-    const max = vertAcc.max ? vertAcc.max as [number, number, number] : undefined;
+    const min = posAcc.min ? posAcc.min as [number, number, number] : undefined;
+    const max = posAcc.max ? posAcc.max as [number, number, number] : undefined;
 
     // accessorData return the full bufferView, not just specific accessorData.
-    const posBufferView = await asset.accessorData(vertAccIndex);
-    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
+    const posBufferView = await asset.accessorData(posAccIndex);
+    const positions = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (posAcc.byteOffset ?? 0), posAcc.count * 3);
+
+    // Load normals, if avail.
+    const normalsAccIndex = primitive.attributes["NORMAL"];
+    let normals: Float32Array | undefined;
+    if (normalsAccIndex !== undefined) {
+        const normalsAcc = content.accessors[normalsAccIndex];
+        if (normalsAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${normalsAcc.type}`); }
+        if (normalsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${normalsAcc.componentType}`); }
+
+        const normalsBufferView = await asset.accessorData(normalsAccIndex);
+        normals = new Float32Array(normalsBufferView.buffer, normalsBufferView.byteOffset + (normalsAcc.byteOffset ?? 0), normalsAcc.count * 3);
+    }
 
     const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
-
-    for (let i = 0; i < vertAcc.count; i++) {
+    for (let i = 0; i < posAcc.count; i++) {
+        let normal = [0, 0, 0, 0];
+        if (normals) {
+            normal = [normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]];
+        }
         vertices.push({
-            pos: [f32[i * 3], f32[i * 3 + 1], f32[i * 3 + 2]],
+            pos: [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]],
             color: [1, 0, 1, 1],
+            normal: normal,
         });
     }
 

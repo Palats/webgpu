@@ -90,6 +90,8 @@ class Demo {
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>,
                     @location(0) color: vec4<f32>,
+                    @location(1) world: vec4<f32>,
+                    @location(2) normal: vec4<f32>,
                 };
 
                 @stage(vertex)
@@ -98,22 +100,28 @@ class Demo {
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
-                    let pos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-
-                    var out : Vertex;
-                    out.pos =
-                        uniforms.camera
-                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                    let tr = ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * pos;
-                    out.color = vec4<f32>(0.5 * (pos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                        * uniforms.modelTransform;
+
+                    var out : Vertex;
+                    out.pos = uniforms.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    out.world = tr * vec4<f32>(inp.pos, 1.0);
+                    out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
+
+                    let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
+                    out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
                 }
 
+                let light = vec4<f32>(4.0, 4.0, 10.0, 1.0);
+
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
-                    return vert.color;
+                    let ray = normalize(light - vert.world);
+                    let lum = clamp(dot(ray, vert.normal), .0, 1.0);
+                    return lum * vert.color;
                 }
             `,
         }).toDesc());
