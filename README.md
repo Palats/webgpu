@@ -1,9 +1,23 @@
-# Some WebGPU effects.
+# WebGPU toolkit
 
-[> Live version <](https://palats.github.io/webgpu/)
+... and some WebGPU effects. [> Live version <](https://palats.github.io/webgpu/)
 
-WebGPU is an API to drive compute & rendering on GPUs from browsers (and others). This is to WebGL what Vulkan is to OpenGL. This repository implements some effects using both compute & rendering WebGPU APIs:
+## Features
+
+Library submodules:
+- `lang` helps writing WGSL. It allows for including snippets of WGSL & reuse,
+  with some namespacing to avoid conflict. It also does import deduplication -
+  i.e., this is not just textual includes.
+- `types` helps mapping data (esp. uniforms) between Typescript & WGSL. Struct
+  can be described in one place and used in both languages with proper typing
+  and WGSL declarations.
+
+## Demos
+
+Available demos, visible [here](https://palats.github.io/webgpu/):
+
  - `multicubes`: A bunch of rotating cubes bouncing around.
+ - `viewer`: Minimal glTF loader.
  - `fire`: A classic demoscene style fire effect.
  - `cube`: A rotating cube. All is done on the GPU, even the rotation / projection matrix calculation.
  - `conway`: A binary Conway [game of life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
@@ -12,16 +26,13 @@ WebGPU is an API to drive compute & rendering on GPUs from browsers (and others)
  - `falling`: Trivial compute example, moving data a bit around.
  - `minimal`: Minimalistic render pipeline with no compute.
 
-In the `wg` directory, there are experimental libs:
- - `lang` helps writing WGSL. It allows for including snippets of WGSL & reuse,
-   with some namespacing to avoid conflict. It also does import deduplication -
-   i.e., this is not just textual includes.
- - `types` helps mapping data (esp. uniforms) between Typescript & WGSL. Struct
-   can be described in one place and used in both languages with proper typing
-   and WGSL declarations.
+### Example of conway2
+
+https://user-images.githubusercontent.com/905855/151704281-b2c7c4dd-c814-4cae-a48c-c69bbedfae6e.mp4
 
 ## Activating WebGPU
-As of Jan. 2022, WebGPU is not available by default in browsers, and thus require experimental features to be available:
+
+WebGPU is an API to drive compute & rendering on GPUs from browsers (and others). This is to WebGL what Vulkan is to OpenGL. As of Jan. 2022, WebGPU is not available by default in browsers, and thus require experimental features to be available:
 
 - Chrome on Linux, run it with the following extra flags - character case is important:
   ```
@@ -33,9 +44,6 @@ As of Jan. 2022, WebGPU is not available by default in browsers, and thus requir
   ```
 - Firefox: run the nightly, go in "about:config" and activate feature "dom.webgpu.enabled". You might need to restart Firefox.
 
-## Example of conway2
-
-https://user-images.githubusercontent.com/905855/151704281-b2c7c4dd-c814-4cae-a48c-c69bbedfae6e.mp4
 
 ## Related links
  - [WebGPU API](https://gpuweb.github.io/gpuweb/) ; [API quick reference](https://webgpu.rocks/)
@@ -44,16 +52,16 @@ https://user-images.githubusercontent.com/905855/151704281-b2c7c4dd-c814-4cae-a4
 ## Dev
 
 ### Running locally
-To run a dev version of this code, from a checkout of the code, assuming `npm` being available:
+To run a dev version of the demos in this code, from a checkout of the code, assuming `npm` being available:
 ```
 npm install
-npm run dev
+npm run dev-demos
 ```
 
 ### Updating live version
 ```
-npm run build
+npm run build-demos
 git checkout pages
-cp -f dist/* .
+cp -f dist/demos/* .
 git commit -a -m "Updating live version"
 ```

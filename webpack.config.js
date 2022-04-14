@@ -1,7 +1,6 @@
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
@@ -29,10 +28,7 @@ module.exports = {
     },
     output: {
         filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist'),
-        // This line is VERY important for VS Code debugging to attach properly
-        // Tamper with it at your own risks
-        devtoolModuleFilenameTemplate: '../../[resource-path]',
+        path: path.resolve(__dirname, 'dist/demos'),
     },
     plugins: [
         new MiniCssExtractPlugin(),
@@ -45,7 +41,7 @@ module.exports = {
     ],
     devServer: {
         static: {
-            directory: path.join(__dirname, 'dist'),
+            directory: path.join(__dirname, 'dist/demos'),
         },
         // keep port in sync with VS Code launch.json
         port: 3000,

@@ -1,15 +1,16 @@
 {
     "compilerOptions": {
-        "outDir": "./dist",
-        "target": "esnext",
-        "module": "CommonJS",
+        "outDir": "./dist/tsout",
+        "target": "es2019",
+        "module": "esnext",
+        "declaration": true,
+        "declarationMap": true,
         "sourceMap": true,
+        "moduleResolution": "node",
         "strict": true,
         "experimentalDecorators": true,
         // For lit `query` decorator to work
         "useDefineForClassFields": false,
-        // Without, fields like `.interactive` on Sprite (Phaser) are not visible.
-        "allowSyntheticDefaultImports": true,
     },
     "include": [
         "src/*",

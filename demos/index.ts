@@ -136,7 +136,7 @@ export class AppMain extends LitElement {
                     ${this.webGPUpresent ? '' : html`
                         <div>
                             Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
-                            WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
+                            WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu#activating-webgpu">README</a> for details on how to activate it.
                         </div>
                     `}
                     ${this.error ? html`
