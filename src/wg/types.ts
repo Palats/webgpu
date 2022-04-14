@@ -340,7 +340,7 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
             if (locations) {
                 location = `@location(${member.idx}) `;
             }
-            lines.push(wgsl`  ${location}${member.name}: ${member.type.typename()};\n`);
+            lines.push(wgsl`  ${location}${member.name}: ${member.type.typename()},\n`);
         }
 
         lines.push(wgsl`};\n`);

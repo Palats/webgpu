@@ -67,8 +67,8 @@ class Demo {
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
 
                 struct Vertex {
-                    @builtin(position) pos: vec4<f32>;
-                    @location(0) color: vec4<f32>;
+                    @builtin(position) pos: vec4<f32>,
+                    @location(0) color: vec4<f32>,
                 };
 
                 @stage(vertex)

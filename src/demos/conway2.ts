@@ -246,8 +246,8 @@ export const demo = {
                     label: "full screen vertices",
                     code: `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> VSOut {

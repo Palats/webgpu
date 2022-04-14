@@ -73,8 +73,8 @@ export const demo = {
                 );
 
                 struct VertexOut {
-                    @builtin(position) pos: vec4<f32>;
-                    @location(0) coord: vec4<f32>;
+                    @builtin(position) pos: vec4<f32>,
+                    @location(0) coord: vec4<f32>,
                 };
 
                 @stage(vertex)
@@ -91,7 +91,7 @@ export const demo = {
                 let gridStep = 1.0;
 
                 struct FragOut {
-                    @location(0) color: vec4<f32>;
+                    @location(0) color: vec4<f32>,
                 }
 
                 @stage(fragment)

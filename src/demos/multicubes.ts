@@ -144,7 +144,7 @@ export const demo = {
 
                         struct InstanceState {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(2) var<storage, write> outp : array<InstanceState, ${instances.toString()}>;
 
@@ -234,13 +234,13 @@ export const demo = {
                     code: wg.wgsl`
                         struct InstanceState {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(0) var<storage> states : array<InstanceState, ${instances.toString()}>;
 
                         struct Out {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec3<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec3<f32>,
                         };
 
                         @stage(vertex)

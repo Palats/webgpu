@@ -47,15 +47,15 @@ export const demo = {
                     // Project & rotations from https://github.com/toji/gl-matrix
                     code: `
                         struct Uniforms {
-                            elapsedMs: f32;
-                            renderWidth: f32;
-                            renderHeight: f32;
+                            elapsedMs: f32,
+                            renderWidth: f32,
+                            renderHeight: f32,
                         };
                         @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
                         struct Output {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(1) var<storage, write> outp : Output;
 
@@ -190,13 +190,13 @@ export const demo = {
                     code: `
                         struct Output {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(0) var<storage> outp : Output;
 
                         struct Out {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec3<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec3<f32>,
                         };
 
                         // The cube mesh, as triangle strip.
