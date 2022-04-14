@@ -1,6 +1,247 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./node_modules/@palats/varpanel/dist/varpanel.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@palats/varpanel/dist/varpanel.js ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "BoolElement": () => (/* binding */ BoolElement),
+/* harmony export */   "SelectElement": () => (/* binding */ SelectElement),
+/* harmony export */   "VarPanel": () => (/* binding */ VarPanel),
+/* harmony export */   "commonStyle": () => (/* binding */ commonStyle),
+/* harmony export */   "newBool": () => (/* binding */ newBool),
+/* harmony export */   "newSelect": () => (/* binding */ newSelect)
+/* harmony export */ });
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$1=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,e$3=Symbol(),n$5=new Map;class s$3{constructor(t,n){if(this._$cssResult$=!0,n!==e$3)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t;}get styleSheet(){let e=n$5.get(this.cssText);return t$1&&void 0===e&&(n$5.set(this.cssText,e=new CSSStyleSheet),e.replaceSync(this.cssText)),e}toString(){return this.cssText}}const o$3=t=>new s$3("string"==typeof t?t:t+"",e$3),r$2=(t,...n)=>{const o=1===t.length?t[0]:n.reduce(((e,n,s)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(n)+t[s+1]),t[0]);return new s$3(o,e$3)},i$2=(e,n)=>{t$1?e.adoptedStyleSheets=n.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet)):n.forEach((t=>{const n=document.createElement("style"),s=window.litNonce;void 0!==s&&n.setAttribute("nonce",s),n.textContent=t.cssText,e.appendChild(n);}));},S$1=t$1?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const n of t.cssRules)e+=n.cssText;return o$3(e)})(t):t;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */var s$2;const e$2=window.trustedTypes,r$1=e$2?e$2.emptyScript:"",h$1=window.reactiveElementPolyfillSupport,o$2={toAttribute(t,i){switch(i){case Boolean:t=t?r$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,i){let s=t;switch(i){case Boolean:s=null!==t;break;case Number:s=null===t?null:Number(t);break;case Object:case Array:try{s=JSON.parse(t);}catch(t){s=null;}}return s}},n$4=(t,i)=>i!==t&&(i==i||t==t),l$2={attribute:!0,type:String,converter:o$2,reflect:!1,hasChanged:n$4};class a$1 extends HTMLElement{constructor(){super(),this._$Et=new Map,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Ei=null,this.o();}static addInitializer(t){var i;null!==(i=this.l)&&void 0!==i||(this.l=[]),this.l.push(t);}static get observedAttributes(){this.finalize();const t=[];return this.elementProperties.forEach(((i,s)=>{const e=this._$Eh(s,i);void 0!==e&&(this._$Eu.set(e,s),t.push(e));})),t}static createProperty(t,i=l$2){if(i.state&&(i.attribute=!1),this.finalize(),this.elementProperties.set(t,i),!i.noAccessor&&!this.prototype.hasOwnProperty(t)){const s="symbol"==typeof t?Symbol():"__"+t,e=this.getPropertyDescriptor(t,s,i);void 0!==e&&Object.defineProperty(this.prototype,t,e);}}static getPropertyDescriptor(t,i,s){return {get(){return this[i]},set(e){const r=this[t];this[i]=e,this.requestUpdate(t,r,s);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)||l$2}static finalize(){if(this.hasOwnProperty("finalized"))return !1;this.finalized=!0;const t=Object.getPrototypeOf(this);if(t.finalize(),this.elementProperties=new Map(t.elementProperties),this._$Eu=new Map,this.hasOwnProperty("properties")){const t=this.properties,i=[...Object.getOwnPropertyNames(t),...Object.getOwnPropertySymbols(t)];for(const s of i)this.createProperty(s,t[s]);}return this.elementStyles=this.finalizeStyles(this.styles),!0}static finalizeStyles(i){const s=[];if(Array.isArray(i)){const e=new Set(i.flat(1/0).reverse());for(const i of e)s.unshift(S$1(i));}else void 0!==i&&s.push(S$1(i));return s}static _$Eh(t,i){const s=i.attribute;return !1===s?void 0:"string"==typeof s?s:"string"==typeof t?t.toLowerCase():void 0}o(){var t;this._$Ep=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$Em(),this.requestUpdate(),null===(t=this.constructor.l)||void 0===t||t.forEach((t=>t(this)));}addController(t){var i,s;(null!==(i=this._$Eg)&&void 0!==i?i:this._$Eg=[]).push(t),void 0!==this.renderRoot&&this.isConnected&&(null===(s=t.hostConnected)||void 0===s||s.call(t));}removeController(t){var i;null===(i=this._$Eg)||void 0===i||i.splice(this._$Eg.indexOf(t)>>>0,1);}_$Em(){this.constructor.elementProperties.forEach(((t,i)=>{this.hasOwnProperty(i)&&(this._$Et.set(i,this[i]),delete this[i]);}));}createRenderRoot(){var t;const s=null!==(t=this.shadowRoot)&&void 0!==t?t:this.attachShadow(this.constructor.shadowRootOptions);return i$2(s,this.constructor.elementStyles),s}connectedCallback(){var t;void 0===this.renderRoot&&(this.renderRoot=this.createRenderRoot()),this.enableUpdating(!0),null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostConnected)||void 0===i?void 0:i.call(t)}));}enableUpdating(t){}disconnectedCallback(){var t;null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostDisconnected)||void 0===i?void 0:i.call(t)}));}attributeChangedCallback(t,i,s){this._$AK(t,s);}_$ES(t,i,s=l$2){var e,r;const h=this.constructor._$Eh(t,s);if(void 0!==h&&!0===s.reflect){const n=(null!==(r=null===(e=s.converter)||void 0===e?void 0:e.toAttribute)&&void 0!==r?r:o$2.toAttribute)(i,s.type);this._$Ei=t,null==n?this.removeAttribute(h):this.setAttribute(h,n),this._$Ei=null;}}_$AK(t,i){var s,e,r;const h=this.constructor,n=h._$Eu.get(t);if(void 0!==n&&this._$Ei!==n){const t=h.getPropertyOptions(n),l=t.converter,a=null!==(r=null!==(e=null===(s=l)||void 0===s?void 0:s.fromAttribute)&&void 0!==e?e:"function"==typeof l?l:null)&&void 0!==r?r:o$2.fromAttribute;this._$Ei=n,this[n]=a(i,t.type),this._$Ei=null;}}requestUpdate(t,i,s){let e=!0;void 0!==t&&(((s=s||this.constructor.getPropertyOptions(t)).hasChanged||n$4)(this[t],i)?(this._$AL.has(t)||this._$AL.set(t,i),!0===s.reflect&&this._$Ei!==t&&(void 0===this._$EC&&(this._$EC=new Map),this._$EC.set(t,s))):e=!1),!this.isUpdatePending&&e&&(this._$Ep=this._$E_());}async _$E_(){this.isUpdatePending=!0;try{await this._$Ep;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){var t;if(!this.isUpdatePending)return;this.hasUpdated,this._$Et&&(this._$Et.forEach(((t,i)=>this[i]=t)),this._$Et=void 0);let i=!1;const s=this._$AL;try{i=this.shouldUpdate(s),i?(this.willUpdate(s),null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostUpdate)||void 0===i?void 0:i.call(t)})),this.update(s)):this._$EU();}catch(t){throw i=!1,this._$EU(),t}i&&this._$AE(s);}willUpdate(t){}_$AE(t){var i;null===(i=this._$Eg)||void 0===i||i.forEach((t=>{var i;return null===(i=t.hostUpdated)||void 0===i?void 0:i.call(t)})),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EU(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$Ep}shouldUpdate(t){return !0}update(t){void 0!==this._$EC&&(this._$EC.forEach(((t,i)=>this._$ES(i,this[i],t))),this._$EC=void 0),this._$EU();}updated(t){}firstUpdated(t){}}a$1.finalized=!0,a$1.elementProperties=new Map,a$1.elementStyles=[],a$1.shadowRootOptions={mode:"open"},null==h$1||h$1({ReactiveElement:a$1}),(null!==(s$2=globalThis.reactiveElementVersions)&&void 0!==s$2?s$2:globalThis.reactiveElementVersions=[]).push("1.3.1");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var t;const i$1=globalThis.trustedTypes,s$1=i$1?i$1.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$1=`lit$${(Math.random()+"").slice(9)}$`,o$1="?"+e$1,n$3=`<${o$1}>`,l$1=document,h=(t="")=>l$1.createComment(t),r=t=>null===t||"object"!=typeof t&&"function"!=typeof t,d=Array.isArray,u=t=>{var i;return d(t)||"function"==typeof(null===(i=t)||void 0===i?void 0:i[Symbol.iterator])},c=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,a=/>/g,f=/>|[ 	\n\r](?:([^\s"'>=/]+)([ 	\n\r]*=[ 	\n\r]*(?:[^ 	\n\r"'`<>=]|("|')|))|$)/g,_=/'/g,m=/"/g,g=/^(?:script|style|textarea|title)$/i,p=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),$=p(1),b=Symbol.for("lit-noChange"),w=Symbol.for("lit-nothing"),T=new WeakMap,x=(t,i,s)=>{var e,o;const n=null!==(e=null==s?void 0:s.renderBefore)&&void 0!==e?e:i;let l=n._$litPart$;if(void 0===l){const t=null!==(o=null==s?void 0:s.renderBefore)&&void 0!==o?o:null;n._$litPart$=l=new N(i.insertBefore(h(),t),t,void 0,null!=s?s:{});}return l._$AI(t),l},A=l$1.createTreeWalker(l$1,129,null,!1),C=(t,i)=>{const o=t.length-1,l=[];let h,r=2===i?"<svg>":"",d=c;for(let i=0;i<o;i++){const s=t[i];let o,u,p=-1,$=0;for(;$<s.length&&(d.lastIndex=$,u=d.exec(s),null!==u);)$=d.lastIndex,d===c?"!--"===u[1]?d=v:void 0!==u[1]?d=a:void 0!==u[2]?(g.test(u[2])&&(h=RegExp("</"+u[2],"g")),d=f):void 0!==u[3]&&(d=f):d===f?">"===u[0]?(d=null!=h?h:c,p=-1):void 0===u[1]?p=-2:(p=d.lastIndex-u[2].length,o=u[1],d=void 0===u[3]?f:'"'===u[3]?m:_):d===m||d===_?d=f:d===v||d===a?d=c:(d=f,h=void 0);const y=d===f&&t[i+1].startsWith("/>")?" ":"";r+=d===c?s+n$3:p>=0?(l.push(o),s.slice(0,p)+"$lit$"+s.slice(p)+e$1+y):s+e$1+(-2===p?(l.push(void 0),i):y);}const u=r+(t[o]||"<?>")+(2===i?"</svg>":"");if(!Array.isArray(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return [void 0!==s$1?s$1.createHTML(u):u,l]};class E{constructor({strings:t,_$litType$:s},n){let l;this.parts=[];let r=0,d=0;const u=t.length-1,c=this.parts,[v,a]=C(t,s);if(this.el=E.createElement(v,n),A.currentNode=this.el.content,2===s){const t=this.el.content,i=t.firstChild;i.remove(),t.append(...i.childNodes);}for(;null!==(l=A.nextNode())&&c.length<u;){if(1===l.nodeType){if(l.hasAttributes()){const t=[];for(const i of l.getAttributeNames())if(i.endsWith("$lit$")||i.startsWith(e$1)){const s=a[d++];if(t.push(i),void 0!==s){const t=l.getAttribute(s.toLowerCase()+"$lit$").split(e$1),i=/([.?@])?(.*)/.exec(s);c.push({type:1,index:r,name:i[2],strings:t,ctor:"."===i[1]?M:"?"===i[1]?H:"@"===i[1]?I:S});}else c.push({type:6,index:r});}for(const i of t)l.removeAttribute(i);}if(g.test(l.tagName)){const t=l.textContent.split(e$1),s=t.length-1;if(s>0){l.textContent=i$1?i$1.emptyScript:"";for(let i=0;i<s;i++)l.append(t[i],h()),A.nextNode(),c.push({type:2,index:++r});l.append(t[s],h());}}}else if(8===l.nodeType)if(l.data===o$1)c.push({type:2,index:r});else {let t=-1;for(;-1!==(t=l.data.indexOf(e$1,t+1));)c.push({type:7,index:r}),t+=e$1.length-1;}r++;}}static createElement(t,i){const s=l$1.createElement("template");return s.innerHTML=t,s}}function P(t,i,s=t,e){var o,n,l,h;if(i===b)return i;let d=void 0!==e?null===(o=s._$Cl)||void 0===o?void 0:o[e]:s._$Cu;const u=r(i)?void 0:i._$litDirective$;return (null==d?void 0:d.constructor)!==u&&(null===(n=null==d?void 0:d._$AO)||void 0===n||n.call(d,!1),void 0===u?d=void 0:(d=new u(t),d._$AT(t,s,e)),void 0!==e?(null!==(l=(h=s)._$Cl)&&void 0!==l?l:h._$Cl=[])[e]=d:s._$Cu=d),void 0!==d&&(i=P(t,d._$AS(t,i.values),d,e)),i}class V{constructor(t,i){this.v=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}p(t){var i;const{el:{content:s},parts:e}=this._$AD,o=(null!==(i=null==t?void 0:t.creationScope)&&void 0!==i?i:l$1).importNode(s,!0);A.currentNode=o;let n=A.nextNode(),h=0,r=0,d=e[0];for(;void 0!==d;){if(h===d.index){let i;2===d.type?i=new N(n,n.nextSibling,this,t):1===d.type?i=new d.ctor(n,d.name,d.strings,this,t):6===d.type&&(i=new L(n,this,t)),this.v.push(i),d=e[++r];}h!==(null==d?void 0:d.index)&&(n=A.nextNode(),h++);}return o}m(t){let i=0;for(const s of this.v)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class N{constructor(t,i,s,e){var o;this.type=2,this._$AH=w,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cg=null===(o=null==e?void 0:e.isConnected)||void 0===o||o;}get _$AU(){var t,i;return null!==(i=null===(t=this._$AM)||void 0===t?void 0:t._$AU)&&void 0!==i?i:this._$Cg}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=P(this,t,i),r(t)?t===w||null==t||""===t?(this._$AH!==w&&this._$AR(),this._$AH=w):t!==this._$AH&&t!==b&&this.$(t):void 0!==t._$litType$?this.T(t):void 0!==t.nodeType?this.k(t):u(t)?this.S(t):this.$(t);}A(t,i=this._$AB){return this._$AA.parentNode.insertBefore(t,i)}k(t){this._$AH!==t&&(this._$AR(),this._$AH=this.A(t));}$(t){this._$AH!==w&&r(this._$AH)?this._$AA.nextSibling.data=t:this.k(l$1.createTextNode(t)),this._$AH=t;}T(t){var i;const{values:s,_$litType$:e}=t,o="number"==typeof e?this._$AC(t):(void 0===e.el&&(e.el=E.createElement(e.h,this.options)),e);if((null===(i=this._$AH)||void 0===i?void 0:i._$AD)===o)this._$AH.m(s);else {const t=new V(o,this),i=t.p(this.options);t.m(s),this.k(i),this._$AH=t;}}_$AC(t){let i=T.get(t.strings);return void 0===i&&T.set(t.strings,i=new E(t)),i}S(t){d(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const o of t)e===i.length?i.push(s=new N(this.A(h()),this.A(h()),this,this.options)):s=i[e],s._$AI(o),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){var s;for(null===(s=this._$AP)||void 0===s||s.call(this,!1,!0,i);t&&t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){var i;void 0===this._$AM&&(this._$Cg=t,null===(i=this._$AP)||void 0===i||i.call(this,t));}}class S{constructor(t,i,s,e,o){this.type=1,this._$AH=w,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=o,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=w;}get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}_$AI(t,i=this,s,e){const o=this.strings;let n=!1;if(void 0===o)t=P(this,t,i,0),n=!r(t)||t!==this._$AH&&t!==b,n&&(this._$AH=t);else {const e=t;let l,h;for(t=o[0],l=0;l<o.length-1;l++)h=P(this,e[s+l],i,l),h===b&&(h=this._$AH[l]),n||(n=!r(h)||h!==this._$AH[l]),h===w?t=w:t!==w&&(t+=(null!=h?h:"")+o[l+1]),this._$AH[l]=h;}n&&!e&&this.C(t);}C(t){t===w?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,null!=t?t:"");}}class M extends S{constructor(){super(...arguments),this.type=3;}C(t){this.element[this.name]=t===w?void 0:t;}}const k=i$1?i$1.emptyScript:"";class H extends S{constructor(){super(...arguments),this.type=4;}C(t){t&&t!==w?this.element.setAttribute(this.name,k):this.element.removeAttribute(this.name);}}class I extends S{constructor(t,i,s,e,o){super(t,i,s,e,o),this.type=5;}_$AI(t,i=this){var s;if((t=null!==(s=P(this,t,i,0))&&void 0!==s?s:w)===b)return;const e=this._$AH,o=t===w&&e!==w||t.capture!==e.capture||t.once!==e.once||t.passive!==e.passive,n=t!==w&&(e===w||o);o&&this.element.removeEventListener(this.name,this,e),n&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){var i,s;"function"==typeof this._$AH?this._$AH.call(null!==(s=null===(i=this.options)||void 0===i?void 0:i.host)&&void 0!==s?s:this.element,t):this._$AH.handleEvent(t);}}class L{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){P(this,t);}}const z=window.litHtmlPolyfillSupport;null==z||z(E,N),(null!==(t=globalThis.litHtmlVersions)&&void 0!==t?t:globalThis.litHtmlVersions=[]).push("2.2.1");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */var l,o;class s extends a$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Dt=void 0;}createRenderRoot(){var t,e;const i=super.createRenderRoot();return null!==(t=(e=this.renderOptions).renderBefore)&&void 0!==t||(e.renderBefore=i.firstChild),i}update(t){const i=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Dt=x(i,this.renderRoot,this.renderOptions);}connectedCallback(){var t;super.connectedCallback(),null===(t=this._$Dt)||void 0===t||t.setConnected(!0);}disconnectedCallback(){var t;super.disconnectedCallback(),null===(t=this._$Dt)||void 0===t||t.setConnected(!1);}render(){return b}}s.finalized=!0,s._$litElement$=!0,null===(l=globalThis.litElementHydrateSupport)||void 0===l||l.call(globalThis,{LitElement:s});const n$2=globalThis.litElementPolyfillSupport;null==n$2||n$2({LitElement:s});(null!==(o=globalThis.litElementVersions)&&void 0!==o?o:globalThis.litElementVersions=[]).push("3.2.0");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const n$1=n=>e=>"function"==typeof e?((n,e)=>(window.customElements.define(n,e),e))(n,e):((n,e)=>{const{kind:t,elements:i}=e;return {kind:t,elements:i,finisher(e){window.customElements.define(n,e);}}})(n,e);
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const i=(i,e)=>"method"===e.kind&&e.descriptor&&!("value"in e.descriptor)?{...e,finisher(n){n.createProperty(e.key,i);}}:{kind:"field",key:Symbol(),placement:"own",descriptor:{},originalKey:e.key,initializer(){"function"==typeof e.initializer&&(this[e.key]=e.initializer.call(this));},finisher(n){n.createProperty(e.key,i);}};function e(e){return (n,t)=>void 0!==t?((i,e,n)=>{e.constructor.createProperty(n,i);})(e,n,t):i(e,n)}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */var n;null!=(null===(n=window.HTMLSlotElement)||void 0===n?void 0:n.prototype.assignedElements)?(o,n)=>o.assignedElements(n):(o,n)=>o.assignedNodes(n).filter((o=>o.nodeType===Node.ELEMENT_NODE));
+
+const commonStyle = r$2 `
+    .labelvalue {
+        display: grid;
+        grid-template-columns: 8em 100fr;
+        grid-template-rows: 100fr;
+
+        border-top: 1px solid #4d4d4d;
+        padding: 2px 1px 2px 1px;
+        font: 11px 'Lucida Grande', sans-serif;
+    }
+
+    .labelvalue select, .labelvalue input {
+        font: 11px 'Lucida Grande', sans-serif;
+        margin: 0;
+    }
+
+    .labelvalue label {
+        grid-column-start: 1;
+        grid-column-end: 2;
+    }
+
+    .value {
+        grid-column-start: 2;
+        grid-column-end: 3;
+    }
+`;
+let VarPanel = class VarPanel extends s {
+    constructor() {
+        super(...arguments);
+        this.expanded = false;
+    }
+    render() {
+        return $ `
+            ${this.expanded ? $ `<slot></slot>` : ``}
+            <div class="line">
+                <button @click="${() => { this.expanded = !this.expanded; }}">
+                    ${this.expanded ? 'Close' : 'Open'} controls2
+                </button>
+            </div>
+        `;
+    }
+};
+VarPanel.styles = [commonStyle, r$2 `
+        :host {
+            background-color: #d6d6d6f0;
+            border: #8b8b8b 1px solid;
+            font-size: 11px;
+        }
+
+        .line {
+            border-top: 1px solid #4d4d4d;
+            display: flex;
+            justify-content: center;
+        }
+
+        .line button {
+            flex-grow: 1;
+            font: italic 11px 'Lucida Grande', sans-serif;
+            border: none;
+            background-color: transparent;
+        }
+    `];
+__decorate([
+    e({ type: Boolean })
+], VarPanel.prototype, "expanded", void 0);
+VarPanel = __decorate([
+    n$1('var-panel')
+], VarPanel);
+function newBool(desc) {
+    return $ `<vp-bool .obj=${desc.obj} .field=${desc.field}>${desc.caption}</vp-bool>`;
+}
+let BoolElement = class BoolElement extends s {
+    constructor() {
+        super(...arguments);
+        this.field = "";
+    }
+    render() {
+        return $ `
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <input class="value" type=checkbox ?checked=${this.getValue()} @change=${(e) => { this.setValue(e.target.checked); }}></input>
+            </div>
+        `;
+    }
+    getValue() {
+        return this.obj[this.field] ?? false;
+    }
+    setValue(v) {
+        this.obj[this.field] = v;
+    }
+};
+BoolElement.styles = [commonStyle];
+__decorate([
+    e()
+], BoolElement.prototype, "field", void 0);
+__decorate([
+    e()
+], BoolElement.prototype, "obj", void 0);
+BoolElement = __decorate([
+    n$1('vp-bool')
+], BoolElement);
+function newSelect(desc) {
+    return $ `<vp-select .obj=${desc.obj} .field=${desc.field} .values=${desc.values}>${desc.caption}</vp-select>`;
+}
+let SelectElement = class SelectElement extends s {
+    constructor() {
+        super(...arguments);
+        this.field = "";
+        this.values = [];
+    }
+    render() {
+        const current = this.getValue();
+        return $ `
+            <div class="labelvalue">
+                <label><slot>${this.field}</slot></label>
+                <select class="value" @change=${this.onChange}>
+                    ${this.values.map(id => $ `
+                        <option value=${id} ?selected=${id === current}>${id}</option>
+                    `)}
+                </select>
+            </div>
+        `;
+    }
+    onChange(evt) {
+        const options = evt.target.selectedOptions;
+        if (!options) {
+            return;
+        }
+        this.setValue(options[0].value);
+    }
+    getValue() {
+        return this.obj[this.field] ?? false;
+    }
+    setValue(v) {
+        this.obj[this.field] = v;
+    }
+};
+SelectElement.styles = [commonStyle];
+__decorate([
+    e()
+], SelectElement.prototype, "field", void 0);
+__decorate([
+    e({ attribute: false })
+], SelectElement.prototype, "obj", void 0);
+__decorate([
+    e({ attribute: false })
+], SelectElement.prototype, "values", void 0);
+SelectElement = __decorate([
+    n$1('vp-select')
+], SelectElement);
+
+
+//# sourceMappingURL=varpanel.js.map
+
+
+/***/ }),
+
 /***/ "./node_modules/gl-matrix/esm/common.js":
 /*!**********************************************!*\
   !*** ./node_modules/gl-matrix/esm/common.js ***!
@@ -67,1047 +308,6 @@ if (!Math.hypot) Math.hypot = function () {
 
   return Math.sqrt(y);
 };
-
-/***/ }),
-
-/***/ "./node_modules/gl-matrix/esm/index.js":
-/*!*********************************************!*\
-  !*** ./node_modules/gl-matrix/esm/index.js ***!
-  \*********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "glMatrix": () => (/* reexport module object */ _common_js__WEBPACK_IMPORTED_MODULE_0__),
-/* harmony export */   "mat2": () => (/* reexport module object */ _mat2_js__WEBPACK_IMPORTED_MODULE_1__),
-/* harmony export */   "mat2d": () => (/* reexport module object */ _mat2d_js__WEBPACK_IMPORTED_MODULE_2__),
-/* harmony export */   "mat3": () => (/* reexport module object */ _mat3_js__WEBPACK_IMPORTED_MODULE_3__),
-/* harmony export */   "mat4": () => (/* reexport module object */ _mat4_js__WEBPACK_IMPORTED_MODULE_4__),
-/* harmony export */   "quat": () => (/* reexport module object */ _quat_js__WEBPACK_IMPORTED_MODULE_5__),
-/* harmony export */   "quat2": () => (/* reexport module object */ _quat2_js__WEBPACK_IMPORTED_MODULE_6__),
-/* harmony export */   "vec2": () => (/* reexport module object */ _vec2_js__WEBPACK_IMPORTED_MODULE_7__),
-/* harmony export */   "vec3": () => (/* reexport module object */ _vec3_js__WEBPACK_IMPORTED_MODULE_8__),
-/* harmony export */   "vec4": () => (/* reexport module object */ _vec4_js__WEBPACK_IMPORTED_MODULE_9__)
-/* harmony export */ });
-/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common.js */ "./node_modules/gl-matrix/esm/common.js");
-/* harmony import */ var _mat2_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./mat2.js */ "./node_modules/gl-matrix/esm/mat2.js");
-/* harmony import */ var _mat2d_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./mat2d.js */ "./node_modules/gl-matrix/esm/mat2d.js");
-/* harmony import */ var _mat3_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./mat3.js */ "./node_modules/gl-matrix/esm/mat3.js");
-/* harmony import */ var _mat4_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./mat4.js */ "./node_modules/gl-matrix/esm/mat4.js");
-/* harmony import */ var _quat_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./quat.js */ "./node_modules/gl-matrix/esm/quat.js");
-/* harmony import */ var _quat2_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./quat2.js */ "./node_modules/gl-matrix/esm/quat2.js");
-/* harmony import */ var _vec2_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./vec2.js */ "./node_modules/gl-matrix/esm/vec2.js");
-/* harmony import */ var _vec3_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./vec3.js */ "./node_modules/gl-matrix/esm/vec3.js");
-/* harmony import */ var _vec4_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./vec4.js */ "./node_modules/gl-matrix/esm/vec4.js");
-
-
-
-
-
-
-
-
-
-
-
-
-/***/ }),
-
-/***/ "./node_modules/gl-matrix/esm/mat2.js":
-/*!********************************************!*\
-  !*** ./node_modules/gl-matrix/esm/mat2.js ***!
-  \********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "LDU": () => (/* binding */ LDU),
-/* harmony export */   "add": () => (/* binding */ add),
-/* harmony export */   "adjoint": () => (/* binding */ adjoint),
-/* harmony export */   "clone": () => (/* binding */ clone),
-/* harmony export */   "copy": () => (/* binding */ copy),
-/* harmony export */   "create": () => (/* binding */ create),
-/* harmony export */   "determinant": () => (/* binding */ determinant),
-/* harmony export */   "equals": () => (/* binding */ equals),
-/* harmony export */   "exactEquals": () => (/* binding */ exactEquals),
-/* harmony export */   "frob": () => (/* binding */ frob),
-/* harmony export */   "fromRotation": () => (/* binding */ fromRotation),
-/* harmony export */   "fromScaling": () => (/* binding */ fromScaling),
-/* harmony export */   "fromValues": () => (/* binding */ fromValues),
-/* harmony export */   "identity": () => (/* binding */ identity),
-/* harmony export */   "invert": () => (/* binding */ invert),
-/* harmony export */   "mul": () => (/* binding */ mul),
-/* harmony export */   "multiply": () => (/* binding */ multiply),
-/* harmony export */   "multiplyScalar": () => (/* binding */ multiplyScalar),
-/* harmony export */   "multiplyScalarAndAdd": () => (/* binding */ multiplyScalarAndAdd),
-/* harmony export */   "rotate": () => (/* binding */ rotate),
-/* harmony export */   "scale": () => (/* binding */ scale),
-/* harmony export */   "set": () => (/* binding */ set),
-/* harmony export */   "str": () => (/* binding */ str),
-/* harmony export */   "sub": () => (/* binding */ sub),
-/* harmony export */   "subtract": () => (/* binding */ subtract),
-/* harmony export */   "transpose": () => (/* binding */ transpose)
-/* harmony export */ });
-/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common.js */ "./node_modules/gl-matrix/esm/common.js");
-
-/**
- * 2x2 Matrix
- * @module mat2
- */
-
-/**
- * Creates a new identity mat2
- *
- * @returns {mat2} a new 2x2 matrix
- */
-
-function create() {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(4);
-
-  if (_common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE != Float32Array) {
-    out[1] = 0;
-    out[2] = 0;
-  }
-
-  out[0] = 1;
-  out[3] = 1;
-  return out;
-}
-/**
- * Creates a new mat2 initialized with values from an existing matrix
- *
- * @param {ReadonlyMat2} a matrix to clone
- * @returns {mat2} a new 2x2 matrix
- */
-
-function clone(a) {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(4);
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  return out;
-}
-/**
- * Copy the values from one mat2 to another
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the source matrix
- * @returns {mat2} out
- */
-
-function copy(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  return out;
-}
-/**
- * Set a mat2 to the identity matrix
- *
- * @param {mat2} out the receiving matrix
- * @returns {mat2} out
- */
-
-function identity(out) {
-  out[0] = 1;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 1;
-  return out;
-}
-/**
- * Create a new mat2 with the given values
- *
- * @param {Number} m00 Component in column 0, row 0 position (index 0)
- * @param {Number} m01 Component in column 0, row 1 position (index 1)
- * @param {Number} m10 Component in column 1, row 0 position (index 2)
- * @param {Number} m11 Component in column 1, row 1 position (index 3)
- * @returns {mat2} out A new 2x2 matrix
- */
-
-function fromValues(m00, m01, m10, m11) {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(4);
-  out[0] = m00;
-  out[1] = m01;
-  out[2] = m10;
-  out[3] = m11;
-  return out;
-}
-/**
- * Set the components of a mat2 to the given values
- *
- * @param {mat2} out the receiving matrix
- * @param {Number} m00 Component in column 0, row 0 position (index 0)
- * @param {Number} m01 Component in column 0, row 1 position (index 1)
- * @param {Number} m10 Component in column 1, row 0 position (index 2)
- * @param {Number} m11 Component in column 1, row 1 position (index 3)
- * @returns {mat2} out
- */
-
-function set(out, m00, m01, m10, m11) {
-  out[0] = m00;
-  out[1] = m01;
-  out[2] = m10;
-  out[3] = m11;
-  return out;
-}
-/**
- * Transpose the values of a mat2
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the source matrix
- * @returns {mat2} out
- */
-
-function transpose(out, a) {
-  // If we are transposing ourselves we can skip a few steps but have to cache
-  // some values
-  if (out === a) {
-    var a1 = a[1];
-    out[1] = a[2];
-    out[2] = a1;
-  } else {
-    out[0] = a[0];
-    out[1] = a[2];
-    out[2] = a[1];
-    out[3] = a[3];
-  }
-
-  return out;
-}
-/**
- * Inverts a mat2
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the source matrix
- * @returns {mat2} out
- */
-
-function invert(out, a) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3]; // Calculate the determinant
-
-  var det = a0 * a3 - a2 * a1;
-
-  if (!det) {
-    return null;
-  }
-
-  det = 1.0 / det;
-  out[0] = a3 * det;
-  out[1] = -a1 * det;
-  out[2] = -a2 * det;
-  out[3] = a0 * det;
-  return out;
-}
-/**
- * Calculates the adjugate of a mat2
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the source matrix
- * @returns {mat2} out
- */
-
-function adjoint(out, a) {
-  // Caching this value is nessecary if out == a
-  var a0 = a[0];
-  out[0] = a[3];
-  out[1] = -a[1];
-  out[2] = -a[2];
-  out[3] = a0;
-  return out;
-}
-/**
- * Calculates the determinant of a mat2
- *
- * @param {ReadonlyMat2} a the source matrix
- * @returns {Number} determinant of a
- */
-
-function determinant(a) {
-  return a[0] * a[3] - a[2] * a[1];
-}
-/**
- * Multiplies two mat2's
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the first operand
- * @param {ReadonlyMat2} b the second operand
- * @returns {mat2} out
- */
-
-function multiply(out, a, b) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3];
-  var b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3];
-  out[0] = a0 * b0 + a2 * b1;
-  out[1] = a1 * b0 + a3 * b1;
-  out[2] = a0 * b2 + a2 * b3;
-  out[3] = a1 * b2 + a3 * b3;
-  return out;
-}
-/**
- * Rotates a mat2 by the given angle
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat2} out
- */
-
-function rotate(out, a, rad) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3];
-  var s = Math.sin(rad);
-  var c = Math.cos(rad);
-  out[0] = a0 * c + a2 * s;
-  out[1] = a1 * c + a3 * s;
-  out[2] = a0 * -s + a2 * c;
-  out[3] = a1 * -s + a3 * c;
-  return out;
-}
-/**
- * Scales the mat2 by the dimensions in the given vec2
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the matrix to rotate
- * @param {ReadonlyVec2} v the vec2 to scale the matrix by
- * @returns {mat2} out
- **/
-
-function scale(out, a, v) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3];
-  var v0 = v[0],
-      v1 = v[1];
-  out[0] = a0 * v0;
-  out[1] = a1 * v0;
-  out[2] = a2 * v1;
-  out[3] = a3 * v1;
-  return out;
-}
-/**
- * Creates a matrix from a given angle
- * This is equivalent to (but much faster than):
- *
- *     mat2.identity(dest);
- *     mat2.rotate(dest, dest, rad);
- *
- * @param {mat2} out mat2 receiving operation result
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat2} out
- */
-
-function fromRotation(out, rad) {
-  var s = Math.sin(rad);
-  var c = Math.cos(rad);
-  out[0] = c;
-  out[1] = s;
-  out[2] = -s;
-  out[3] = c;
-  return out;
-}
-/**
- * Creates a matrix from a vector scaling
- * This is equivalent to (but much faster than):
- *
- *     mat2.identity(dest);
- *     mat2.scale(dest, dest, vec);
- *
- * @param {mat2} out mat2 receiving operation result
- * @param {ReadonlyVec2} v Scaling vector
- * @returns {mat2} out
- */
-
-function fromScaling(out, v) {
-  out[0] = v[0];
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = v[1];
-  return out;
-}
-/**
- * Returns a string representation of a mat2
- *
- * @param {ReadonlyMat2} a matrix to represent as a string
- * @returns {String} string representation of the matrix
- */
-
-function str(a) {
-  return "mat2(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ")";
-}
-/**
- * Returns Frobenius norm of a mat2
- *
- * @param {ReadonlyMat2} a the matrix to calculate Frobenius norm of
- * @returns {Number} Frobenius norm
- */
-
-function frob(a) {
-  return Math.hypot(a[0], a[1], a[2], a[3]);
-}
-/**
- * Returns L, D and U matrices (Lower triangular, Diagonal and Upper triangular) by factorizing the input matrix
- * @param {ReadonlyMat2} L the lower triangular matrix
- * @param {ReadonlyMat2} D the diagonal matrix
- * @param {ReadonlyMat2} U the upper triangular matrix
- * @param {ReadonlyMat2} a the input matrix to factorize
- */
-
-function LDU(L, D, U, a) {
-  L[2] = a[2] / a[0];
-  U[0] = a[0];
-  U[1] = a[1];
-  U[3] = a[3] - L[2] * U[1];
-  return [L, D, U];
-}
-/**
- * Adds two mat2's
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the first operand
- * @param {ReadonlyMat2} b the second operand
- * @returns {mat2} out
- */
-
-function add(out, a, b) {
-  out[0] = a[0] + b[0];
-  out[1] = a[1] + b[1];
-  out[2] = a[2] + b[2];
-  out[3] = a[3] + b[3];
-  return out;
-}
-/**
- * Subtracts matrix b from matrix a
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the first operand
- * @param {ReadonlyMat2} b the second operand
- * @returns {mat2} out
- */
-
-function subtract(out, a, b) {
-  out[0] = a[0] - b[0];
-  out[1] = a[1] - b[1];
-  out[2] = a[2] - b[2];
-  out[3] = a[3] - b[3];
-  return out;
-}
-/**
- * Returns whether or not the matrices have exactly the same elements in the same position (when compared with ===)
- *
- * @param {ReadonlyMat2} a The first matrix.
- * @param {ReadonlyMat2} b The second matrix.
- * @returns {Boolean} True if the matrices are equal, false otherwise.
- */
-
-function exactEquals(a, b) {
-  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
-}
-/**
- * Returns whether or not the matrices have approximately the same elements in the same position.
- *
- * @param {ReadonlyMat2} a The first matrix.
- * @param {ReadonlyMat2} b The second matrix.
- * @returns {Boolean} True if the matrices are equal, false otherwise.
- */
-
-function equals(a, b) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3];
-  var b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3];
-  return Math.abs(a0 - b0) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3));
-}
-/**
- * Multiply each element of the matrix by a scalar.
- *
- * @param {mat2} out the receiving matrix
- * @param {ReadonlyMat2} a the matrix to scale
- * @param {Number} b amount to scale the matrix's elements by
- * @returns {mat2} out
- */
-
-function multiplyScalar(out, a, b) {
-  out[0] = a[0] * b;
-  out[1] = a[1] * b;
-  out[2] = a[2] * b;
-  out[3] = a[3] * b;
-  return out;
-}
-/**
- * Adds two mat2's after multiplying each element of the second operand by a scalar value.
- *
- * @param {mat2} out the receiving vector
- * @param {ReadonlyMat2} a the first operand
- * @param {ReadonlyMat2} b the second operand
- * @param {Number} scale the amount to scale b's elements by before adding
- * @returns {mat2} out
- */
-
-function multiplyScalarAndAdd(out, a, b, scale) {
-  out[0] = a[0] + b[0] * scale;
-  out[1] = a[1] + b[1] * scale;
-  out[2] = a[2] + b[2] * scale;
-  out[3] = a[3] + b[3] * scale;
-  return out;
-}
-/**
- * Alias for {@link mat2.multiply}
- * @function
- */
-
-var mul = multiply;
-/**
- * Alias for {@link mat2.subtract}
- * @function
- */
-
-var sub = subtract;
-
-/***/ }),
-
-/***/ "./node_modules/gl-matrix/esm/mat2d.js":
-/*!*********************************************!*\
-  !*** ./node_modules/gl-matrix/esm/mat2d.js ***!
-  \*********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "add": () => (/* binding */ add),
-/* harmony export */   "clone": () => (/* binding */ clone),
-/* harmony export */   "copy": () => (/* binding */ copy),
-/* harmony export */   "create": () => (/* binding */ create),
-/* harmony export */   "determinant": () => (/* binding */ determinant),
-/* harmony export */   "equals": () => (/* binding */ equals),
-/* harmony export */   "exactEquals": () => (/* binding */ exactEquals),
-/* harmony export */   "frob": () => (/* binding */ frob),
-/* harmony export */   "fromRotation": () => (/* binding */ fromRotation),
-/* harmony export */   "fromScaling": () => (/* binding */ fromScaling),
-/* harmony export */   "fromTranslation": () => (/* binding */ fromTranslation),
-/* harmony export */   "fromValues": () => (/* binding */ fromValues),
-/* harmony export */   "identity": () => (/* binding */ identity),
-/* harmony export */   "invert": () => (/* binding */ invert),
-/* harmony export */   "mul": () => (/* binding */ mul),
-/* harmony export */   "multiply": () => (/* binding */ multiply),
-/* harmony export */   "multiplyScalar": () => (/* binding */ multiplyScalar),
-/* harmony export */   "multiplyScalarAndAdd": () => (/* binding */ multiplyScalarAndAdd),
-/* harmony export */   "rotate": () => (/* binding */ rotate),
-/* harmony export */   "scale": () => (/* binding */ scale),
-/* harmony export */   "set": () => (/* binding */ set),
-/* harmony export */   "str": () => (/* binding */ str),
-/* harmony export */   "sub": () => (/* binding */ sub),
-/* harmony export */   "subtract": () => (/* binding */ subtract),
-/* harmony export */   "translate": () => (/* binding */ translate)
-/* harmony export */ });
-/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common.js */ "./node_modules/gl-matrix/esm/common.js");
-
-/**
- * 2x3 Matrix
- * @module mat2d
- * @description
- * A mat2d contains six elements defined as:
- * <pre>
- * [a, b,
- *  c, d,
- *  tx, ty]
- * </pre>
- * This is a short form for the 3x3 matrix:
- * <pre>
- * [a, b, 0,
- *  c, d, 0,
- *  tx, ty, 1]
- * </pre>
- * The last column is ignored so the array is shorter and operations are faster.
- */
-
-/**
- * Creates a new identity mat2d
- *
- * @returns {mat2d} a new 2x3 matrix
- */
-
-function create() {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(6);
-
-  if (_common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE != Float32Array) {
-    out[1] = 0;
-    out[2] = 0;
-    out[4] = 0;
-    out[5] = 0;
-  }
-
-  out[0] = 1;
-  out[3] = 1;
-  return out;
-}
-/**
- * Creates a new mat2d initialized with values from an existing matrix
- *
- * @param {ReadonlyMat2d} a matrix to clone
- * @returns {mat2d} a new 2x3 matrix
- */
-
-function clone(a) {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(6);
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  out[4] = a[4];
-  out[5] = a[5];
-  return out;
-}
-/**
- * Copy the values from one mat2d to another
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the source matrix
- * @returns {mat2d} out
- */
-
-function copy(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  out[4] = a[4];
-  out[5] = a[5];
-  return out;
-}
-/**
- * Set a mat2d to the identity matrix
- *
- * @param {mat2d} out the receiving matrix
- * @returns {mat2d} out
- */
-
-function identity(out) {
-  out[0] = 1;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 1;
-  out[4] = 0;
-  out[5] = 0;
-  return out;
-}
-/**
- * Create a new mat2d with the given values
- *
- * @param {Number} a Component A (index 0)
- * @param {Number} b Component B (index 1)
- * @param {Number} c Component C (index 2)
- * @param {Number} d Component D (index 3)
- * @param {Number} tx Component TX (index 4)
- * @param {Number} ty Component TY (index 5)
- * @returns {mat2d} A new mat2d
- */
-
-function fromValues(a, b, c, d, tx, ty) {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(6);
-  out[0] = a;
-  out[1] = b;
-  out[2] = c;
-  out[3] = d;
-  out[4] = tx;
-  out[5] = ty;
-  return out;
-}
-/**
- * Set the components of a mat2d to the given values
- *
- * @param {mat2d} out the receiving matrix
- * @param {Number} a Component A (index 0)
- * @param {Number} b Component B (index 1)
- * @param {Number} c Component C (index 2)
- * @param {Number} d Component D (index 3)
- * @param {Number} tx Component TX (index 4)
- * @param {Number} ty Component TY (index 5)
- * @returns {mat2d} out
- */
-
-function set(out, a, b, c, d, tx, ty) {
-  out[0] = a;
-  out[1] = b;
-  out[2] = c;
-  out[3] = d;
-  out[4] = tx;
-  out[5] = ty;
-  return out;
-}
-/**
- * Inverts a mat2d
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the source matrix
- * @returns {mat2d} out
- */
-
-function invert(out, a) {
-  var aa = a[0],
-      ab = a[1],
-      ac = a[2],
-      ad = a[3];
-  var atx = a[4],
-      aty = a[5];
-  var det = aa * ad - ab * ac;
-
-  if (!det) {
-    return null;
-  }
-
-  det = 1.0 / det;
-  out[0] = ad * det;
-  out[1] = -ab * det;
-  out[2] = -ac * det;
-  out[3] = aa * det;
-  out[4] = (ac * aty - ad * atx) * det;
-  out[5] = (ab * atx - aa * aty) * det;
-  return out;
-}
-/**
- * Calculates the determinant of a mat2d
- *
- * @param {ReadonlyMat2d} a the source matrix
- * @returns {Number} determinant of a
- */
-
-function determinant(a) {
-  return a[0] * a[3] - a[1] * a[2];
-}
-/**
- * Multiplies two mat2d's
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the first operand
- * @param {ReadonlyMat2d} b the second operand
- * @returns {mat2d} out
- */
-
-function multiply(out, a, b) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3],
-      a4 = a[4],
-      a5 = a[5];
-  var b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3],
-      b4 = b[4],
-      b5 = b[5];
-  out[0] = a0 * b0 + a2 * b1;
-  out[1] = a1 * b0 + a3 * b1;
-  out[2] = a0 * b2 + a2 * b3;
-  out[3] = a1 * b2 + a3 * b3;
-  out[4] = a0 * b4 + a2 * b5 + a4;
-  out[5] = a1 * b4 + a3 * b5 + a5;
-  return out;
-}
-/**
- * Rotates a mat2d by the given angle
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat2d} out
- */
-
-function rotate(out, a, rad) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3],
-      a4 = a[4],
-      a5 = a[5];
-  var s = Math.sin(rad);
-  var c = Math.cos(rad);
-  out[0] = a0 * c + a2 * s;
-  out[1] = a1 * c + a3 * s;
-  out[2] = a0 * -s + a2 * c;
-  out[3] = a1 * -s + a3 * c;
-  out[4] = a4;
-  out[5] = a5;
-  return out;
-}
-/**
- * Scales the mat2d by the dimensions in the given vec2
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the matrix to translate
- * @param {ReadonlyVec2} v the vec2 to scale the matrix by
- * @returns {mat2d} out
- **/
-
-function scale(out, a, v) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3],
-      a4 = a[4],
-      a5 = a[5];
-  var v0 = v[0],
-      v1 = v[1];
-  out[0] = a0 * v0;
-  out[1] = a1 * v0;
-  out[2] = a2 * v1;
-  out[3] = a3 * v1;
-  out[4] = a4;
-  out[5] = a5;
-  return out;
-}
-/**
- * Translates the mat2d by the dimensions in the given vec2
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the matrix to translate
- * @param {ReadonlyVec2} v the vec2 to translate the matrix by
- * @returns {mat2d} out
- **/
-
-function translate(out, a, v) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3],
-      a4 = a[4],
-      a5 = a[5];
-  var v0 = v[0],
-      v1 = v[1];
-  out[0] = a0;
-  out[1] = a1;
-  out[2] = a2;
-  out[3] = a3;
-  out[4] = a0 * v0 + a2 * v1 + a4;
-  out[5] = a1 * v0 + a3 * v1 + a5;
-  return out;
-}
-/**
- * Creates a matrix from a given angle
- * This is equivalent to (but much faster than):
- *
- *     mat2d.identity(dest);
- *     mat2d.rotate(dest, dest, rad);
- *
- * @param {mat2d} out mat2d receiving operation result
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat2d} out
- */
-
-function fromRotation(out, rad) {
-  var s = Math.sin(rad),
-      c = Math.cos(rad);
-  out[0] = c;
-  out[1] = s;
-  out[2] = -s;
-  out[3] = c;
-  out[4] = 0;
-  out[5] = 0;
-  return out;
-}
-/**
- * Creates a matrix from a vector scaling
- * This is equivalent to (but much faster than):
- *
- *     mat2d.identity(dest);
- *     mat2d.scale(dest, dest, vec);
- *
- * @param {mat2d} out mat2d receiving operation result
- * @param {ReadonlyVec2} v Scaling vector
- * @returns {mat2d} out
- */
-
-function fromScaling(out, v) {
-  out[0] = v[0];
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = v[1];
-  out[4] = 0;
-  out[5] = 0;
-  return out;
-}
-/**
- * Creates a matrix from a vector translation
- * This is equivalent to (but much faster than):
- *
- *     mat2d.identity(dest);
- *     mat2d.translate(dest, dest, vec);
- *
- * @param {mat2d} out mat2d receiving operation result
- * @param {ReadonlyVec2} v Translation vector
- * @returns {mat2d} out
- */
-
-function fromTranslation(out, v) {
-  out[0] = 1;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 1;
-  out[4] = v[0];
-  out[5] = v[1];
-  return out;
-}
-/**
- * Returns a string representation of a mat2d
- *
- * @param {ReadonlyMat2d} a matrix to represent as a string
- * @returns {String} string representation of the matrix
- */
-
-function str(a) {
-  return "mat2d(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ", " + a[4] + ", " + a[5] + ")";
-}
-/**
- * Returns Frobenius norm of a mat2d
- *
- * @param {ReadonlyMat2d} a the matrix to calculate Frobenius norm of
- * @returns {Number} Frobenius norm
- */
-
-function frob(a) {
-  return Math.hypot(a[0], a[1], a[2], a[3], a[4], a[5], 1);
-}
-/**
- * Adds two mat2d's
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the first operand
- * @param {ReadonlyMat2d} b the second operand
- * @returns {mat2d} out
- */
-
-function add(out, a, b) {
-  out[0] = a[0] + b[0];
-  out[1] = a[1] + b[1];
-  out[2] = a[2] + b[2];
-  out[3] = a[3] + b[3];
-  out[4] = a[4] + b[4];
-  out[5] = a[5] + b[5];
-  return out;
-}
-/**
- * Subtracts matrix b from matrix a
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the first operand
- * @param {ReadonlyMat2d} b the second operand
- * @returns {mat2d} out
- */
-
-function subtract(out, a, b) {
-  out[0] = a[0] - b[0];
-  out[1] = a[1] - b[1];
-  out[2] = a[2] - b[2];
-  out[3] = a[3] - b[3];
-  out[4] = a[4] - b[4];
-  out[5] = a[5] - b[5];
-  return out;
-}
-/**
- * Multiply each element of the matrix by a scalar.
- *
- * @param {mat2d} out the receiving matrix
- * @param {ReadonlyMat2d} a the matrix to scale
- * @param {Number} b amount to scale the matrix's elements by
- * @returns {mat2d} out
- */
-
-function multiplyScalar(out, a, b) {
-  out[0] = a[0] * b;
-  out[1] = a[1] * b;
-  out[2] = a[2] * b;
-  out[3] = a[3] * b;
-  out[4] = a[4] * b;
-  out[5] = a[5] * b;
-  return out;
-}
-/**
- * Adds two mat2d's after multiplying each element of the second operand by a scalar value.
- *
- * @param {mat2d} out the receiving vector
- * @param {ReadonlyMat2d} a the first operand
- * @param {ReadonlyMat2d} b the second operand
- * @param {Number} scale the amount to scale b's elements by before adding
- * @returns {mat2d} out
- */
-
-function multiplyScalarAndAdd(out, a, b, scale) {
-  out[0] = a[0] + b[0] * scale;
-  out[1] = a[1] + b[1] * scale;
-  out[2] = a[2] + b[2] * scale;
-  out[3] = a[3] + b[3] * scale;
-  out[4] = a[4] + b[4] * scale;
-  out[5] = a[5] + b[5] * scale;
-  return out;
-}
-/**
- * Returns whether or not the matrices have exactly the same elements in the same position (when compared with ===)
- *
- * @param {ReadonlyMat2d} a The first matrix.
- * @param {ReadonlyMat2d} b The second matrix.
- * @returns {Boolean} True if the matrices are equal, false otherwise.
- */
-
-function exactEquals(a, b) {
-  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3] && a[4] === b[4] && a[5] === b[5];
-}
-/**
- * Returns whether or not the matrices have approximately the same elements in the same position.
- *
- * @param {ReadonlyMat2d} a The first matrix.
- * @param {ReadonlyMat2d} b The second matrix.
- * @returns {Boolean} True if the matrices are equal, false otherwise.
- */
-
-function equals(a, b) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3],
-      a4 = a[4],
-      a5 = a[5];
-  var b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3],
-      b4 = b[4],
-      b5 = b[5];
-  return Math.abs(a0 - b0) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5));
-}
-/**
- * Alias for {@link mat2d.multiply}
- * @function
- */
-
-var mul = multiply;
-/**
- * Alias for {@link mat2d.subtract}
- * @function
- */
-
-var sub = subtract;
 
 /***/ }),
 
@@ -4676,1579 +3876,6 @@ var setAxes = function () {
 
 /***/ }),
 
-/***/ "./node_modules/gl-matrix/esm/quat2.js":
-/*!*********************************************!*\
-  !*** ./node_modules/gl-matrix/esm/quat2.js ***!
-  \*********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "add": () => (/* binding */ add),
-/* harmony export */   "clone": () => (/* binding */ clone),
-/* harmony export */   "conjugate": () => (/* binding */ conjugate),
-/* harmony export */   "copy": () => (/* binding */ copy),
-/* harmony export */   "create": () => (/* binding */ create),
-/* harmony export */   "dot": () => (/* binding */ dot),
-/* harmony export */   "equals": () => (/* binding */ equals),
-/* harmony export */   "exactEquals": () => (/* binding */ exactEquals),
-/* harmony export */   "fromMat4": () => (/* binding */ fromMat4),
-/* harmony export */   "fromRotation": () => (/* binding */ fromRotation),
-/* harmony export */   "fromRotationTranslation": () => (/* binding */ fromRotationTranslation),
-/* harmony export */   "fromRotationTranslationValues": () => (/* binding */ fromRotationTranslationValues),
-/* harmony export */   "fromTranslation": () => (/* binding */ fromTranslation),
-/* harmony export */   "fromValues": () => (/* binding */ fromValues),
-/* harmony export */   "getDual": () => (/* binding */ getDual),
-/* harmony export */   "getReal": () => (/* binding */ getReal),
-/* harmony export */   "getTranslation": () => (/* binding */ getTranslation),
-/* harmony export */   "identity": () => (/* binding */ identity),
-/* harmony export */   "invert": () => (/* binding */ invert),
-/* harmony export */   "len": () => (/* binding */ len),
-/* harmony export */   "length": () => (/* binding */ length),
-/* harmony export */   "lerp": () => (/* binding */ lerp),
-/* harmony export */   "mul": () => (/* binding */ mul),
-/* harmony export */   "multiply": () => (/* binding */ multiply),
-/* harmony export */   "normalize": () => (/* binding */ normalize),
-/* harmony export */   "rotateAroundAxis": () => (/* binding */ rotateAroundAxis),
-/* harmony export */   "rotateByQuatAppend": () => (/* binding */ rotateByQuatAppend),
-/* harmony export */   "rotateByQuatPrepend": () => (/* binding */ rotateByQuatPrepend),
-/* harmony export */   "rotateX": () => (/* binding */ rotateX),
-/* harmony export */   "rotateY": () => (/* binding */ rotateY),
-/* harmony export */   "rotateZ": () => (/* binding */ rotateZ),
-/* harmony export */   "scale": () => (/* binding */ scale),
-/* harmony export */   "set": () => (/* binding */ set),
-/* harmony export */   "setDual": () => (/* binding */ setDual),
-/* harmony export */   "setReal": () => (/* binding */ setReal),
-/* harmony export */   "sqrLen": () => (/* binding */ sqrLen),
-/* harmony export */   "squaredLength": () => (/* binding */ squaredLength),
-/* harmony export */   "str": () => (/* binding */ str),
-/* harmony export */   "translate": () => (/* binding */ translate)
-/* harmony export */ });
-/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common.js */ "./node_modules/gl-matrix/esm/common.js");
-/* harmony import */ var _quat_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./quat.js */ "./node_modules/gl-matrix/esm/quat.js");
-/* harmony import */ var _mat4_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./mat4.js */ "./node_modules/gl-matrix/esm/mat4.js");
-
-
-
-/**
- * Dual Quaternion<br>
- * Format: [real, dual]<br>
- * Quaternion format: XYZW<br>
- * Make sure to have normalized dual quaternions, otherwise the functions may not work as intended.<br>
- * @module quat2
- */
-
-/**
- * Creates a new identity dual quat
- *
- * @returns {quat2} a new dual quaternion [real -> rotation, dual -> translation]
- */
-
-function create() {
-  var dq = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(8);
-
-  if (_common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE != Float32Array) {
-    dq[0] = 0;
-    dq[1] = 0;
-    dq[2] = 0;
-    dq[4] = 0;
-    dq[5] = 0;
-    dq[6] = 0;
-    dq[7] = 0;
-  }
-
-  dq[3] = 1;
-  return dq;
-}
-/**
- * Creates a new quat initialized with values from an existing quaternion
- *
- * @param {ReadonlyQuat2} a dual quaternion to clone
- * @returns {quat2} new dual quaternion
- * @function
- */
-
-function clone(a) {
-  var dq = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(8);
-  dq[0] = a[0];
-  dq[1] = a[1];
-  dq[2] = a[2];
-  dq[3] = a[3];
-  dq[4] = a[4];
-  dq[5] = a[5];
-  dq[6] = a[6];
-  dq[7] = a[7];
-  return dq;
-}
-/**
- * Creates a new dual quat initialized with the given values
- *
- * @param {Number} x1 X component
- * @param {Number} y1 Y component
- * @param {Number} z1 Z component
- * @param {Number} w1 W component
- * @param {Number} x2 X component
- * @param {Number} y2 Y component
- * @param {Number} z2 Z component
- * @param {Number} w2 W component
- * @returns {quat2} new dual quaternion
- * @function
- */
-
-function fromValues(x1, y1, z1, w1, x2, y2, z2, w2) {
-  var dq = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(8);
-  dq[0] = x1;
-  dq[1] = y1;
-  dq[2] = z1;
-  dq[3] = w1;
-  dq[4] = x2;
-  dq[5] = y2;
-  dq[6] = z2;
-  dq[7] = w2;
-  return dq;
-}
-/**
- * Creates a new dual quat from the given values (quat and translation)
- *
- * @param {Number} x1 X component
- * @param {Number} y1 Y component
- * @param {Number} z1 Z component
- * @param {Number} w1 W component
- * @param {Number} x2 X component (translation)
- * @param {Number} y2 Y component (translation)
- * @param {Number} z2 Z component (translation)
- * @returns {quat2} new dual quaternion
- * @function
- */
-
-function fromRotationTranslationValues(x1, y1, z1, w1, x2, y2, z2) {
-  var dq = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(8);
-  dq[0] = x1;
-  dq[1] = y1;
-  dq[2] = z1;
-  dq[3] = w1;
-  var ax = x2 * 0.5,
-      ay = y2 * 0.5,
-      az = z2 * 0.5;
-  dq[4] = ax * w1 + ay * z1 - az * y1;
-  dq[5] = ay * w1 + az * x1 - ax * z1;
-  dq[6] = az * w1 + ax * y1 - ay * x1;
-  dq[7] = -ax * x1 - ay * y1 - az * z1;
-  return dq;
-}
-/**
- * Creates a dual quat from a quaternion and a translation
- *
- * @param {ReadonlyQuat2} dual quaternion receiving operation result
- * @param {ReadonlyQuat} q a normalized quaternion
- * @param {ReadonlyVec3} t tranlation vector
- * @returns {quat2} dual quaternion receiving operation result
- * @function
- */
-
-function fromRotationTranslation(out, q, t) {
-  var ax = t[0] * 0.5,
-      ay = t[1] * 0.5,
-      az = t[2] * 0.5,
-      bx = q[0],
-      by = q[1],
-      bz = q[2],
-      bw = q[3];
-  out[0] = bx;
-  out[1] = by;
-  out[2] = bz;
-  out[3] = bw;
-  out[4] = ax * bw + ay * bz - az * by;
-  out[5] = ay * bw + az * bx - ax * bz;
-  out[6] = az * bw + ax * by - ay * bx;
-  out[7] = -ax * bx - ay * by - az * bz;
-  return out;
-}
-/**
- * Creates a dual quat from a translation
- *
- * @param {ReadonlyQuat2} dual quaternion receiving operation result
- * @param {ReadonlyVec3} t translation vector
- * @returns {quat2} dual quaternion receiving operation result
- * @function
- */
-
-function fromTranslation(out, t) {
-  out[0] = 0;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 1;
-  out[4] = t[0] * 0.5;
-  out[5] = t[1] * 0.5;
-  out[6] = t[2] * 0.5;
-  out[7] = 0;
-  return out;
-}
-/**
- * Creates a dual quat from a quaternion
- *
- * @param {ReadonlyQuat2} dual quaternion receiving operation result
- * @param {ReadonlyQuat} q the quaternion
- * @returns {quat2} dual quaternion receiving operation result
- * @function
- */
-
-function fromRotation(out, q) {
-  out[0] = q[0];
-  out[1] = q[1];
-  out[2] = q[2];
-  out[3] = q[3];
-  out[4] = 0;
-  out[5] = 0;
-  out[6] = 0;
-  out[7] = 0;
-  return out;
-}
-/**
- * Creates a new dual quat from a matrix (4x4)
- *
- * @param {quat2} out the dual quaternion
- * @param {ReadonlyMat4} a the matrix
- * @returns {quat2} dual quat receiving operation result
- * @function
- */
-
-function fromMat4(out, a) {
-  //TODO Optimize this
-  var outer = _quat_js__WEBPACK_IMPORTED_MODULE_1__.create();
-  _mat4_js__WEBPACK_IMPORTED_MODULE_2__.getRotation(outer, a);
-  var t = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(3);
-  _mat4_js__WEBPACK_IMPORTED_MODULE_2__.getTranslation(t, a);
-  fromRotationTranslation(out, outer, t);
-  return out;
-}
-/**
- * Copy the values from one dual quat to another
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the source dual quaternion
- * @returns {quat2} out
- * @function
- */
-
-function copy(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  out[4] = a[4];
-  out[5] = a[5];
-  out[6] = a[6];
-  out[7] = a[7];
-  return out;
-}
-/**
- * Set a dual quat to the identity dual quaternion
- *
- * @param {quat2} out the receiving quaternion
- * @returns {quat2} out
- */
-
-function identity(out) {
-  out[0] = 0;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 1;
-  out[4] = 0;
-  out[5] = 0;
-  out[6] = 0;
-  out[7] = 0;
-  return out;
-}
-/**
- * Set the components of a dual quat to the given values
- *
- * @param {quat2} out the receiving quaternion
- * @param {Number} x1 X component
- * @param {Number} y1 Y component
- * @param {Number} z1 Z component
- * @param {Number} w1 W component
- * @param {Number} x2 X component
- * @param {Number} y2 Y component
- * @param {Number} z2 Z component
- * @param {Number} w2 W component
- * @returns {quat2} out
- * @function
- */
-
-function set(out, x1, y1, z1, w1, x2, y2, z2, w2) {
-  out[0] = x1;
-  out[1] = y1;
-  out[2] = z1;
-  out[3] = w1;
-  out[4] = x2;
-  out[5] = y2;
-  out[6] = z2;
-  out[7] = w2;
-  return out;
-}
-/**
- * Gets the real part of a dual quat
- * @param  {quat} out real part
- * @param  {ReadonlyQuat2} a Dual Quaternion
- * @return {quat} real part
- */
-
-var getReal = _quat_js__WEBPACK_IMPORTED_MODULE_1__.copy;
-/**
- * Gets the dual part of a dual quat
- * @param  {quat} out dual part
- * @param  {ReadonlyQuat2} a Dual Quaternion
- * @return {quat} dual part
- */
-
-function getDual(out, a) {
-  out[0] = a[4];
-  out[1] = a[5];
-  out[2] = a[6];
-  out[3] = a[7];
-  return out;
-}
-/**
- * Set the real component of a dual quat to the given quaternion
- *
- * @param {quat2} out the receiving quaternion
- * @param {ReadonlyQuat} q a quaternion representing the real part
- * @returns {quat2} out
- * @function
- */
-
-var setReal = _quat_js__WEBPACK_IMPORTED_MODULE_1__.copy;
-/**
- * Set the dual component of a dual quat to the given quaternion
- *
- * @param {quat2} out the receiving quaternion
- * @param {ReadonlyQuat} q a quaternion representing the dual part
- * @returns {quat2} out
- * @function
- */
-
-function setDual(out, q) {
-  out[4] = q[0];
-  out[5] = q[1];
-  out[6] = q[2];
-  out[7] = q[3];
-  return out;
-}
-/**
- * Gets the translation of a normalized dual quat
- * @param  {vec3} out translation
- * @param  {ReadonlyQuat2} a Dual Quaternion to be decomposed
- * @return {vec3} translation
- */
-
-function getTranslation(out, a) {
-  var ax = a[4],
-      ay = a[5],
-      az = a[6],
-      aw = a[7],
-      bx = -a[0],
-      by = -a[1],
-      bz = -a[2],
-      bw = a[3];
-  out[0] = (ax * bw + aw * bx + ay * bz - az * by) * 2;
-  out[1] = (ay * bw + aw * by + az * bx - ax * bz) * 2;
-  out[2] = (az * bw + aw * bz + ax * by - ay * bx) * 2;
-  return out;
-}
-/**
- * Translates a dual quat by the given vector
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the dual quaternion to translate
- * @param {ReadonlyVec3} v vector to translate by
- * @returns {quat2} out
- */
-
-function translate(out, a, v) {
-  var ax1 = a[0],
-      ay1 = a[1],
-      az1 = a[2],
-      aw1 = a[3],
-      bx1 = v[0] * 0.5,
-      by1 = v[1] * 0.5,
-      bz1 = v[2] * 0.5,
-      ax2 = a[4],
-      ay2 = a[5],
-      az2 = a[6],
-      aw2 = a[7];
-  out[0] = ax1;
-  out[1] = ay1;
-  out[2] = az1;
-  out[3] = aw1;
-  out[4] = aw1 * bx1 + ay1 * bz1 - az1 * by1 + ax2;
-  out[5] = aw1 * by1 + az1 * bx1 - ax1 * bz1 + ay2;
-  out[6] = aw1 * bz1 + ax1 * by1 - ay1 * bx1 + az2;
-  out[7] = -ax1 * bx1 - ay1 * by1 - az1 * bz1 + aw2;
-  return out;
-}
-/**
- * Rotates a dual quat around the X axis
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the dual quaternion to rotate
- * @param {number} rad how far should the rotation be
- * @returns {quat2} out
- */
-
-function rotateX(out, a, rad) {
-  var bx = -a[0],
-      by = -a[1],
-      bz = -a[2],
-      bw = a[3],
-      ax = a[4],
-      ay = a[5],
-      az = a[6],
-      aw = a[7],
-      ax1 = ax * bw + aw * bx + ay * bz - az * by,
-      ay1 = ay * bw + aw * by + az * bx - ax * bz,
-      az1 = az * bw + aw * bz + ax * by - ay * bx,
-      aw1 = aw * bw - ax * bx - ay * by - az * bz;
-  _quat_js__WEBPACK_IMPORTED_MODULE_1__.rotateX(out, a, rad);
-  bx = out[0];
-  by = out[1];
-  bz = out[2];
-  bw = out[3];
-  out[4] = ax1 * bw + aw1 * bx + ay1 * bz - az1 * by;
-  out[5] = ay1 * bw + aw1 * by + az1 * bx - ax1 * bz;
-  out[6] = az1 * bw + aw1 * bz + ax1 * by - ay1 * bx;
-  out[7] = aw1 * bw - ax1 * bx - ay1 * by - az1 * bz;
-  return out;
-}
-/**
- * Rotates a dual quat around the Y axis
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the dual quaternion to rotate
- * @param {number} rad how far should the rotation be
- * @returns {quat2} out
- */
-
-function rotateY(out, a, rad) {
-  var bx = -a[0],
-      by = -a[1],
-      bz = -a[2],
-      bw = a[3],
-      ax = a[4],
-      ay = a[5],
-      az = a[6],
-      aw = a[7],
-      ax1 = ax * bw + aw * bx + ay * bz - az * by,
-      ay1 = ay * bw + aw * by + az * bx - ax * bz,
-      az1 = az * bw + aw * bz + ax * by - ay * bx,
-      aw1 = aw * bw - ax * bx - ay * by - az * bz;
-  _quat_js__WEBPACK_IMPORTED_MODULE_1__.rotateY(out, a, rad);
-  bx = out[0];
-  by = out[1];
-  bz = out[2];
-  bw = out[3];
-  out[4] = ax1 * bw + aw1 * bx + ay1 * bz - az1 * by;
-  out[5] = ay1 * bw + aw1 * by + az1 * bx - ax1 * bz;
-  out[6] = az1 * bw + aw1 * bz + ax1 * by - ay1 * bx;
-  out[7] = aw1 * bw - ax1 * bx - ay1 * by - az1 * bz;
-  return out;
-}
-/**
- * Rotates a dual quat around the Z axis
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the dual quaternion to rotate
- * @param {number} rad how far should the rotation be
- * @returns {quat2} out
- */
-
-function rotateZ(out, a, rad) {
-  var bx = -a[0],
-      by = -a[1],
-      bz = -a[2],
-      bw = a[3],
-      ax = a[4],
-      ay = a[5],
-      az = a[6],
-      aw = a[7],
-      ax1 = ax * bw + aw * bx + ay * bz - az * by,
-      ay1 = ay * bw + aw * by + az * bx - ax * bz,
-      az1 = az * bw + aw * bz + ax * by - ay * bx,
-      aw1 = aw * bw - ax * bx - ay * by - az * bz;
-  _quat_js__WEBPACK_IMPORTED_MODULE_1__.rotateZ(out, a, rad);
-  bx = out[0];
-  by = out[1];
-  bz = out[2];
-  bw = out[3];
-  out[4] = ax1 * bw + aw1 * bx + ay1 * bz - az1 * by;
-  out[5] = ay1 * bw + aw1 * by + az1 * bx - ax1 * bz;
-  out[6] = az1 * bw + aw1 * bz + ax1 * by - ay1 * bx;
-  out[7] = aw1 * bw - ax1 * bx - ay1 * by - az1 * bz;
-  return out;
-}
-/**
- * Rotates a dual quat by a given quaternion (a * q)
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the dual quaternion to rotate
- * @param {ReadonlyQuat} q quaternion to rotate by
- * @returns {quat2} out
- */
-
-function rotateByQuatAppend(out, a, q) {
-  var qx = q[0],
-      qy = q[1],
-      qz = q[2],
-      qw = q[3],
-      ax = a[0],
-      ay = a[1],
-      az = a[2],
-      aw = a[3];
-  out[0] = ax * qw + aw * qx + ay * qz - az * qy;
-  out[1] = ay * qw + aw * qy + az * qx - ax * qz;
-  out[2] = az * qw + aw * qz + ax * qy - ay * qx;
-  out[3] = aw * qw - ax * qx - ay * qy - az * qz;
-  ax = a[4];
-  ay = a[5];
-  az = a[6];
-  aw = a[7];
-  out[4] = ax * qw + aw * qx + ay * qz - az * qy;
-  out[5] = ay * qw + aw * qy + az * qx - ax * qz;
-  out[6] = az * qw + aw * qz + ax * qy - ay * qx;
-  out[7] = aw * qw - ax * qx - ay * qy - az * qz;
-  return out;
-}
-/**
- * Rotates a dual quat by a given quaternion (q * a)
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat} q quaternion to rotate by
- * @param {ReadonlyQuat2} a the dual quaternion to rotate
- * @returns {quat2} out
- */
-
-function rotateByQuatPrepend(out, q, a) {
-  var qx = q[0],
-      qy = q[1],
-      qz = q[2],
-      qw = q[3],
-      bx = a[0],
-      by = a[1],
-      bz = a[2],
-      bw = a[3];
-  out[0] = qx * bw + qw * bx + qy * bz - qz * by;
-  out[1] = qy * bw + qw * by + qz * bx - qx * bz;
-  out[2] = qz * bw + qw * bz + qx * by - qy * bx;
-  out[3] = qw * bw - qx * bx - qy * by - qz * bz;
-  bx = a[4];
-  by = a[5];
-  bz = a[6];
-  bw = a[7];
-  out[4] = qx * bw + qw * bx + qy * bz - qz * by;
-  out[5] = qy * bw + qw * by + qz * bx - qx * bz;
-  out[6] = qz * bw + qw * bz + qx * by - qy * bx;
-  out[7] = qw * bw - qx * bx - qy * by - qz * bz;
-  return out;
-}
-/**
- * Rotates a dual quat around a given axis. Does the normalisation automatically
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the dual quaternion to rotate
- * @param {ReadonlyVec3} axis the axis to rotate around
- * @param {Number} rad how far the rotation should be
- * @returns {quat2} out
- */
-
-function rotateAroundAxis(out, a, axis, rad) {
-  //Special case for rad = 0
-  if (Math.abs(rad) < _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON) {
-    return copy(out, a);
-  }
-
-  var axisLength = Math.hypot(axis[0], axis[1], axis[2]);
-  rad = rad * 0.5;
-  var s = Math.sin(rad);
-  var bx = s * axis[0] / axisLength;
-  var by = s * axis[1] / axisLength;
-  var bz = s * axis[2] / axisLength;
-  var bw = Math.cos(rad);
-  var ax1 = a[0],
-      ay1 = a[1],
-      az1 = a[2],
-      aw1 = a[3];
-  out[0] = ax1 * bw + aw1 * bx + ay1 * bz - az1 * by;
-  out[1] = ay1 * bw + aw1 * by + az1 * bx - ax1 * bz;
-  out[2] = az1 * bw + aw1 * bz + ax1 * by - ay1 * bx;
-  out[3] = aw1 * bw - ax1 * bx - ay1 * by - az1 * bz;
-  var ax = a[4],
-      ay = a[5],
-      az = a[6],
-      aw = a[7];
-  out[4] = ax * bw + aw * bx + ay * bz - az * by;
-  out[5] = ay * bw + aw * by + az * bx - ax * bz;
-  out[6] = az * bw + aw * bz + ax * by - ay * bx;
-  out[7] = aw * bw - ax * bx - ay * by - az * bz;
-  return out;
-}
-/**
- * Adds two dual quat's
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the first operand
- * @param {ReadonlyQuat2} b the second operand
- * @returns {quat2} out
- * @function
- */
-
-function add(out, a, b) {
-  out[0] = a[0] + b[0];
-  out[1] = a[1] + b[1];
-  out[2] = a[2] + b[2];
-  out[3] = a[3] + b[3];
-  out[4] = a[4] + b[4];
-  out[5] = a[5] + b[5];
-  out[6] = a[6] + b[6];
-  out[7] = a[7] + b[7];
-  return out;
-}
-/**
- * Multiplies two dual quat's
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a the first operand
- * @param {ReadonlyQuat2} b the second operand
- * @returns {quat2} out
- */
-
-function multiply(out, a, b) {
-  var ax0 = a[0],
-      ay0 = a[1],
-      az0 = a[2],
-      aw0 = a[3],
-      bx1 = b[4],
-      by1 = b[5],
-      bz1 = b[6],
-      bw1 = b[7],
-      ax1 = a[4],
-      ay1 = a[5],
-      az1 = a[6],
-      aw1 = a[7],
-      bx0 = b[0],
-      by0 = b[1],
-      bz0 = b[2],
-      bw0 = b[3];
-  out[0] = ax0 * bw0 + aw0 * bx0 + ay0 * bz0 - az0 * by0;
-  out[1] = ay0 * bw0 + aw0 * by0 + az0 * bx0 - ax0 * bz0;
-  out[2] = az0 * bw0 + aw0 * bz0 + ax0 * by0 - ay0 * bx0;
-  out[3] = aw0 * bw0 - ax0 * bx0 - ay0 * by0 - az0 * bz0;
-  out[4] = ax0 * bw1 + aw0 * bx1 + ay0 * bz1 - az0 * by1 + ax1 * bw0 + aw1 * bx0 + ay1 * bz0 - az1 * by0;
-  out[5] = ay0 * bw1 + aw0 * by1 + az0 * bx1 - ax0 * bz1 + ay1 * bw0 + aw1 * by0 + az1 * bx0 - ax1 * bz0;
-  out[6] = az0 * bw1 + aw0 * bz1 + ax0 * by1 - ay0 * bx1 + az1 * bw0 + aw1 * bz0 + ax1 * by0 - ay1 * bx0;
-  out[7] = aw0 * bw1 - ax0 * bx1 - ay0 * by1 - az0 * bz1 + aw1 * bw0 - ax1 * bx0 - ay1 * by0 - az1 * bz0;
-  return out;
-}
-/**
- * Alias for {@link quat2.multiply}
- * @function
- */
-
-var mul = multiply;
-/**
- * Scales a dual quat by a scalar number
- *
- * @param {quat2} out the receiving dual quat
- * @param {ReadonlyQuat2} a the dual quat to scale
- * @param {Number} b amount to scale the dual quat by
- * @returns {quat2} out
- * @function
- */
-
-function scale(out, a, b) {
-  out[0] = a[0] * b;
-  out[1] = a[1] * b;
-  out[2] = a[2] * b;
-  out[3] = a[3] * b;
-  out[4] = a[4] * b;
-  out[5] = a[5] * b;
-  out[6] = a[6] * b;
-  out[7] = a[7] * b;
-  return out;
-}
-/**
- * Calculates the dot product of two dual quat's (The dot product of the real parts)
- *
- * @param {ReadonlyQuat2} a the first operand
- * @param {ReadonlyQuat2} b the second operand
- * @returns {Number} dot product of a and b
- * @function
- */
-
-var dot = _quat_js__WEBPACK_IMPORTED_MODULE_1__.dot;
-/**
- * Performs a linear interpolation between two dual quats's
- * NOTE: The resulting dual quaternions won't always be normalized (The error is most noticeable when t = 0.5)
- *
- * @param {quat2} out the receiving dual quat
- * @param {ReadonlyQuat2} a the first operand
- * @param {ReadonlyQuat2} b the second operand
- * @param {Number} t interpolation amount, in the range [0-1], between the two inputs
- * @returns {quat2} out
- */
-
-function lerp(out, a, b, t) {
-  var mt = 1 - t;
-  if (dot(a, b) < 0) t = -t;
-  out[0] = a[0] * mt + b[0] * t;
-  out[1] = a[1] * mt + b[1] * t;
-  out[2] = a[2] * mt + b[2] * t;
-  out[3] = a[3] * mt + b[3] * t;
-  out[4] = a[4] * mt + b[4] * t;
-  out[5] = a[5] * mt + b[5] * t;
-  out[6] = a[6] * mt + b[6] * t;
-  out[7] = a[7] * mt + b[7] * t;
-  return out;
-}
-/**
- * Calculates the inverse of a dual quat. If they are normalized, conjugate is cheaper
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a dual quat to calculate inverse of
- * @returns {quat2} out
- */
-
-function invert(out, a) {
-  var sqlen = squaredLength(a);
-  out[0] = -a[0] / sqlen;
-  out[1] = -a[1] / sqlen;
-  out[2] = -a[2] / sqlen;
-  out[3] = a[3] / sqlen;
-  out[4] = -a[4] / sqlen;
-  out[5] = -a[5] / sqlen;
-  out[6] = -a[6] / sqlen;
-  out[7] = a[7] / sqlen;
-  return out;
-}
-/**
- * Calculates the conjugate of a dual quat
- * If the dual quaternion is normalized, this function is faster than quat2.inverse and produces the same result.
- *
- * @param {quat2} out the receiving quaternion
- * @param {ReadonlyQuat2} a quat to calculate conjugate of
- * @returns {quat2} out
- */
-
-function conjugate(out, a) {
-  out[0] = -a[0];
-  out[1] = -a[1];
-  out[2] = -a[2];
-  out[3] = a[3];
-  out[4] = -a[4];
-  out[5] = -a[5];
-  out[6] = -a[6];
-  out[7] = a[7];
-  return out;
-}
-/**
- * Calculates the length of a dual quat
- *
- * @param {ReadonlyQuat2} a dual quat to calculate length of
- * @returns {Number} length of a
- * @function
- */
-
-var length = _quat_js__WEBPACK_IMPORTED_MODULE_1__.length;
-/**
- * Alias for {@link quat2.length}
- * @function
- */
-
-var len = length;
-/**
- * Calculates the squared length of a dual quat
- *
- * @param {ReadonlyQuat2} a dual quat to calculate squared length of
- * @returns {Number} squared length of a
- * @function
- */
-
-var squaredLength = _quat_js__WEBPACK_IMPORTED_MODULE_1__.squaredLength;
-/**
- * Alias for {@link quat2.squaredLength}
- * @function
- */
-
-var sqrLen = squaredLength;
-/**
- * Normalize a dual quat
- *
- * @param {quat2} out the receiving dual quaternion
- * @param {ReadonlyQuat2} a dual quaternion to normalize
- * @returns {quat2} out
- * @function
- */
-
-function normalize(out, a) {
-  var magnitude = squaredLength(a);
-
-  if (magnitude > 0) {
-    magnitude = Math.sqrt(magnitude);
-    var a0 = a[0] / magnitude;
-    var a1 = a[1] / magnitude;
-    var a2 = a[2] / magnitude;
-    var a3 = a[3] / magnitude;
-    var b0 = a[4];
-    var b1 = a[5];
-    var b2 = a[6];
-    var b3 = a[7];
-    var a_dot_b = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
-    out[0] = a0;
-    out[1] = a1;
-    out[2] = a2;
-    out[3] = a3;
-    out[4] = (b0 - a0 * a_dot_b) / magnitude;
-    out[5] = (b1 - a1 * a_dot_b) / magnitude;
-    out[6] = (b2 - a2 * a_dot_b) / magnitude;
-    out[7] = (b3 - a3 * a_dot_b) / magnitude;
-  }
-
-  return out;
-}
-/**
- * Returns a string representation of a dual quatenion
- *
- * @param {ReadonlyQuat2} a dual quaternion to represent as a string
- * @returns {String} string representation of the dual quat
- */
-
-function str(a) {
-  return "quat2(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ", " + a[4] + ", " + a[5] + ", " + a[6] + ", " + a[7] + ")";
-}
-/**
- * Returns whether or not the dual quaternions have exactly the same elements in the same position (when compared with ===)
- *
- * @param {ReadonlyQuat2} a the first dual quaternion.
- * @param {ReadonlyQuat2} b the second dual quaternion.
- * @returns {Boolean} true if the dual quaternions are equal, false otherwise.
- */
-
-function exactEquals(a, b) {
-  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3] && a[4] === b[4] && a[5] === b[5] && a[6] === b[6] && a[7] === b[7];
-}
-/**
- * Returns whether or not the dual quaternions have approximately the same elements in the same position.
- *
- * @param {ReadonlyQuat2} a the first dual quat.
- * @param {ReadonlyQuat2} b the second dual quat.
- * @returns {Boolean} true if the dual quats are equal, false otherwise.
- */
-
-function equals(a, b) {
-  var a0 = a[0],
-      a1 = a[1],
-      a2 = a[2],
-      a3 = a[3],
-      a4 = a[4],
-      a5 = a[5],
-      a6 = a[6],
-      a7 = a[7];
-  var b0 = b[0],
-      b1 = b[1],
-      b2 = b[2],
-      b3 = b[3],
-      b4 = b[4],
-      b5 = b[5],
-      b6 = b[6],
-      b7 = b[7];
-  return Math.abs(a0 - b0) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
-}
-
-/***/ }),
-
-/***/ "./node_modules/gl-matrix/esm/vec2.js":
-/*!********************************************!*\
-  !*** ./node_modules/gl-matrix/esm/vec2.js ***!
-  \********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "add": () => (/* binding */ add),
-/* harmony export */   "angle": () => (/* binding */ angle),
-/* harmony export */   "ceil": () => (/* binding */ ceil),
-/* harmony export */   "clone": () => (/* binding */ clone),
-/* harmony export */   "copy": () => (/* binding */ copy),
-/* harmony export */   "create": () => (/* binding */ create),
-/* harmony export */   "cross": () => (/* binding */ cross),
-/* harmony export */   "dist": () => (/* binding */ dist),
-/* harmony export */   "distance": () => (/* binding */ distance),
-/* harmony export */   "div": () => (/* binding */ div),
-/* harmony export */   "divide": () => (/* binding */ divide),
-/* harmony export */   "dot": () => (/* binding */ dot),
-/* harmony export */   "equals": () => (/* binding */ equals),
-/* harmony export */   "exactEquals": () => (/* binding */ exactEquals),
-/* harmony export */   "floor": () => (/* binding */ floor),
-/* harmony export */   "forEach": () => (/* binding */ forEach),
-/* harmony export */   "fromValues": () => (/* binding */ fromValues),
-/* harmony export */   "inverse": () => (/* binding */ inverse),
-/* harmony export */   "len": () => (/* binding */ len),
-/* harmony export */   "length": () => (/* binding */ length),
-/* harmony export */   "lerp": () => (/* binding */ lerp),
-/* harmony export */   "max": () => (/* binding */ max),
-/* harmony export */   "min": () => (/* binding */ min),
-/* harmony export */   "mul": () => (/* binding */ mul),
-/* harmony export */   "multiply": () => (/* binding */ multiply),
-/* harmony export */   "negate": () => (/* binding */ negate),
-/* harmony export */   "normalize": () => (/* binding */ normalize),
-/* harmony export */   "random": () => (/* binding */ random),
-/* harmony export */   "rotate": () => (/* binding */ rotate),
-/* harmony export */   "round": () => (/* binding */ round),
-/* harmony export */   "scale": () => (/* binding */ scale),
-/* harmony export */   "scaleAndAdd": () => (/* binding */ scaleAndAdd),
-/* harmony export */   "set": () => (/* binding */ set),
-/* harmony export */   "sqrDist": () => (/* binding */ sqrDist),
-/* harmony export */   "sqrLen": () => (/* binding */ sqrLen),
-/* harmony export */   "squaredDistance": () => (/* binding */ squaredDistance),
-/* harmony export */   "squaredLength": () => (/* binding */ squaredLength),
-/* harmony export */   "str": () => (/* binding */ str),
-/* harmony export */   "sub": () => (/* binding */ sub),
-/* harmony export */   "subtract": () => (/* binding */ subtract),
-/* harmony export */   "transformMat2": () => (/* binding */ transformMat2),
-/* harmony export */   "transformMat2d": () => (/* binding */ transformMat2d),
-/* harmony export */   "transformMat3": () => (/* binding */ transformMat3),
-/* harmony export */   "transformMat4": () => (/* binding */ transformMat4),
-/* harmony export */   "zero": () => (/* binding */ zero)
-/* harmony export */ });
-/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common.js */ "./node_modules/gl-matrix/esm/common.js");
-
-/**
- * 2 Dimensional Vector
- * @module vec2
- */
-
-/**
- * Creates a new, empty vec2
- *
- * @returns {vec2} a new 2D vector
- */
-
-function create() {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(2);
-
-  if (_common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE != Float32Array) {
-    out[0] = 0;
-    out[1] = 0;
-  }
-
-  return out;
-}
-/**
- * Creates a new vec2 initialized with values from an existing vector
- *
- * @param {ReadonlyVec2} a vector to clone
- * @returns {vec2} a new 2D vector
- */
-
-function clone(a) {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(2);
-  out[0] = a[0];
-  out[1] = a[1];
-  return out;
-}
-/**
- * Creates a new vec2 initialized with the given values
- *
- * @param {Number} x X component
- * @param {Number} y Y component
- * @returns {vec2} a new 2D vector
- */
-
-function fromValues(x, y) {
-  var out = new _common_js__WEBPACK_IMPORTED_MODULE_0__.ARRAY_TYPE(2);
-  out[0] = x;
-  out[1] = y;
-  return out;
-}
-/**
- * Copy the values from one vec2 to another
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the source vector
- * @returns {vec2} out
- */
-
-function copy(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  return out;
-}
-/**
- * Set the components of a vec2 to the given values
- *
- * @param {vec2} out the receiving vector
- * @param {Number} x X component
- * @param {Number} y Y component
- * @returns {vec2} out
- */
-
-function set(out, x, y) {
-  out[0] = x;
-  out[1] = y;
-  return out;
-}
-/**
- * Adds two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec2} out
- */
-
-function add(out, a, b) {
-  out[0] = a[0] + b[0];
-  out[1] = a[1] + b[1];
-  return out;
-}
-/**
- * Subtracts vector b from vector a
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec2} out
- */
-
-function subtract(out, a, b) {
-  out[0] = a[0] - b[0];
-  out[1] = a[1] - b[1];
-  return out;
-}
-/**
- * Multiplies two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec2} out
- */
-
-function multiply(out, a, b) {
-  out[0] = a[0] * b[0];
-  out[1] = a[1] * b[1];
-  return out;
-}
-/**
- * Divides two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec2} out
- */
-
-function divide(out, a, b) {
-  out[0] = a[0] / b[0];
-  out[1] = a[1] / b[1];
-  return out;
-}
-/**
- * Math.ceil the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a vector to ceil
- * @returns {vec2} out
- */
-
-function ceil(out, a) {
-  out[0] = Math.ceil(a[0]);
-  out[1] = Math.ceil(a[1]);
-  return out;
-}
-/**
- * Math.floor the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a vector to floor
- * @returns {vec2} out
- */
-
-function floor(out, a) {
-  out[0] = Math.floor(a[0]);
-  out[1] = Math.floor(a[1]);
-  return out;
-}
-/**
- * Returns the minimum of two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec2} out
- */
-
-function min(out, a, b) {
-  out[0] = Math.min(a[0], b[0]);
-  out[1] = Math.min(a[1], b[1]);
-  return out;
-}
-/**
- * Returns the maximum of two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec2} out
- */
-
-function max(out, a, b) {
-  out[0] = Math.max(a[0], b[0]);
-  out[1] = Math.max(a[1], b[1]);
-  return out;
-}
-/**
- * Math.round the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a vector to round
- * @returns {vec2} out
- */
-
-function round(out, a) {
-  out[0] = Math.round(a[0]);
-  out[1] = Math.round(a[1]);
-  return out;
-}
-/**
- * Scales a vec2 by a scalar number
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the vector to scale
- * @param {Number} b amount to scale the vector by
- * @returns {vec2} out
- */
-
-function scale(out, a, b) {
-  out[0] = a[0] * b;
-  out[1] = a[1] * b;
-  return out;
-}
-/**
- * Adds two vec2's after scaling the second operand by a scalar value
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @param {Number} scale the amount to scale b by before adding
- * @returns {vec2} out
- */
-
-function scaleAndAdd(out, a, b, scale) {
-  out[0] = a[0] + b[0] * scale;
-  out[1] = a[1] + b[1] * scale;
-  return out;
-}
-/**
- * Calculates the euclidian distance between two vec2's
- *
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {Number} distance between a and b
- */
-
-function distance(a, b) {
-  var x = b[0] - a[0],
-      y = b[1] - a[1];
-  return Math.hypot(x, y);
-}
-/**
- * Calculates the squared euclidian distance between two vec2's
- *
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {Number} squared distance between a and b
- */
-
-function squaredDistance(a, b) {
-  var x = b[0] - a[0],
-      y = b[1] - a[1];
-  return x * x + y * y;
-}
-/**
- * Calculates the length of a vec2
- *
- * @param {ReadonlyVec2} a vector to calculate length of
- * @returns {Number} length of a
- */
-
-function length(a) {
-  var x = a[0],
-      y = a[1];
-  return Math.hypot(x, y);
-}
-/**
- * Calculates the squared length of a vec2
- *
- * @param {ReadonlyVec2} a vector to calculate squared length of
- * @returns {Number} squared length of a
- */
-
-function squaredLength(a) {
-  var x = a[0],
-      y = a[1];
-  return x * x + y * y;
-}
-/**
- * Negates the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a vector to negate
- * @returns {vec2} out
- */
-
-function negate(out, a) {
-  out[0] = -a[0];
-  out[1] = -a[1];
-  return out;
-}
-/**
- * Returns the inverse of the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a vector to invert
- * @returns {vec2} out
- */
-
-function inverse(out, a) {
-  out[0] = 1.0 / a[0];
-  out[1] = 1.0 / a[1];
-  return out;
-}
-/**
- * Normalize a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a vector to normalize
- * @returns {vec2} out
- */
-
-function normalize(out, a) {
-  var x = a[0],
-      y = a[1];
-  var len = x * x + y * y;
-
-  if (len > 0) {
-    //TODO: evaluate use of glm_invsqrt here?
-    len = 1 / Math.sqrt(len);
-  }
-
-  out[0] = a[0] * len;
-  out[1] = a[1] * len;
-  return out;
-}
-/**
- * Calculates the dot product of two vec2's
- *
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {Number} dot product of a and b
- */
-
-function dot(a, b) {
-  return a[0] * b[0] + a[1] * b[1];
-}
-/**
- * Computes the cross product of two vec2's
- * Note that the cross product must by definition produce a 3D vector
- *
- * @param {vec3} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @returns {vec3} out
- */
-
-function cross(out, a, b) {
-  var z = a[0] * b[1] - a[1] * b[0];
-  out[0] = out[1] = 0;
-  out[2] = z;
-  return out;
-}
-/**
- * Performs a linear interpolation between two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the first operand
- * @param {ReadonlyVec2} b the second operand
- * @param {Number} t interpolation amount, in the range [0-1], between the two inputs
- * @returns {vec2} out
- */
-
-function lerp(out, a, b, t) {
-  var ax = a[0],
-      ay = a[1];
-  out[0] = ax + t * (b[0] - ax);
-  out[1] = ay + t * (b[1] - ay);
-  return out;
-}
-/**
- * Generates a random vector with the given scale
- *
- * @param {vec2} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
- * @returns {vec2} out
- */
-
-function random(out, scale) {
-  scale = scale || 1.0;
-  var r = _common_js__WEBPACK_IMPORTED_MODULE_0__.RANDOM() * 2.0 * Math.PI;
-  out[0] = Math.cos(r) * scale;
-  out[1] = Math.sin(r) * scale;
-  return out;
-}
-/**
- * Transforms the vec2 with a mat2
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the vector to transform
- * @param {ReadonlyMat2} m matrix to transform with
- * @returns {vec2} out
- */
-
-function transformMat2(out, a, m) {
-  var x = a[0],
-      y = a[1];
-  out[0] = m[0] * x + m[2] * y;
-  out[1] = m[1] * x + m[3] * y;
-  return out;
-}
-/**
- * Transforms the vec2 with a mat2d
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the vector to transform
- * @param {ReadonlyMat2d} m matrix to transform with
- * @returns {vec2} out
- */
-
-function transformMat2d(out, a, m) {
-  var x = a[0],
-      y = a[1];
-  out[0] = m[0] * x + m[2] * y + m[4];
-  out[1] = m[1] * x + m[3] * y + m[5];
-  return out;
-}
-/**
- * Transforms the vec2 with a mat3
- * 3rd vector component is implicitly '1'
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the vector to transform
- * @param {ReadonlyMat3} m matrix to transform with
- * @returns {vec2} out
- */
-
-function transformMat3(out, a, m) {
-  var x = a[0],
-      y = a[1];
-  out[0] = m[0] * x + m[3] * y + m[6];
-  out[1] = m[1] * x + m[4] * y + m[7];
-  return out;
-}
-/**
- * Transforms the vec2 with a mat4
- * 3rd vector component is implicitly '0'
- * 4th vector component is implicitly '1'
- *
- * @param {vec2} out the receiving vector
- * @param {ReadonlyVec2} a the vector to transform
- * @param {ReadonlyMat4} m matrix to transform with
- * @returns {vec2} out
- */
-
-function transformMat4(out, a, m) {
-  var x = a[0];
-  var y = a[1];
-  out[0] = m[0] * x + m[4] * y + m[12];
-  out[1] = m[1] * x + m[5] * y + m[13];
-  return out;
-}
-/**
- * Rotate a 2D vector
- * @param {vec2} out The receiving vec2
- * @param {ReadonlyVec2} a The vec2 point to rotate
- * @param {ReadonlyVec2} b The origin of the rotation
- * @param {Number} rad The angle of rotation in radians
- * @returns {vec2} out
- */
-
-function rotate(out, a, b, rad) {
-  //Translate point to the origin
-  var p0 = a[0] - b[0],
-      p1 = a[1] - b[1],
-      sinC = Math.sin(rad),
-      cosC = Math.cos(rad); //perform rotation and translate to correct position
-
-  out[0] = p0 * cosC - p1 * sinC + b[0];
-  out[1] = p0 * sinC + p1 * cosC + b[1];
-  return out;
-}
-/**
- * Get the angle between two 2D vectors
- * @param {ReadonlyVec2} a The first operand
- * @param {ReadonlyVec2} b The second operand
- * @returns {Number} The angle in radians
- */
-
-function angle(a, b) {
-  var x1 = a[0],
-      y1 = a[1],
-      x2 = b[0],
-      y2 = b[1],
-      // mag is the product of the magnitudes of a and b
-  mag = Math.sqrt(x1 * x1 + y1 * y1) * Math.sqrt(x2 * x2 + y2 * y2),
-      // mag &&.. short circuits if mag == 0
-  cosine = mag && (x1 * x2 + y1 * y2) / mag; // Math.min(Math.max(cosine, -1), 1) clamps the cosine between -1 and 1
-
-  return Math.acos(Math.min(Math.max(cosine, -1), 1));
-}
-/**
- * Set the components of a vec2 to zero
- *
- * @param {vec2} out the receiving vector
- * @returns {vec2} out
- */
-
-function zero(out) {
-  out[0] = 0.0;
-  out[1] = 0.0;
-  return out;
-}
-/**
- * Returns a string representation of a vector
- *
- * @param {ReadonlyVec2} a vector to represent as a string
- * @returns {String} string representation of the vector
- */
-
-function str(a) {
-  return "vec2(" + a[0] + ", " + a[1] + ")";
-}
-/**
- * Returns whether or not the vectors exactly have the same elements in the same position (when compared with ===)
- *
- * @param {ReadonlyVec2} a The first vector.
- * @param {ReadonlyVec2} b The second vector.
- * @returns {Boolean} True if the vectors are equal, false otherwise.
- */
-
-function exactEquals(a, b) {
-  return a[0] === b[0] && a[1] === b[1];
-}
-/**
- * Returns whether or not the vectors have approximately the same elements in the same position.
- *
- * @param {ReadonlyVec2} a The first vector.
- * @param {ReadonlyVec2} b The second vector.
- * @returns {Boolean} True if the vectors are equal, false otherwise.
- */
-
-function equals(a, b) {
-  var a0 = a[0],
-      a1 = a[1];
-  var b0 = b[0],
-      b1 = b[1];
-  return Math.abs(a0 - b0) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= _common_js__WEBPACK_IMPORTED_MODULE_0__.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1));
-}
-/**
- * Alias for {@link vec2.length}
- * @function
- */
-
-var len = length;
-/**
- * Alias for {@link vec2.subtract}
- * @function
- */
-
-var sub = subtract;
-/**
- * Alias for {@link vec2.multiply}
- * @function
- */
-
-var mul = multiply;
-/**
- * Alias for {@link vec2.divide}
- * @function
- */
-
-var div = divide;
-/**
- * Alias for {@link vec2.distance}
- * @function
- */
-
-var dist = distance;
-/**
- * Alias for {@link vec2.squaredDistance}
- * @function
- */
-
-var sqrDist = squaredDistance;
-/**
- * Alias for {@link vec2.squaredLength}
- * @function
- */
-
-var sqrLen = squaredLength;
-/**
- * Perform some operation over an array of vec2s.
- *
- * @param {Array} a the array of vectors to iterate over
- * @param {Number} stride Number of elements between the start of each vec2. If 0 assumes tightly packed
- * @param {Number} offset Number of elements to skip at the beginning of the array
- * @param {Number} count Number of vec2s to iterate over. If 0 iterates over entire array
- * @param {Function} fn Function to call for each vector in the array
- * @param {Object} [arg] additional argument to pass to fn
- * @returns {Array} a
- * @function
- */
-
-var forEach = function () {
-  var vec = create();
-  return function (a, stride, offset, count, fn, arg) {
-    var i, l;
-
-    if (!stride) {
-      stride = 2;
-    }
-
-    if (!offset) {
-      offset = 0;
-    }
-
-    if (count) {
-      l = Math.min(count * stride + offset, a.length);
-    } else {
-      l = a.length;
-    }
-
-    for (i = offset; i < l; i += stride) {
-      vec[0] = a[i];
-      vec[1] = a[i + 1];
-      fn(vec, vec, arg);
-      a[i] = vec[0];
-      a[i + 1] = vec[1];
-    }
-
-    return a;
-  };
-}();
-
-/***/ }),
-
 /***/ "./node_modules/gl-matrix/esm/vec3.js":
 /*!********************************************!*\
   !*** ./node_modules/gl-matrix/esm/vec3.js ***!
@@ -7827,57 +5454,61 @@ module.exports=function(e){var t={};function r(i){if(t[i])return t[i].exports;va
 
 /***/ }),
 
-/***/ "./src/cameras.ts":
-/*!************************!*\
-  !*** ./src/cameras.ts ***!
-  \************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/cameras.ts":
+/*!**************************!*\
+  !*** ./demos/cameras.ts ***!
+  \**************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ArcBall": () => (/* binding */ ArcBall),
+/* harmony export */   "Null": () => (/* binding */ Null),
+/* harmony export */   "Static": () => (/* binding */ Static)
+/* harmony export */ });
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/vec3.js");
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/quat.js");
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/mat4.js");
 
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ArcBall = exports.Static = exports.Null = void 0;
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
 // A null camera, doing nothing.
 class Null {
     transform(camera, mvt) { }
     update(mvt) { }
     reset() { }
 }
-exports.Null = Null;
 // A static camera, which cannot be moved.
 class Static {
-    constructor(tr = glmatrix.vec3.fromValues(0, 0, 0), rot = glmatrix.vec3.fromValues(0, 0, 0)) {
+    constructor(tr = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.fromValues(0, 0, 0), rot = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.fromValues(0, 0, 0)) {
         this.tr = tr;
         this.rot = rot;
     }
     transform(camera, mvt) {
-        const q = glmatrix.quat.create();
-        glmatrix.quat.fromEuler(q, this.rot[0], this.rot[1], this.rot[2]);
-        const chg = glmatrix.mat4.create();
-        glmatrix.mat4.fromRotationTranslation(chg, q, this.tr);
-        glmatrix.mat4.mul(camera, camera, chg);
+        const q = gl_matrix__WEBPACK_IMPORTED_MODULE_1__.create();
+        gl_matrix__WEBPACK_IMPORTED_MODULE_1__.fromEuler(q, this.rot[0], this.rot[1], this.rot[2]);
+        const chg = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.create();
+        gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromRotationTranslation(chg, q, this.tr);
+        gl_matrix__WEBPACK_IMPORTED_MODULE_2__.mul(camera, camera, chg);
     }
     update(mvt) { }
     reset() { }
 }
-exports.Static = Static;
 // A camera where the pointer allows to rotate from the current position.
 // Inspiration from http://asliceofrendering.com/camera/2019/11/30/ArcballCamera/
 class ArcBall {
-    constructor(eye, lookAt = glmatrix.vec3.fromValues(0, 0, 0)) {
+    constructor(eye, lookAt = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.fromValues(0, 0, 0)) {
         this.lookAt = lookAt;
         this.startEye = eye;
         this.reset();
     }
     reset() {
         this.eye = this.startEye;
-        this.up = glmatrix.vec3.fromValues(0, 1, 0);
+        this.up = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.fromValues(0, 1, 0);
     }
     transform(camera, mvt) {
         const [eye, up] = this.currentEye(mvt);
-        const view = glmatrix.mat4.lookAt(glmatrix.mat4.create(), eye, this.lookAt, up);
-        glmatrix.mat4.mul(camera, camera, view);
+        const view = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.lookAt(gl_matrix__WEBPACK_IMPORTED_MODULE_2__.create(), eye, this.lookAt, up);
+        gl_matrix__WEBPACK_IMPORTED_MODULE_2__.mul(camera, camera, view);
     }
     update(mvt) {
         [this.eye, this.up] = this.currentEye(mvt);
@@ -7887,52 +5518,53 @@ class ArcBall {
         if (!mvt) {
             return [this.eye, this.up];
         }
-        const eye = glmatrix.vec3.clone(this.eye);
-        const up = glmatrix.vec3.clone(this.up);
-        const lookVec = glmatrix.vec3.sub(glmatrix.vec3.create(), this.lookAt, this.eye);
-        glmatrix.vec3.normalize(lookVec, lookVec);
-        const right = glmatrix.vec3.cross(glmatrix.vec3.create(), lookVec, up);
-        const r = glmatrix.mat4.create();
+        const eye = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.clone(this.eye);
+        const up = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.clone(this.up);
+        const lookVec = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.sub(gl_matrix__WEBPACK_IMPORTED_MODULE_0__.create(), this.lookAt, this.eye);
+        gl_matrix__WEBPACK_IMPORTED_MODULE_0__.normalize(lookVec, lookVec);
+        const right = gl_matrix__WEBPACK_IMPORTED_MODULE_0__.cross(gl_matrix__WEBPACK_IMPORTED_MODULE_0__.create(), lookVec, up);
+        const r = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.create();
         if (mvt.deltaX) {
             const angx = -mvt.deltaX * 2 * Math.PI;
-            glmatrix.mat4.rotate(r, r, angx, up);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_2__.rotate(r, r, angx, up);
         }
         if (mvt.deltaY) {
             const angy = -mvt.deltaY * Math.PI;
-            glmatrix.mat4.rotate(r, r, angy, right);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_2__.rotate(r, r, angy, right);
         }
-        glmatrix.vec3.transformMat4(eye, eye, r);
+        gl_matrix__WEBPACK_IMPORTED_MODULE_0__.transformMat4(eye, eye, r);
         if (mvt.deltaZoom) {
-            glmatrix.vec3.add(eye, eye, glmatrix.vec3.scale(glmatrix.vec3.create(), lookVec, -10 * mvt.deltaZoom));
+            gl_matrix__WEBPACK_IMPORTED_MODULE_0__.add(eye, eye, gl_matrix__WEBPACK_IMPORTED_MODULE_0__.scale(gl_matrix__WEBPACK_IMPORTED_MODULE_0__.create(), lookVec, -10 * mvt.deltaZoom));
         }
         // This accumulate rotations on `up`, which likely leads to errors.
-        glmatrix.vec3.transformMat4(up, up, r);
+        gl_matrix__WEBPACK_IMPORTED_MODULE_0__.transformMat4(up, up, r);
         return [eye, up];
     }
 }
-exports.ArcBall = ArcBall;
 
 
 /***/ }),
 
-/***/ "./src/demos/conway.ts":
-/*!*****************************!*\
-  !*** ./src/demos/conway.ts ***!
-  \*****************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/conway.ts":
+/*!*******************************!*\
+  !*** ./demos/demos/conway.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
 // A basic game of life.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const uniformsDesc = new wg.StructType({
-    computeWidth: { type: wg.U32, idx: 0 },
-    computeHeight: { type: wg.U32, idx: 1 },
+
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    computeWidth: { type: _src__WEBPACK_IMPORTED_MODULE_0__.U32, idx: 0 },
+    computeHeight: { type: _src__WEBPACK_IMPORTED_MODULE_0__.U32, idx: 1 },
 });
 const computeTexFormat = "rgba8unorm";
-exports.demo = {
+const demo = {
     id: "conway",
     caption: "A Conway game of life.",
     async init(params) {
@@ -8014,9 +5646,9 @@ exports.demo = {
             }),
             compute: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "Game of life step",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
@@ -8113,12 +5745,12 @@ exports.demo = {
             }),
             vertex: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "full screen vertices",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> VSOut {
@@ -8146,12 +5778,12 @@ exports.demo = {
             },
             fragment: {
                 entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "simple copy from compute",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
 
                         @group(0) @binding(0) var computeTexture : texture_2d<f32>;
@@ -8236,18 +5868,19 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/conway2.ts":
-/*!******************************!*\
-  !*** ./src/demos/conway2.ts ***!
-  \******************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ "./demos/demos/conway2.ts":
+/*!********************************!*\
+  !*** ./demos/demos/conway2.ts ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
 // A conway game of life with indirect rendering.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-exports.demo = {
+const demo = {
     id: "conway2",
     caption: "A conway game of life with paletted blurring over time.",
     async init(params) {
@@ -8473,8 +6106,8 @@ exports.demo = {
                     label: "full screen vertices",
                     code: `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> VSOut {
@@ -8597,14 +6230,17 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/cube.ts":
-/*!***************************!*\
-  !*** ./src/demos/cube.ts ***!
-  \***************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ "./demos/demos/cube.ts":
+/*!*****************************!*\
+  !*** ./demos/demos/cube.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
 // A rotating cube, with rotation on GPU.
 //
 // Rotation, translation and project are calculated within a compute shader. For
@@ -8613,9 +6249,7 @@ exports.demo = {
 //
 // Lots of inspiration from
 // https://github.com/austinEng/webgpu-samples/blob/main/src/sample/rotatingCube/main.ts
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-exports.demo = {
+const demo = {
     id: "cube",
     caption: "The good old rotating cube.",
     async init(params) {
@@ -8650,15 +6284,15 @@ exports.demo = {
                     // Project & rotations from https://github.com/toji/gl-matrix
                     code: `
                         struct Uniforms {
-                            elapsedMs: f32;
-                            renderWidth: f32;
-                            renderHeight: f32;
+                            elapsedMs: f32,
+                            renderWidth: f32,
+                            renderHeight: f32,
                         };
                         @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
                         struct Output {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(1) var<storage, write> outp : Output;
 
@@ -8789,13 +6423,13 @@ exports.demo = {
                     code: `
                         struct Output {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(0) var<storage> outp : Output;
 
                         struct Out {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec3<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec3<f32>,
                         };
 
                         // The cube mesh, as triangle strip.
@@ -8926,23 +6560,25 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/fade.ts":
-/*!***************************!*\
-  !*** ./src/demos/fade.ts ***!
-  \***************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/fade.ts":
+/*!*****************************!*\
+  !*** ./demos/demos/fade.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
 // A minimal effect which works on a buffer and make it evolve over time.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { type: wg.F32, idx: 0 },
+
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    elapsedMs: { type: _src__WEBPACK_IMPORTED_MODULE_0__.F32, idx: 0 },
 });
 const computeTexFormat = "rgba8unorm";
-exports.demo = {
+const demo = {
     id: "fade",
     caption: "Cycling the red component over time.",
     async init(params) {
@@ -9022,9 +6658,9 @@ exports.demo = {
             }),
             compute: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "Changing the red channel from previous buffer",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
@@ -9092,12 +6728,12 @@ exports.demo = {
             }),
             vertex: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "full screen vertices",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> VSOut {
@@ -9125,12 +6761,12 @@ exports.demo = {
             },
             fragment: {
                 entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "simple copy from compute",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
 
                         @group(0) @binding(0) var computeTexture : texture_2d<f32>;
@@ -9214,26 +6850,29 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/fire.ts":
-/*!***************************!*\
-  !*** ./src/demos/fire.ts ***!
-  \***************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/fire.ts":
+/*!*****************************!*\
+  !*** ./demos/demos/fire.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
+/* harmony import */ var _shaderlib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../shaderlib */ "./demos/shaderlib.ts");
 // A classic fire effect.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const uniformsDesc = new wg.StructType({
-    computeWidth: { type: wg.U32, idx: 0 },
-    computeHeight: { type: wg.U32, idx: 1 },
-    rngSeed: { type: wg.F32, idx: 2 },
+
+
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    computeWidth: { type: _src__WEBPACK_IMPORTED_MODULE_0__.U32, idx: 0 },
+    computeHeight: { type: _src__WEBPACK_IMPORTED_MODULE_0__.U32, idx: 1 },
+    rngSeed: { type: _src__WEBPACK_IMPORTED_MODULE_0__.F32, idx: 2 },
 });
 const computeTexFormat = "rgba8unorm";
-exports.demo = {
+const demo = {
     id: "fire",
     caption: "The classic fire effect.",
     async init(params) {
@@ -9301,9 +6940,9 @@ exports.demo = {
             }),
             compute: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "update fire state",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
@@ -9324,7 +6963,7 @@ exports.demo = {
 
                             var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
                             if (y == (i32(uniforms.computeHeight) - 1)) {
-                                if (${shaderlib.rand.ref("meh")}(uniforms.rngSeed, f32(x)) < 0.2) {
+                                if (${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.rand.ref("meh")}(uniforms.rngSeed, f32(x)) < 0.2) {
                                     v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
                                 } else {
                                     v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
@@ -9393,12 +7032,12 @@ exports.demo = {
             }),
             vertex: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "full screen vertices",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> VSOut {
@@ -9426,12 +7065,12 @@ exports.demo = {
             },
             fragment: {
                 entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "simple copy from compute",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
 
                         @group(0) @binding(0) var computeTexture : texture_2d<f32>;
@@ -9528,18 +7167,19 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/minimal.ts":
-/*!******************************!*\
-  !*** ./src/demos/minimal.ts ***!
-  \******************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ "./demos/demos/minimal.ts":
+/*!********************************!*\
+  !*** ./demos/demos/minimal.ts ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
 // Minimal effect, with only a basic render pass.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-exports.demo = {
+const demo = {
     id: "minimal",
     caption: "Minimal setup without compute.",
     async init(params) {
@@ -9561,8 +7201,8 @@ exports.demo = {
                     label: "full screen vertices",
                     code: `
                         struct VSOut {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec2<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec2<f32>,
                         };
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32) -> VSOut {
@@ -9635,24 +7275,31 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/multicubes.ts":
-/*!*********************************!*\
-  !*** ./src/demos/multicubes.ts ***!
-  \*********************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/multicubes.ts":
+/*!***********************************!*\
+  !*** ./demos/demos/multicubes.ts ***!
+  \***********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/vec3.js");
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/mat4.js");
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
+/* harmony import */ var _shaderlib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../shaderlib */ "./demos/shaderlib.ts");
+/* harmony import */ var _palats_varpanel__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @palats/varpanel */ "./node_modules/@palats/varpanel/dist/varpanel.js");
+/* harmony import */ var _cameras__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../cameras */ "./demos/cameras.ts");
 // Multiple rotating cubes.
 //
 // Rotation, translation and projection are calculated within compute shaders.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
-const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
+
+
+
+
+
 // Number of instances.
 const workgroupWidth = 8;
 const workgroupHeight = 8;
@@ -9661,27 +7308,27 @@ const instancesHeight = 1 * workgroupHeight;
 const instances = instancesWidth * instancesHeight;
 // Space parameters.
 const boxSize = 20;
-const cameraOffset = glmatrix.vec3.fromValues(0, 0, 25);
+const cameraOffset = gl_matrix__WEBPACK_IMPORTED_MODULE_4__.fromValues(0, 0, 25);
 const spaceLimit = boxSize / 2.0;
 // Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    elapsedMs: { idx: 0, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    deltaMs: { idx: 1, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderWidth: { idx: 2, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderHeight: { idx: 3, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    rngSeed: { idx: 4, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    camera: { idx: 5, type: _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32 },
 });
 // Parameters from Javascript to the computer shader
 // for each instance.
-const instanceParamsDesc = new wg.StructType({
-    'pos': { type: wg.Vec3f32, idx: 0 },
-    'rot': { type: wg.Vec3f32, idx: 1 },
-    'move': { type: wg.Vec3f32, idx: 2 },
-    'scale': { type: wg.F32, idx: 3 },
+const instanceParamsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    'pos': { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 0 },
+    'rot': { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 1 },
+    'move': { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 2 },
+    'scale': { type: _src__WEBPACK_IMPORTED_MODULE_0__.F32, idx: 3 },
 });
-const instanceArrayDesc = new wg.ArrayType(instanceParamsDesc, instances);
-exports.demo = {
+const instanceArrayDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.ArrayType(instanceParamsDesc, instances);
+const demo = {
     id: "multicubes",
     caption: "Multiple independent rotating cubes.",
     async init(params) {
@@ -9690,8 +7337,8 @@ exports.demo = {
             showBoundaries: true,
             showBasis: false,
         };
-        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBoundaries' }));
-        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBasis' }));
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_2__.newBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_2__.newBool({ obj: ctrls, field: 'showBasis' }));
         // Setup some initial positions for the cubes.
         const positions = [];
         for (let y = 0; y < instancesHeight; y++) {
@@ -9731,7 +7378,7 @@ exports.demo = {
         });
         const computeResult = params.device.createBuffer({
             label: "Compute output for vertex shaders",
-            size: instances * wg.Mat4x4F32.byteSize(),
+            size: instances * _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32.byteSize(),
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.VERTEX,
         });
         // -- Compute pipeline. It takes care of calculating the cube vertices
@@ -9766,15 +7413,15 @@ exports.demo = {
             }),
             compute: {
                 entryPoint: "main",
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "Rendering matrix compute",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var<storage, read_write> params : ${instanceArrayDesc.typename()};
 
                         struct InstanceState {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(2) var<storage, write> outp : array<InstanceState, ${instances.toString()}>;
 
@@ -9806,11 +7453,11 @@ exports.demo = {
 
                             outp[idx].mvp =
                                 uniforms.camera
-                                * ${shaderlib.tr.ref("translate")}(pos)
-                                * ${shaderlib.tr.ref("rotateZ")}(r.z)
-                                * ${shaderlib.tr.ref("rotateY")}(r.y)
-                                * ${shaderlib.tr.ref("rotateX")}(r.x)
-                                * ${shaderlib.tr.ref("scale")}(params[idx].scale);
+                                * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("translate")}(pos)
+                                * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateZ")}(r.z)
+                                * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateY")}(r.y)
+                                * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateX")}(r.x)
+                                * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("scale")}(params[idx].scale);
                         }
                     `,
                 }).toDesc()),
@@ -9856,23 +7503,23 @@ exports.demo = {
             }),
             vertex: {
                 entryPoint: 'main',
-                module: params.device.createShaderModule(new wg.WGSLModule({
+                module: params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
                     label: "cube vertex shader",
-                    code: wg.wgsl `
+                    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                         struct InstanceState {
                             // ModelViewProjection
-                            mvp: mat4x4<f32>;
+                            mvp: mat4x4<f32>,
                         };
                         @group(0) @binding(0) var<storage> states : array<InstanceState, ${instances.toString()}>;
 
                         struct Out {
-                            @builtin(position) pos: vec4<f32>;
-                            @location(0) coord: vec3<f32>;
+                            @builtin(position) pos: vec4<f32>,
+                            @location(0) coord: vec3<f32>,
                         };
 
                         @stage(vertex)
                         fn main(@builtin(vertex_index) idx : u32, @builtin(instance_index) instance: u32) -> Out {
-                            let pos = ${shaderlib.cubeMeshStrip.ref("mesh")}[idx];
+                            let pos = ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.cubeMeshStrip.ref("mesh")}[idx];
 
                             var out : Out;
                             out.pos = states[instance].mvp * vec4<f32>(pos , 1.0);
@@ -9939,30 +7586,30 @@ exports.demo = {
         renderBundleEncoder.draw(14, instances, 0, 0);
         const renderBundle = renderBundleEncoder.finish();
         // Orthonormals.
-        const basisBundle = shaderlib.buildLineBundle({
+        const basisBundle = _shaderlib__WEBPACK_IMPORTED_MODULE_1__.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
-            lines: shaderlib.ortholines,
+            lines: _shaderlib__WEBPACK_IMPORTED_MODULE_1__.ortholines,
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
         // Cube surrounding the scene.
-        const boundariesBundle = shaderlib.buildLineBundle({
+        const boundariesBundle = _shaderlib__WEBPACK_IMPORTED_MODULE_1__.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
-            lines: shaderlib.cubelines(spaceLimit),
+            lines: _shaderlib__WEBPACK_IMPORTED_MODULE_1__.cubelines(spaceLimit),
             depthCompare: 'less',
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
         // Configuring camera.
-        const camera = new cameras.ArcBall(cameraOffset);
+        const camera = new _cameras__WEBPACK_IMPORTED_MODULE_3__.ArcBall(cameraOffset);
         params.setCamera(camera);
         // -- Single frame rendering.
         return async (info) => {
-            const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            const viewproj = gl_matrix__WEBPACK_IMPORTED_MODULE_5__.perspective(gl_matrix__WEBPACK_IMPORTED_MODULE_5__.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
             params.renderWidth / params.renderHeight, // aspect
             1.0, // near
             100.0);
@@ -10022,35 +7669,42 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/plane.ts":
-/*!****************************!*\
-  !*** ./src/demos/plane.ts ***!
-  \****************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/plane.ts":
+/*!******************************!*\
+  !*** ./demos/demos/plane.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/vec3.js");
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/mat4.js");
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
+/* harmony import */ var _shaderlib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../shaderlib */ "./demos/shaderlib.ts");
+/* harmony import */ var _palats_varpanel__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @palats/varpanel */ "./node_modules/@palats/varpanel/dist/varpanel.js");
+/* harmony import */ var _cameras__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../cameras */ "./demos/cameras.ts");
 // An infinite plane.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
-const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
+
+
+
+
+
 // Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
-    revCamera: { idx: 6, type: wg.Mat4x4F32 },
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    elapsedMs: { idx: 0, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    deltaMs: { idx: 1, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderWidth: { idx: 2, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderHeight: { idx: 3, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    rngSeed: { idx: 4, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    camera: { idx: 5, type: _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32 },
+    revCamera: { idx: 6, type: _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32 },
 });
 // Parameters from Javascript to the computer shader
 // for each instance.
-exports.demo = {
+const demo = {
     id: "plane",
     caption: "An infinite plane",
     async init(params) {
@@ -10059,8 +7713,8 @@ exports.demo = {
             showBoundaries: true,
             showBasis: true,
         };
-        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBoundaries' }));
-        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBasis' }));
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_2__.newBool({ obj: ctrls, field: 'showBoundaries' }));
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_2__.newBool({ obj: ctrls, field: 'showBasis' }));
         const uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
@@ -10072,9 +7726,9 @@ exports.demo = {
         const depthFormat = "depth24plus";
         // Inspiration from https://stackoverflow.com/questions/12965161/rendering-infinitely-large-plane
         // And http://asliceofrendering.com/scene%20helper/2020/01/05/InfiniteGrid/
-        const shader = params.device.createShaderModule(new wg.WGSLModule({
+        const shader = params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
             label: "vertex shader",
-            code: wg.wgsl `
+            code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
 
                 // An XY plane described using 4 triangles.
@@ -10097,8 +7751,8 @@ exports.demo = {
                 );
 
                 struct VertexOut {
-                    @builtin(position) pos: vec4<f32>;
-                    @location(0) coord: vec4<f32>;
+                    @builtin(position) pos: vec4<f32>,
+                    @location(0) coord: vec4<f32>,
                 };
 
                 @stage(vertex)
@@ -10115,7 +7769,7 @@ exports.demo = {
                 let gridStep = 1.0;
 
                 struct FragOut {
-                    @location(0) color: vec4<f32>;
+                    @location(0) color: vec4<f32>,
                 }
 
                 @stage(fragment)
@@ -10219,30 +7873,30 @@ exports.demo = {
         renderBundleEncoder.draw(12, 1, 0, 0);
         const renderBundle = renderBundleEncoder.finish();
         // Orthonormals.
-        const basisBundle = shaderlib.buildLineBundle({
+        const basisBundle = _shaderlib__WEBPACK_IMPORTED_MODULE_1__.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
-            lines: shaderlib.ortholines,
+            lines: _shaderlib__WEBPACK_IMPORTED_MODULE_1__.ortholines,
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
         // Cube surrounding the scene.
-        const boundariesBundle = shaderlib.buildLineBundle({
+        const boundariesBundle = _shaderlib__WEBPACK_IMPORTED_MODULE_1__.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
-            lines: shaderlib.cubelines(1.0),
+            lines: _shaderlib__WEBPACK_IMPORTED_MODULE_1__.cubelines(1.0),
             depthCompare: 'less',
             mod: uniformsDesc,
             buffer: uniformsBuffer,
         });
         // Configuring camera.
-        const camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 5));
+        const camera = new _cameras__WEBPACK_IMPORTED_MODULE_3__.ArcBall(gl_matrix__WEBPACK_IMPORTED_MODULE_4__.fromValues(0, 0, 5));
         params.setCamera(camera);
         // -- Single frame rendering.
         return async (info) => {
-            const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            const viewproj = gl_matrix__WEBPACK_IMPORTED_MODULE_5__.perspective(gl_matrix__WEBPACK_IMPORTED_MODULE_5__.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
             params.renderWidth / params.renderHeight, // aspect
             1.0, // near
             100.0);
@@ -10254,7 +7908,7 @@ exports.demo = {
                 renderHeight: params.renderHeight,
                 rngSeed: info.rng,
                 camera: Array.from(viewproj),
-                revCamera: Array.from(glmatrix.mat4.invert(glmatrix.mat4.create(), viewproj)),
+                revCamera: Array.from(gl_matrix__WEBPACK_IMPORTED_MODULE_5__.invert(gl_matrix__WEBPACK_IMPORTED_MODULE_5__.create(), viewproj)),
             }));
             const commandEncoder = params.device.createCommandEncoder();
             commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
@@ -10293,24 +7947,32 @@ exports.demo = {
 
 /***/ }),
 
-/***/ "./src/demos/sphere.ts":
-/*!*****************************!*\
-  !*** ./src/demos/sphere.ts ***!
-  \*****************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/sphere.ts":
+/*!*******************************!*\
+  !*** ./demos/demos/sphere.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/vec3.js");
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/mat4.js");
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
+/* harmony import */ var _shaderlib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../shaderlib */ "./demos/shaderlib.ts");
+/* harmony import */ var _cameras__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../cameras */ "./demos/cameras.ts");
+/* harmony import */ var _palats_varpanel__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @palats/varpanel */ "./node_modules/@palats/varpanel/dist/varpanel.js");
+/* harmony import */ var _models__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../models */ "./demos/models.ts");
 // Draw a sphere.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
-const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
-const models = __webpack_require__(/*! ../models */ "./src/models.ts");
-exports.demo = {
+
+
+
+
+
+
+const demo = {
     id: "sphere",
     caption: "A sphere",
     async init(params) {
@@ -10320,13 +7982,13 @@ exports.demo = {
     }
 };
 // Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    elapsedMs: { idx: 0, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    deltaMs: { idx: 1, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderWidth: { idx: 2, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderHeight: { idx: 3, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    rngSeed: { idx: 4, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    camera: { idx: 5, type: _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32 },
 });
 const depthFormat = "depth24plus";
 class Demo {
@@ -10334,25 +7996,25 @@ class Demo {
         this.bundles = [];
         this._model = "sphere";
         this.params = params;
-        params.expose(varpanel.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_3__.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         // -- Render pipeline.
-        const shader = params.device.createShaderModule(new wg.WGSLModule({
+        const shader = params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
             label: "vertex shader",
-            code: wg.wgsl `
+            code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
 
                 struct Vertex {
-                    @builtin(position) pos: vec4<f32>;
-                    @location(0) color: vec4<f32>;
+                    @builtin(position) pos: vec4<f32>,
+                    @location(0) color: vec4<f32>,
                 };
 
                 @stage(vertex)
-                fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
+                fn vertex(inp: ${_models__WEBPACK_IMPORTED_MODULE_4__.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
@@ -10360,9 +8022,9 @@ class Demo {
                     var out : Vertex;
                     out.pos =
                         uniforms.camera
-                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
-                        * ${shaderlib.tr.ref("rotateY")}(r.y)
-                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateZ")}(r.z)
+                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateY")}(r.y)
+                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateX")}(r.z)
                         * vec4<f32>(inp.pos, 1.0);
                     // out.color = inp.color;
                     out.color = vec4<f32>(0.5 * (inp.pos + vec3<f32>(1., 1., 1.)), 1.0);
@@ -10395,7 +8057,7 @@ class Demo {
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
-                buffers: [models.vertexDesc.vertexBufferLayout()],
+                buffers: [_models__WEBPACK_IMPORTED_MODULE_4__.vertexDesc.vertexBufferLayout()],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -10431,17 +8093,17 @@ class Demo {
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
         // Configuring camera.
-        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        this.camera = new _cameras__WEBPACK_IMPORTED_MODULE_2__.ArcBall(gl_matrix__WEBPACK_IMPORTED_MODULE_5__.fromValues(0, 0, 4));
         params.setCamera(this.camera);
-        this.setMesh(new models.GPUMesh(params, models.sphereMesh()));
+        this.setMesh(new _models__WEBPACK_IMPORTED_MODULE_4__.GPUMesh(params, _models__WEBPACK_IMPORTED_MODULE_4__.sphereMesh()));
     }
     get model() { return this._model; }
     set model(s) {
         this._model = s;
         if (s === "cube")
-            this.setMesh(new models.GPUMesh(this.params, models.cubeMesh()));
+            this.setMesh(new _models__WEBPACK_IMPORTED_MODULE_4__.GPUMesh(this.params, _models__WEBPACK_IMPORTED_MODULE_4__.cubeMesh()));
         else
-            this.setMesh(new models.GPUMesh(this.params, models.sphereMesh()));
+            this.setMesh(new _models__WEBPACK_IMPORTED_MODULE_4__.GPUMesh(this.params, _models__WEBPACK_IMPORTED_MODULE_4__.sphereMesh()));
     }
     setMesh(gpuMesh) {
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
@@ -10458,7 +8120,7 @@ class Demo {
     }
     // -- Single frame rendering.
     async draw(info) {
-        const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+        const viewproj = gl_matrix__WEBPACK_IMPORTED_MODULE_6__.perspective(gl_matrix__WEBPACK_IMPORTED_MODULE_6__.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
         this.params.renderWidth / this.params.renderHeight, // aspect
         1.0, // near
         100.0);
@@ -10501,24 +8163,32 @@ class Demo {
 
 /***/ }),
 
-/***/ "./src/demos/viewer.ts":
-/*!*****************************!*\
-  !*** ./src/demos/viewer.ts ***!
-  \*****************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/demos/viewer.ts":
+/*!*******************************!*\
+  !*** ./demos/demos/viewer.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "demo": () => (/* binding */ demo)
+/* harmony export */ });
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/mat4.js");
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/vec3.js");
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../src */ "./src/index.ts");
+/* harmony import */ var _shaderlib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../shaderlib */ "./demos/shaderlib.ts");
+/* harmony import */ var _cameras__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../cameras */ "./demos/cameras.ts");
+/* harmony import */ var _palats_varpanel__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @palats/varpanel */ "./node_modules/@palats/varpanel/dist/varpanel.js");
+/* harmony import */ var _models__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../models */ "./demos/models.ts");
 // Load gltf models.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.demo = void 0;
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
-const wg = __webpack_require__(/*! ../wg */ "./src/wg.ts");
-const shaderlib = __webpack_require__(/*! ../shaderlib */ "./src/shaderlib.ts");
-const cameras = __webpack_require__(/*! ../cameras */ "./src/cameras.ts");
-const varpanel = __webpack_require__(/*! ../varpanel */ "./src/varpanel.ts");
-const models = __webpack_require__(/*! ../models */ "./src/models.ts");
-exports.demo = {
+
+
+
+
+
+
+const demo = {
     id: "viewer",
     caption: "A gltf viewer",
     async init(params) {
@@ -10527,25 +8197,25 @@ exports.demo = {
     }
 };
 // Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
-    modelTransform: { idx: 6, type: wg.Mat4x4F32 },
+const uniformsDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    elapsedMs: { idx: 0, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    deltaMs: { idx: 1, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderWidth: { idx: 2, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    renderHeight: { idx: 3, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    rngSeed: { idx: 4, type: _src__WEBPACK_IMPORTED_MODULE_0__.F32 },
+    camera: { idx: 5, type: _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32 },
+    modelTransform: { idx: 6, type: _src__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32 },
 });
 const depthFormat = "depth24plus";
 function loadToGPU(u) {
     return async (params) => {
-        const mesh = await models.loadGLTF(u);
-        return new models.GPUMesh(params, mesh);
+        const mesh = await _models__WEBPACK_IMPORTED_MODULE_4__.loadGLTF(u);
+        return new _models__WEBPACK_IMPORTED_MODULE_4__.GPUMesh(params, mesh);
     };
 }
 const allModels = {
-    "sphere/builtin": async (params) => new models.GPUMesh(params, models.sphereMesh()),
-    "cube/builtin": async (params) => new models.GPUMesh(params, models.cubeMesh()),
+    "sphere/builtin": async (params) => new _models__WEBPACK_IMPORTED_MODULE_4__.GPUMesh(params, _models__WEBPACK_IMPORTED_MODULE_4__.sphereMesh()),
+    "cube/builtin": async (params) => new _models__WEBPACK_IMPORTED_MODULE_4__.GPUMesh(params, _models__WEBPACK_IMPORTED_MODULE_4__.cubeMesh()),
     "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
     "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
@@ -10558,27 +8228,27 @@ class Demo {
         this.showBasis = true;
         this._model = "cube/gltf";
         this.params = params;
-        this.modelTransform = glmatrix.mat4.create();
-        params.expose(varpanel.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
-        params.expose(varpanel.newBool({ obj: this, field: 'showBasis' }));
+        this.modelTransform = gl_matrix__WEBPACK_IMPORTED_MODULE_5__.create();
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_3__.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
+        params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_3__.newBool({ obj: this, field: 'showBasis' }));
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         // -- Render pipeline.
-        const shader = params.device.createShaderModule(new wg.WGSLModule({
+        const shader = params.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
             label: "vertex shader",
-            code: wg.wgsl `
+            code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
 
                 struct Vertex {
-                    @builtin(position) pos: vec4<f32>;
-                    @location(0) color: vec4<f32>;
+                    @builtin(position) pos: vec4<f32>,
+                    @location(0) color: vec4<f32>,
                 };
 
                 @stage(vertex)
-                fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
+                fn vertex(inp: ${_models__WEBPACK_IMPORTED_MODULE_4__.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
@@ -10588,9 +8258,9 @@ class Demo {
                     var out : Vertex;
                     out.pos =
                         uniforms.camera
-                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
-                        * ${shaderlib.tr.ref("rotateY")}(r.y)
-                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateZ")}(r.z)
+                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateY")}(r.y)
+                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateX")}(r.z)
                         * pos;
                     out.color = vec4<f32>(0.5 * (pos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
@@ -10622,7 +8292,7 @@ class Demo {
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
-                buffers: [models.vertexDesc.vertexBufferLayout()],
+                buffers: [_models__WEBPACK_IMPORTED_MODULE_4__.vertexDesc.vertexBufferLayout()],
             },
             primitive: {
                 topology: 'triangle-list',
@@ -10658,16 +8328,16 @@ class Demo {
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
         // Orthonormals.
-        this.basisBundle = shaderlib.buildLineBundle({
+        this.basisBundle = _shaderlib__WEBPACK_IMPORTED_MODULE_1__.buildLineBundle({
             device: params.device,
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
-            lines: shaderlib.ortholines,
+            lines: _shaderlib__WEBPACK_IMPORTED_MODULE_1__.ortholines,
             mod: uniformsDesc,
             buffer: this.uniformsBuffer,
         });
         // Configuring camera.
-        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        this.camera = new _cameras__WEBPACK_IMPORTED_MODULE_2__.ArcBall(gl_matrix__WEBPACK_IMPORTED_MODULE_6__.fromValues(0, 0, 4));
         params.setCamera(this.camera);
         // Force loading the initial model.
         this.model = this.model;
@@ -10693,25 +8363,25 @@ class Demo {
             this.bundles.push(this.basisBundle);
         }
         if (gpuMesh.min && gpuMesh.max) {
-            const diff = glmatrix.vec3.sub(glmatrix.vec3.create(), gpuMesh.max, gpuMesh.min);
+            const diff = gl_matrix__WEBPACK_IMPORTED_MODULE_6__.sub(gl_matrix__WEBPACK_IMPORTED_MODULE_6__.create(), gpuMesh.max, gpuMesh.min);
             const maxDiff = Math.max(diff[0], diff[1], diff[2]);
             // Make it of size 2 - i.e., fitting it in a box from -1 to +1, as
             // it is rotating around the origin.
             const scale = 2 / maxDiff;
-            const scaleVec = glmatrix.vec3.fromValues(scale, scale, scale);
-            const tr = glmatrix.vec3.clone(gpuMesh.min);
-            glmatrix.vec3.scaleAndAdd(tr, tr, diff, 0.5);
-            glmatrix.vec3.scale(tr, tr, -1);
-            glmatrix.mat4.fromScaling(this.modelTransform, scaleVec);
-            glmatrix.mat4.translate(this.modelTransform, this.modelTransform, tr);
+            const scaleVec = gl_matrix__WEBPACK_IMPORTED_MODULE_6__.fromValues(scale, scale, scale);
+            const tr = gl_matrix__WEBPACK_IMPORTED_MODULE_6__.clone(gpuMesh.min);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_6__.scaleAndAdd(tr, tr, diff, 0.5);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_6__.scale(tr, tr, -1);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_5__.fromScaling(this.modelTransform, scaleVec);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_5__.translate(this.modelTransform, this.modelTransform, tr);
         }
         else {
-            glmatrix.mat4.identity(this.modelTransform);
+            gl_matrix__WEBPACK_IMPORTED_MODULE_5__.identity(this.modelTransform);
         }
     }
     // -- Single frame rendering.
     async draw(info) {
-        const viewproj = glmatrix.mat4.perspective(glmatrix.mat4.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+        const viewproj = gl_matrix__WEBPACK_IMPORTED_MODULE_5__.perspective(gl_matrix__WEBPACK_IMPORTED_MODULE_5__.create(), 2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
         this.params.renderWidth / this.params.renderHeight, // aspect
         1.0, // near
         100.0);
@@ -10755,513 +8425,47 @@ class Demo {
 
 /***/ }),
 
-/***/ "./src/index.ts":
-/*!**********************!*\
-  !*** ./src/index.ts ***!
-  \**********************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ "./demos/models.ts":
+/*!*************************!*\
+  !*** ./demos/models.ts ***!
+  \*************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
-/// <reference types="@webgpu/types" />
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.AppMain = exports.demoByID = exports.allDemos = void 0;
-const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
-const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
-const varpanel = __webpack_require__(/*! ./varpanel */ "./src/varpanel.ts");
-const cameras = __webpack_require__(/*! ./cameras */ "./src/cameras.ts");
-const conway = __webpack_require__(/*! ./demos/conway */ "./src/demos/conway.ts");
-const fire = __webpack_require__(/*! ./demos/fire */ "./src/demos/fire.ts");
-const fade = __webpack_require__(/*! ./demos/fade */ "./src/demos/fade.ts");
-const minimal = __webpack_require__(/*! ./demos/minimal */ "./src/demos/minimal.ts");
-const conway2 = __webpack_require__(/*! ./demos/conway2 */ "./src/demos/conway2.ts");
-const cube = __webpack_require__(/*! ./demos/cube */ "./src/demos/cube.ts");
-const multicubes = __webpack_require__(/*! ./demos/multicubes */ "./src/demos/multicubes.ts");
-const sphere = __webpack_require__(/*! ./demos/sphere */ "./src/demos/sphere.ts");
-const plane = __webpack_require__(/*! ./demos/plane */ "./src/demos/plane.ts");
-const viewer = __webpack_require__(/*! ./demos/viewer */ "./src/demos/viewer.ts");
-exports.allDemos = [
-    conway2.demo,
-    fire.demo,
-    conway.demo,
-    fade.demo,
-    minimal.demo,
-    cube.demo,
-    multicubes.demo,
-    sphere.demo,
-    plane.demo,
-    viewer.demo,
-];
-function demoByID(id) {
-    for (const d of exports.allDemos) {
-        if (d.id === id) {
-            return d;
-        }
-    }
-    return exports.allDemos[0];
-}
-exports.demoByID = demoByID;
-let AppMain = class AppMain extends lit_1.LitElement {
-    constructor() {
-        super();
-        this.webGPUpresent = false;
-        this.error = "";
-        this._limitCanvas = false;
-        this.renderWidth = 0;
-        this.renderHeight = 0;
-        this.controlsExpanded = true;
-        this.extraControls = [];
-        this.paused = false;
-        this.step = false;
-        this.shiftPressed = false;
-        this.camera = new cameras.Null();
-        this.limitCanvas = this.getBoolParam("l", false);
-        this._demoID = this.getStringParam("d", exports.allDemos[0].id);
-        this.controlsExpanded = this.getBoolParam("c", true);
-    }
-    static { this.styles = (0, lit_1.css) `
-        /* Cover both shadow dom / non shadow dom cases */
-        :host, app-main {
-            background-color: #0f0f0f;
-            display: grid;
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            grid-template-columns: 100fr;
-            grid-template-rows: 100fr;
-            box-sizing: border-box;
-        }
-
-        #display {
-            grid-column-start: 1;
-            grid-column-end: 2;
-            grid-row-start: 1;
-            grid-row-end: 2;
-            /* Avoid vertical scroll on canvas. */
-            min-height: 0;
-        }
-
-        #display canvas {
-            display: block;
-            height: 100%;
-            width: 100%;
-            background-color: black;
-        }
-
-        #overlay {
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 10;
-
-            display: grid;
-            grid-template-columns: 250px 100fr;
-            align-items: start;
-        }
-
-        #controls {
-            background-color: #d6d6d6f0;
-            border: #8b8b8b 1px solid;
-            grid-column-start: 1;
-            grid-column-end: 2;
-            font-size: 11px;
-        }
-
-        .doc {
-            font-style: italic;
-            font-size: 12px;
-            padding: 2px 1px 2px 1px;
-        }
-
-        .github {
-            display: flex;
-            justify-content: center;
-            border-top: 1px solid #4d4d4d;
-            font-size: 14px;
-            font-style: italic;
-        }
-
-        #errors {
-            background-color: #ffbebede;
-            grid-column-start: 2;
-            grid-column-end: 3;
-            padding: 2px;
-        }
-    `; }
-    render() {
-        const demoValues = exports.allDemos.map(d => d.id);
-        return (0, lit_1.html) `
-            <div id="display">
-                <canvas id="canvas" tabindex=0></canvas>
-            </div>
-
-            <div id="overlay">
-                <var-panel ?expanded=${this.controlsExpanded}>
-                    <style>${varpanel.commonStyle}</style>
-                    <vp-select .obj=${this} field="demoID" .values=${demoValues}>Demo</vp-select>
-                    <div class="doc">${demoByID(this.demoID).caption}</div>
-                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-                    <vp-bool .obj=${this} field="limitCanvas">Limit canvas</vp-bool>
-                    <div class="doc">
-                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
-                    </div>
-                    ${this.extraControls}
-                </var-panel>
-                ${(!this.webGPUpresent || this.error) ? (0, lit_1.html) `
-                <div id="errors">
-                    ${this.webGPUpresent ? '' : (0, lit_1.html) `
-                        <div>
-                            Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
-                            WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu">README</a> for details on how to activate it.
-                        </div>
-                    `}
-                    ${this.error ? (0, lit_1.html) `
-                        <div><pre>${this.error}</pre></div>
-                        <div>See javascript console for more details.</div>
-                    ` : ``}
-                </div>
-                ` : ``}
-            </div>
-        `;
-    }
-    get limitCanvas() { return this._limitCanvas; }
-    set limitCanvas(v) {
-        if (v === this._limitCanvas) {
-            return;
-        }
-        this._limitCanvas = v;
-        this.updateURL("l", this._limitCanvas);
-        this.updateSize();
-        this.requestUpdate('limitCanvas', !v);
-    }
-    get demoID() { return this._demoID; }
-    set demoID(v) {
-        if (this._demoID === v) {
-            return;
-        }
-        this._demoID = v;
-        this.updateURL("d", this._demoID);
-        this.rebuild("changed demo");
-    }
-    firstUpdated(_changedProperties) {
-        super.firstUpdated(_changedProperties);
-        // Size & observe canvas.
-        this.canvas = this.renderRoot.querySelector('#canvas');
-        this.updateSize();
-        new ResizeObserver(() => {
-            this.updateSize();
-        }).observe(this.canvas);
-        this.loop(this.canvas);
-        // Setup listener
-        const eventElement = this.canvas;
-        eventElement.addEventListener('keydown', e => {
-            if (e.key == ' ') {
-                this.paused = !this.paused;
-            }
-            else if (e.key == '.') {
-                this.paused = true;
-                this.step = true;
-            }
-            else if (e.key == 'Shift') {
-                this.shiftPressed = true;
-            }
-            else if (e.key == 'Escape') {
-                this.camera.reset();
-            }
-        });
-        eventElement.addEventListener('keyup', e => {
-            if (e.key == 'Shift') {
-                this.shiftPressed = false;
-            }
-        });
-        eventElement.addEventListener('pointerdown', e => {
-            if (e.button == 0) {
-                if (this.cameraStart) {
-                    console.error("missing pointerup");
-                }
-                this.cameraStart = e;
-                this.canvas?.setPointerCapture(e.pointerId);
-            }
-        });
-        eventElement.addEventListener('pointermove', e => {
-            if (!this.cameraStart) {
-                return;
-            }
-            if (e.pointerId != this.cameraStart.pointerId) {
-                return;
-            }
-            this.cameraCurrent = e;
-        });
-        eventElement.addEventListener('pointerup', e => {
-            if (!this.cameraStart) {
-                return;
-            }
-            if (e.button != this.cameraStart.button || e.pointerId != this.cameraStart.pointerId) {
-                return;
-            }
-            if (this.cameraStart && this.cameraCurrent) {
-                this.camera.update(this.getCameraMoveInfo());
-            }
-            this.cameraStart = undefined;
-            this.cameraCurrent = undefined;
-        });
-        eventElement.addEventListener('pointerout', e => {
-            if (!this.cameraStart) {
-                return;
-            }
-            if (e.pointerId != this.cameraStart.pointerId) {
-                return;
-            }
-            this.cameraStart = undefined;
-            this.cameraCurrent = undefined;
-        });
-        eventElement.addEventListener('wheel', e => {
-            this.camera.update({
-                deltaZoom: e.deltaY / this.canvas.clientHeight,
-                shift: this.shiftPressed,
-            });
-        });
-        // Make sure keyboard events go to the canvas initially.
-        this.canvas.focus();
-    }
-    getCameraMoveInfo() {
-        const mvt = {
-            shift: this.shiftPressed,
-        };
-        if (this.cameraStart && this.cameraCurrent) {
-            mvt.deltaX = (this.cameraCurrent.x - this.cameraStart.x) / this.canvas.clientWidth;
-            mvt.deltaY = (this.cameraCurrent.y - this.cameraStart.y) / this.canvas.clientHeight;
-        }
-        return mvt;
-    }
-    updateSize() {
-        if (!this.canvas) {
-            return;
-        }
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        let renderWidth = this.canvas.clientWidth * devicePixelRatio;
-        let renderHeight = this.canvas.clientHeight * devicePixelRatio;
-        if (this.limitCanvas && ((renderWidth > 816) || (renderHeight > 640))) {
-            // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
-            // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
-            // lost" otherwise.
-            renderWidth = 816;
-            renderHeight = 640;
-        }
-        if (!renderWidth || !renderHeight) {
-            return;
-        }
-        if (renderWidth === this.renderWidth && renderHeight === this.renderHeight) {
-            return;
-        }
-        this.renderWidth = renderWidth;
-        this.renderHeight = renderHeight;
-        this.rebuild(`resize to ${renderWidth}x${renderHeight}`);
-    }
-    // rebuild tells to stop the current engine and create a new one.
-    rebuild(s) {
-        this.rebuildNeeded = s;
-    }
-    // loop is responsible for running each frame when needed, and recreating
-    // the engine when requested (e.g., on resize).
-    async loop(canvas) {
-        while (true) {
-            console.log("new engine:", this.rebuildNeeded);
-            this.rebuildNeeded = undefined;
-            this.webGPUpresent = false;
-            this.error = "";
-            try {
-                if (!navigator.gpu) {
-                    throw new Error("no webgpu extension");
-                }
-                let adapter = null;
-                try {
-                    // Firefox can have navigator.gpu but still throw when
-                    // calling requestAdapter.
-                    adapter = await navigator.gpu.requestAdapter();
-                }
-                catch (e) {
-                    console.error("navigator.gpu.requestAdapter failed:", e);
-                    throw new Error("requesting adapter failed");
-                }
-                if (!adapter) {
-                    throw new Error("no webgpu adapter");
-                }
-                const device = await adapter.requestDevice();
-                // As of 2021-12-11, Firefox nightly does not support device.lost.
-                device.lost.then((e) => {
-                    console.error("device lost", e);
-                    this.error = "device lost";
-                });
-                device.onuncapturederror = (ev) => {
-                    console.error("webgpu error", ev);
-                    this.error = "webgpu device error";
-                };
-                const context = canvas.getContext('webgpu');
-                if (!context) {
-                    throw new Error("no webgpu canvas context");
-                }
-                this.webGPUpresent = true;
-                const renderFormat = context.getPreferredFormat(adapter);
-                context.configure({
-                    device: device,
-                    format: renderFormat,
-                    compositingAlphaMode: 'opaque',
-                    size: {
-                        width: this.renderWidth,
-                        height: this.renderHeight,
-                    },
-                });
-                this.extraControls = [];
-                this.camera = new cameras.Null();
-                const renderer = await demoByID(this.demoID).init({
-                    context: context,
-                    adapter: adapter,
-                    device: device,
-                    renderFormat: renderFormat,
-                    renderWidth: this.renderWidth,
-                    renderHeight: this.renderHeight,
-                    setCamera: (c) => { this.camera = c; },
-                    expose: (t) => { this.extraControls.push(t); },
-                });
-                if (this.error) {
-                    throw new Error("init failed");
-                }
-                // Render loop
-                let elapsedMs = 0;
-                let timestampMs = 0;
-                while (!this.rebuildNeeded) {
-                    const ts = await new Promise(window.requestAnimationFrame);
-                    let deltaMs = 0;
-                    if (timestampMs) {
-                        deltaMs = ts - timestampMs;
-                    }
-                    // Even when paused, continue updating timestampMs - this
-                    // way, when resuming, it will just count a delta of a
-                    // single frame instead of the full time since paused.
-                    timestampMs = ts;
-                    if (!this.paused || this.step) {
-                        elapsedMs += deltaMs;
-                    }
-                    else {
-                        deltaMs = 0;
-                    }
-                    this.step = false;
-                    await renderer({
-                        elapsedMs: elapsedMs,
-                        deltaMs: deltaMs,
-                        rng: Math.random(),
-                        cameraMvt: this.getCameraMoveInfo(),
-                    });
-                    if (this.error) {
-                        throw new Error("frame failed");
-                    }
-                }
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            catch (e) {
-                console.error("Run:", e);
-                if (e instanceof Error) {
-                    this.error = e.toString();
-                }
-                else {
-                    this.error = "generic error";
-                }
-                // And now, wait for something to tell us to retry.
-                // Could be better done with a proper event, but here we are.
-                while (!this.rebuildNeeded) {
-                    await new Promise(window.requestAnimationFrame);
-                }
-            }
-        }
-    }
-    updateURL(k, v) {
-        if (typeof v == "boolean") {
-            v = v === true ? "1" : "0";
-        }
-        const params = new URLSearchParams(window.location.search);
-        params.set(k, v);
-        history.pushState(null, '', window.location.pathname + '?' + params.toString());
-    }
-    getBoolParam(k, defvalue = false) {
-        const params = new URLSearchParams(window.location.search);
-        const v = params.get(k);
-        if (v === null) {
-            return defvalue;
-        }
-        if (v === "1" || v.toLowerCase() === "false") {
-            return true;
-        }
-        return false;
-    }
-    getStringParam(k, defvalue = "") {
-        const params = new URLSearchParams(window.location.search);
-        const v = params.get(k);
-        if (v === null) {
-            return defvalue;
-        }
-        return v;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)({ type: Boolean })
-], AppMain.prototype, "webGPUpresent", void 0);
-__decorate([
-    (0, decorators_js_1.property)()
-], AppMain.prototype, "error", void 0);
-__decorate([
-    (0, decorators_js_1.property)()
-], AppMain.prototype, "_demoID", void 0);
-AppMain = __decorate([
-    (0, decorators_js_1.customElement)('app-main')
-], AppMain);
-exports.AppMain = AppMain;
-// Setup base document.
-const htmlElt = document.body.parentElement;
-htmlElt.style.height = '100%';
-document.body.style.height = '100%';
-document.body.style.margin = '0';
-document.body.style.backgroundColor = '#888800';
-document.body.appendChild(document.createElement("app-main"));
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "GLTFAccessorComponentType": () => (/* binding */ GLTFAccessorComponentType),
+/* harmony export */   "GLTFAccessorType": () => (/* binding */ GLTFAccessorType),
+/* harmony export */   "GLTFPrimitiveMode": () => (/* binding */ GLTFPrimitiveMode),
+/* harmony export */   "GPUMesh": () => (/* binding */ GPUMesh),
+/* harmony export */   "cubeMesh": () => (/* binding */ cubeMesh),
+/* harmony export */   "loadGLTF": () => (/* binding */ loadGLTF),
+/* harmony export */   "sphereMesh": () => (/* binding */ sphereMesh),
+/* harmony export */   "vertexDesc": () => (/* binding */ vertexDesc)
+/* harmony export */ });
+/* harmony import */ var gl_matrix__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/vec3.js");
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../src */ "./src/index.ts");
+/* harmony import */ var gltf_loader_ts__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! gltf-loader-ts */ "./node_modules/gltf-loader-ts/lib/gltf-loader.js");
+/* harmony import */ var gltf_loader_ts__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(gltf_loader_ts__WEBPACK_IMPORTED_MODULE_1__);
 
 
-/***/ }),
 
-/***/ "./src/models.ts":
-/*!***********************!*\
-  !*** ./src/models.ts ***!
-  \***********************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.loadGLTF = exports.GLTFAccessorComponentType = exports.GLTFAccessorType = exports.GLTFPrimitiveMode = exports.sphereMesh = exports.cubeMesh = exports.GPUMesh = exports.vertexDesc = void 0;
-const glmatrix = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/esm/index.js");
-const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
-const gltfloader = __webpack_require__(/*! gltf-loader-ts */ "./node_modules/gltf-loader-ts/lib/gltf-loader.js");
-exports.vertexDesc = new wg.StructType({
-    pos: { type: wg.Vec3f32, idx: 0 },
-    color: { type: wg.Vec4f32, idx: 1 },
+const vertexDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+    pos: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 0 },
+    color: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec4f32, idx: 1 },
 });
 class GPUMesh {
     constructor(params, mesh) {
         this.min = mesh.min;
         this.max = mesh.max;
-        const verticesDesc = new wg.ArrayType(exports.vertexDesc, mesh.vertices.length);
+        const verticesDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.ArrayType(vertexDesc, mesh.vertices.length);
         this.vertexBuffer = params.device.createBuffer({
             label: `vertex buffer`,
             size: verticesDesc.byteSize(),
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
         params.device.queue.writeBuffer(this.vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
-        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+        const indexDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.ArrayType(_src__WEBPACK_IMPORTED_MODULE_0__.U16, mesh.indices.length);
         // Writing to buffer must be multiple of 4.
         const indexSize = Math.ceil(indexDesc.byteSize() / 4) * 4;
         this.indexBuffer = params.device.createBuffer({
@@ -11280,7 +8484,6 @@ class GPUMesh {
         encoder.drawIndexed(this.indicesCount);
     }
 }
-exports.GPUMesh = GPUMesh;
 function cubeMesh() {
     const r = 0.5;
     return {
@@ -11310,15 +8513,14 @@ function cubeMesh() {
         ]
     };
 }
-exports.cubeMesh = cubeMesh;
 // Inspired from https://github.com/caosdoar/spheres/blob/master/src/spheres.cpp
 const faces = [
-    { idx: 0, origin: glmatrix.vec3.fromValues(-1, -1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 1, origin: glmatrix.vec3.fromValues(1, -1, -1), right: glmatrix.vec3.fromValues(0, 0, 2), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 2, origin: glmatrix.vec3.fromValues(1, -1, 1), right: glmatrix.vec3.fromValues(-2, 0, 0), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 3, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(0, 0, -2), up: glmatrix.vec3.fromValues(0, 2, 0) },
-    { idx: 4, origin: glmatrix.vec3.fromValues(-1, 1, -1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, 2) },
-    { idx: 5, origin: glmatrix.vec3.fromValues(-1, -1, 1), right: glmatrix.vec3.fromValues(2, 0, 0), up: glmatrix.vec3.fromValues(0, 0, -2) },
+    { idx: 0, origin: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(-1, -1, -1), right: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(2, 0, 0), up: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 2, 0) },
+    { idx: 1, origin: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(1, -1, -1), right: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 0, 2), up: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 2, 0) },
+    { idx: 2, origin: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(1, -1, 1), right: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(-2, 0, 0), up: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 2, 0) },
+    { idx: 3, origin: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(-1, -1, 1), right: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 0, -2), up: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 2, 0) },
+    { idx: 4, origin: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(-1, 1, -1), right: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(2, 0, 0), up: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 0, 2) },
+    { idx: 5, origin: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(-1, -1, 1), right: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(2, 0, 0), up: gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(0, 0, -2) },
 ];
 function sphereMesh() {
     const vertices = [];
@@ -11328,8 +8530,8 @@ function sphereMesh() {
     for (const face of faces) {
         for (let j = 0; j <= divisions; j++) {
             for (let i = 0; i <= divisions; i++) {
-                const p = glmatrix.vec3.fromValues(face.origin[0] + step * (i * face.right[0] + j * face.up[0]), face.origin[1] + step * (i * face.right[1] + j * face.up[1]), face.origin[2] + step * (i * face.right[2] + j * face.up[2]));
-                const p2 = glmatrix.vec3.multiply(glmatrix.vec3.create(), p, p);
+                const p = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(face.origin[0] + step * (i * face.right[0] + j * face.up[0]), face.origin[1] + step * (i * face.right[1] + j * face.up[1]), face.origin[2] + step * (i * face.right[2] + j * face.up[2]));
+                const p2 = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.multiply(gl_matrix__WEBPACK_IMPORTED_MODULE_2__.create(), p, p);
                 vertices.push({
                     pos: [
                         p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
@@ -11367,7 +8569,6 @@ function sphereMesh() {
         indices: indices,
     };
 }
-exports.sphereMesh = sphereMesh;
 // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_mesh_primitive_mode
 var GLTFPrimitiveMode;
 (function (GLTFPrimitiveMode) {
@@ -11378,7 +8579,7 @@ var GLTFPrimitiveMode;
     GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLES"] = 4] = "TRIANGLES";
     GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
     GLTFPrimitiveMode[GLTFPrimitiveMode["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
-})(GLTFPrimitiveMode = exports.GLTFPrimitiveMode || (exports.GLTFPrimitiveMode = {}));
+})(GLTFPrimitiveMode || (GLTFPrimitiveMode = {}));
 ;
 // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#accessor-data-types
 var GLTFAccessorType;
@@ -11390,7 +8591,7 @@ var GLTFAccessorType;
     GLTFAccessorType["MAT2"] = "MAT2";
     GLTFAccessorType["MAT3"] = "MAT3";
     GLTFAccessorType["MAT4"] = "MAT4";
-})(GLTFAccessorType = exports.GLTFAccessorType || (exports.GLTFAccessorType = {}));
+})(GLTFAccessorType || (GLTFAccessorType = {}));
 ;
 var GLTFAccessorComponentType;
 (function (GLTFAccessorComponentType) {
@@ -11400,10 +8601,11 @@ var GLTFAccessorComponentType;
     GLTFAccessorComponentType[GLTFAccessorComponentType["U16"] = 5123] = "U16";
     GLTFAccessorComponentType[GLTFAccessorComponentType["U32"] = 5125] = "U32";
     GLTFAccessorComponentType[GLTFAccessorComponentType["F32"] = 5126] = "F32";
-})(GLTFAccessorComponentType = exports.GLTFAccessorComponentType || (exports.GLTFAccessorComponentType = {}));
+})(GLTFAccessorComponentType || (GLTFAccessorComponentType = {}));
 ;
 async function loadGLTF(u) {
-    const loader = new gltfloader.GltfLoader();
+    var _a;
+    const loader = new gltf_loader_ts__WEBPACK_IMPORTED_MODULE_1__.GltfLoader();
     const asset = await loader.load(u);
     const content = asset.gltf;
     if (!content.meshes) {
@@ -11430,7 +8632,7 @@ async function loadGLTF(u) {
     const max = vertAcc.max ? vertAcc.max : undefined;
     // accessorData return the full bufferView, not just specific accessorData.
     const posBufferView = await asset.accessorData(vertAccIndex);
-    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (vertAcc.byteOffset ?? 0), vertAcc.count * 3);
+    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + ((_a = vertAcc.byteOffset) !== null && _a !== void 0 ? _a : 0), vertAcc.count * 3);
     const vertices = [];
     for (let i = 0; i < vertAcc.count; i++) {
         vertices.push({
@@ -11460,26 +8662,33 @@ async function loadGLTF(u) {
         max,
     };
 }
-exports.loadGLTF = loadGLTF;
 
 
 /***/ }),
 
-/***/ "./src/shaderlib.ts":
-/*!**************************!*\
-  !*** ./src/shaderlib.ts ***!
-  \**************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./demos/shaderlib.ts":
+/*!****************************!*\
+  !*** ./demos/shaderlib.ts ***!
+  \****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "buildLineBundle": () => (/* binding */ buildLineBundle),
+/* harmony export */   "cubeMeshStrip": () => (/* binding */ cubeMeshStrip),
+/* harmony export */   "cubelines": () => (/* binding */ cubelines),
+/* harmony export */   "ortholines": () => (/* binding */ ortholines),
+/* harmony export */   "projection": () => (/* binding */ projection),
+/* harmony export */   "rand": () => (/* binding */ rand),
+/* harmony export */   "tr": () => (/* binding */ tr)
+/* harmony export */ });
+/* harmony import */ var _src__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../src */ "./src/index.ts");
 
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cubelines = exports.ortholines = exports.buildLineBundle = exports.rand = exports.cubeMeshStrip = exports.tr = exports.projection = void 0;
-const wg = __webpack_require__(/*! ./wg */ "./src/wg.ts");
 // Functions to calculate projection matrices.
-exports.projection = new wg.WGSLModule({
+const projection = new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
     label: "projection matrices",
-    code: wg.wgsl `
+    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
         fn @@perspective(aspect: f32) -> mat4x4<f32> {
             // Hard coded projection parameters - for more flexibility,
             // we could imagine getting them from the uniforms.
@@ -11499,9 +8708,9 @@ exports.projection = new wg.WGSLModule({
         }`,
 });
 // Functions for common transformations - translation, rotation.
-exports.tr = new wg.WGSLModule({
+const tr = new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
     label: "transform matrices",
-    code: wg.wgsl `
+    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
         fn @@translate(tr : vec3<f32>) -> mat4x4<f32> {
             return mat4x4<f32>(
                 1.0, 0.0, 0.0, 0.0,
@@ -11557,9 +8766,9 @@ exports.tr = new wg.WGSLModule({
 // An hard coded list of vertex for a cube declared as triangle strip.
 // Cube is between -1 and +1.
 // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
-exports.cubeMeshStrip = new wg.WGSLModule({
+const cubeMeshStrip = new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
     label: "mesh for a cube triangle strip",
-    code: wg.wgsl `
+    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
         let @@mesh = array<vec3<f32>, 14>(
             vec3<f32>(1.f, 1.f, 1.f),     // Front-top-left
             vec3<f32>(-1.f, 1.f, 1.f),      // Front-top-right
@@ -11578,9 +8787,9 @@ exports.cubeMeshStrip = new wg.WGSLModule({
         );
     `,
 });
-exports.rand = new wg.WGSLModule({
+const rand = new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
     label: "random functions",
-    code: wg.wgsl `
+    code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
         fn @@meh(a: f32, b: f32) -> f32 {
             return fract(sin(dot(vec2<f32>(a, b), vec2<f32>(12.9898,78.233)))*43758.5453123);
         }
@@ -11588,17 +8797,18 @@ exports.rand = new wg.WGSLModule({
 });
 // Prepare a bundle which will draw a bunch of lines.
 function buildLineBundle(lineDesc) {
-    const label = lineDesc.label ?? "lines";
+    var _a, _b, _c;
+    const label = (_a = lineDesc.label) !== null && _a !== void 0 ? _a : "lines";
     // Count the number of lines.
     let lineCount = 0;
     for (const line of lineDesc.lines) {
         lineCount += line.length - 1;
     }
-    const pointDesc = new wg.StructType({
-        pos: { type: wg.Vec3f32, idx: 0 },
-        color: { type: wg.Vec4f32, idx: 1 },
+    const pointDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
+        pos: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 0 },
+        color: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec4f32, idx: 1 },
     });
-    const arrayDesc = new wg.ArrayType(pointDesc, lineCount * 2);
+    const arrayDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.ArrayType(pointDesc, lineCount * 2);
     const vertexBuffer = lineDesc.device.createBuffer({
         label: `${label} - vertex buffer`,
         size: arrayDesc.byteSize(),
@@ -11619,19 +8829,19 @@ function buildLineBundle(lineDesc) {
         }
     }
     lineDesc.device.queue.writeBuffer(vertexBuffer, 0, a);
-    const shader = lineDesc.device.createShaderModule(new wg.WGSLModule({
+    const shader = lineDesc.device.createShaderModule(new _src__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
         label: `${label} - render shader`,
-        code: wg.wgsl `
+        code: _src__WEBPACK_IMPORTED_MODULE_0__.wgsl `
             @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
 
             struct Input {
-                @location(0) pos: vec3<f32>;
-                @location(1) color: vec4<f32>;
+                @location(0) pos: vec3<f32>,
+                @location(1) color: vec4<f32>,
             }
 
             struct VertexOutput {
-                @builtin(position) pos: vec4<f32>;
-                @location(0) color: vec4<f32>;
+                @builtin(position) pos: vec4<f32>,
+                @location(0) color: vec4<f32>,
             };
 
             @stage(vertex)
@@ -11679,7 +8889,7 @@ function buildLineBundle(lineDesc) {
         },
         depthStencil: lineDesc.depthFormat ? {
             depthWriteEnabled: false,
-            depthCompare: lineDesc.depthCompare ?? 'always',
+            depthCompare: (_b = lineDesc.depthCompare) !== null && _b !== void 0 ? _b : 'always',
             format: lineDesc.depthFormat,
         } : undefined,
         fragment: {
@@ -11700,7 +8910,7 @@ function buildLineBundle(lineDesc) {
         depthReadOnly: true,
         stencilReadOnly: true,
         colorFormats: [lineDesc.colorFormat],
-        depthStencilFormat: lineDesc.depthFormat ?? undefined,
+        depthStencilFormat: (_c = lineDesc.depthFormat) !== null && _c !== void 0 ? _c : undefined,
     });
     bundleEncoder.pushDebugGroup(`${label} - building bundle`);
     bundleEncoder.setVertexBuffer(0, vertexBuffer);
@@ -11710,9 +8920,8 @@ function buildLineBundle(lineDesc) {
     bundleEncoder.popDebugGroup();
     return bundleEncoder.finish();
 }
-exports.buildLineBundle = buildLineBundle;
 // Lines for indicating the orthonormal reference.
-exports.ortholines = [
+const ortholines = [
     [{ pos: [0, 0, 0], color: [1, 0, 0, 1] }, { pos: [1, 0, 0], color: [1, 0, 0, 1] }],
     [{ pos: [0, 0, 0], color: [0, 1, 0, 1] }, { pos: [0, 1, 0], color: [0, 1, 0, 1] }],
     [{ pos: [0, 0, 0], color: [0, 0, 1, 1] }, { pos: [0, 0, 1], color: [0, 0, 1, 1] }],
@@ -11752,240 +8961,72 @@ function cubelines(s) {
         ],
     ];
 }
-exports.cubelines = cubelines;
 
 
 /***/ }),
 
-/***/ "./src/varpanel.ts":
-/*!*************************!*\
-  !*** ./src/varpanel.ts ***!
-  \*************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ "./src/index.ts":
+/*!**********************!*\
+  !*** ./src/index.ts ***!
+  \**********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SelectElement = exports.newSelect = exports.BoolElement = exports.newBool = exports.VarPanel = exports.commonStyle = void 0;
-const lit_1 = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
-const decorators_js_1 = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
-exports.commonStyle = (0, lit_1.css) `
-    .labelvalue {
-        display: grid;
-        grid-template-columns: 8em 100fr;
-        grid-template-rows: 100fr;
-
-        border-top: 1px solid #4d4d4d;
-        padding: 2px 1px 2px 1px;
-        font: 11px 'Lucida Grande', sans-serif;
-    }
-
-    .labelvalue select, .labelvalue input {
-        font: 11px 'Lucida Grande', sans-serif;
-        margin: 0;
-    }
-
-    .labelvalue label {
-        grid-column-start: 1;
-        grid-column-end: 2;
-    }
-
-    .value {
-        grid-column-start: 2;
-        grid-column-end: 3;
-    }
-`;
-let VarPanel = class VarPanel extends lit_1.LitElement {
-    constructor() {
-        super(...arguments);
-        this.expanded = false;
-    }
-    static { this.styles = [exports.commonStyle, (0, lit_1.css) `
-        :host {
-            background-color: #d6d6d6f0;
-            border: #8b8b8b 1px solid;
-            font-size: 11px;
-        }
-
-        .line {
-            border-top: 1px solid #4d4d4d;
-            display: flex;
-            justify-content: center;
-        }
-
-        .line button {
-            flex-grow: 1;
-            font: italic 11px 'Lucida Grande', sans-serif;
-            border: none;
-            background-color: transparent;
-        }
-    `]; }
-    render() {
-        return (0, lit_1.html) `
-            ${this.expanded ? (0, lit_1.html) `<slot></slot>` : ``}
-            <div class="line">
-                <button @click="${() => { this.expanded = !this.expanded; }}">
-                    ${this.expanded ? 'Close' : 'Open'} controls
-                </button>
-            </div>
-        `;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)({ type: Boolean })
-], VarPanel.prototype, "expanded", void 0);
-VarPanel = __decorate([
-    (0, decorators_js_1.customElement)('var-panel')
-], VarPanel);
-exports.VarPanel = VarPanel;
-function newBool(desc) {
-    return (0, lit_1.html) `<vp-bool .obj=${desc.obj} .field=${desc.field}>${desc.caption}</vp-bool>`;
-}
-exports.newBool = newBool;
-let BoolElement = class BoolElement extends lit_1.LitElement {
-    constructor() {
-        super(...arguments);
-        this.field = "";
-    }
-    static { this.styles = [exports.commonStyle]; }
-    render() {
-        return (0, lit_1.html) `
-            <div class="labelvalue">
-                <label><slot>${this.field}</slot></label>
-                <input class="value" type=checkbox ?checked=${this.getValue()} @change=${(e) => { this.setValue(e.target.checked); }}></input>
-            </div>
-        `;
-    }
-    getValue() {
-        return this.obj[this.field] ?? false;
-    }
-    setValue(v) {
-        this.obj[this.field] = v;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)()
-], BoolElement.prototype, "field", void 0);
-__decorate([
-    (0, decorators_js_1.property)()
-], BoolElement.prototype, "obj", void 0);
-BoolElement = __decorate([
-    (0, decorators_js_1.customElement)('vp-bool')
-], BoolElement);
-exports.BoolElement = BoolElement;
-function newSelect(desc) {
-    return (0, lit_1.html) `<vp-select .obj=${desc.obj} .field=${desc.field} .values=${desc.values}>${desc.caption}</vp-select>`;
-}
-exports.newSelect = newSelect;
-let SelectElement = class SelectElement extends lit_1.LitElement {
-    constructor() {
-        super(...arguments);
-        this.field = "";
-        this.values = [];
-    }
-    static { this.styles = [exports.commonStyle]; }
-    render() {
-        const current = this.getValue();
-        return (0, lit_1.html) `
-            <div class="labelvalue">
-                <label><slot>${this.field}</slot></label>
-                <select class="value" @change=${this.onChange}>
-                    ${this.values.map(id => (0, lit_1.html) `
-                        <option value=${id} ?selected=${id === current}>${id}</option>
-                    `)}
-                </select>
-            </div>
-        `;
-    }
-    onChange(evt) {
-        const options = evt.target.selectedOptions;
-        if (!options) {
-            return;
-        }
-        this.setValue(options[0].value);
-    }
-    getValue() {
-        return this.obj[this.field] ?? false;
-    }
-    setValue(v) {
-        this.obj[this.field] = v;
-    }
-};
-__decorate([
-    (0, decorators_js_1.property)()
-], SelectElement.prototype, "field", void 0);
-__decorate([
-    (0, decorators_js_1.property)({ attribute: false })
-], SelectElement.prototype, "obj", void 0);
-__decorate([
-    (0, decorators_js_1.property)({ attribute: false })
-], SelectElement.prototype, "values", void 0);
-SelectElement = __decorate([
-    (0, decorators_js_1.customElement)('vp-select')
-], SelectElement);
-exports.SelectElement = SelectElement;
-
-
-/***/ }),
-
-/***/ "./src/wg.ts":
-/*!*******************!*\
-  !*** ./src/wg.ts ***!
-  \*******************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ArrayType": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.ArrayType),
+/* harmony export */   "F32": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.F32),
+/* harmony export */   "Mat4x4F32": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.Mat4x4F32),
+/* harmony export */   "StructType": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.StructType),
+/* harmony export */   "U16": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.U16),
+/* harmony export */   "U32": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.U32),
+/* harmony export */   "Vec3f32": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.Vec3f32),
+/* harmony export */   "Vec4f32": () => (/* reexport safe */ _types__WEBPACK_IMPORTED_MODULE_0__.Vec4f32),
+/* harmony export */   "WGSLModule": () => (/* reexport safe */ _lang__WEBPACK_IMPORTED_MODULE_1__.WGSLModule),
+/* harmony export */   "lang": () => (/* reexport module object */ _lang__WEBPACK_IMPORTED_MODULE_1__),
+/* harmony export */   "types": () => (/* reexport module object */ _types__WEBPACK_IMPORTED_MODULE_0__),
+/* harmony export */   "wgsl": () => (/* reexport safe */ _lang__WEBPACK_IMPORTED_MODULE_1__.wgsl)
+/* harmony export */ });
+/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./types */ "./src/types.ts");
+/* harmony import */ var _lang__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./lang */ "./src/lang.ts");
 // A WebGPU helper libraries. For now, providers:
 //   - WGSLModule: A way to import / manage a library of reusable WGSL code.
 //   - A way to manage mapping between Javascript types and WGSL types, for
 //     simple buffer translation.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Vec4f32 = exports.Vec3f32 = exports.Mat4x4F32 = exports.ArrayType = exports.StructType = exports.F32 = exports.U32 = exports.U16 = exports.wgsl = exports.WGSLModule = exports.lang = exports.types = void 0;
-exports.types = __webpack_require__(/*! ./wg/types */ "./src/wg/types.ts");
-exports.lang = __webpack_require__(/*! ./wg/lang */ "./src/wg/lang.ts");
-var lang_1 = __webpack_require__(/*! ./wg/lang */ "./src/wg/lang.ts");
-Object.defineProperty(exports, "WGSLModule", ({ enumerable: true, get: function () { return lang_1.WGSLModule; } }));
-Object.defineProperty(exports, "wgsl", ({ enumerable: true, get: function () { return lang_1.wgsl; } }));
-var types_1 = __webpack_require__(/*! ./wg/types */ "./src/wg/types.ts");
-Object.defineProperty(exports, "U16", ({ enumerable: true, get: function () { return types_1.U16; } }));
-Object.defineProperty(exports, "U32", ({ enumerable: true, get: function () { return types_1.U32; } }));
-Object.defineProperty(exports, "F32", ({ enumerable: true, get: function () { return types_1.F32; } }));
-Object.defineProperty(exports, "StructType", ({ enumerable: true, get: function () { return types_1.StructType; } }));
-Object.defineProperty(exports, "ArrayType", ({ enumerable: true, get: function () { return types_1.ArrayType; } }));
-Object.defineProperty(exports, "Mat4x4F32", ({ enumerable: true, get: function () { return types_1.Mat4x4F32; } }));
-Object.defineProperty(exports, "Vec3f32", ({ enumerable: true, get: function () { return types_1.Vec3f32; } }));
-Object.defineProperty(exports, "Vec4f32", ({ enumerable: true, get: function () { return types_1.Vec4f32; } }));
+
+
+
+
 
 
 /***/ }),
 
-/***/ "./src/wg/lang.ts":
-/*!************************!*\
-  !*** ./src/wg/lang.ts ***!
-  \************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ "./src/lang.ts":
+/*!*********************!*\
+  !*** ./src/lang.ts ***!
+  \*********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "WGSLCode": () => (/* binding */ WGSLCode),
+/* harmony export */   "WGSLModule": () => (/* binding */ WGSLModule),
+/* harmony export */   "WGSLName": () => (/* binding */ WGSLName),
+/* harmony export */   "WGSLRef": () => (/* binding */ WGSLRef),
+/* harmony export */   "wgsl": () => (/* binding */ wgsl)
+/* harmony export */ });
 // The following providing a kind of WGSL import system.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wgsl = exports.WGSLCode = exports.WGSLRef = exports.WGSLName = exports.WGSLModule = void 0;
 /// <reference types="@webgpu/types" />
 class WGSLModule {
     constructor(cfg) {
+        var _a;
         this.imports = [];
         this.symbols = new Set();
         if (cfg.imports) {
             this.imports.push(...cfg.imports);
         }
-        this.label = cfg.label ?? "<unnamed>";
+        this.label = (_a = cfg.label) !== null && _a !== void 0 ? _a : "<unnamed>";
         this.code = cfg.code;
         for (const token of this.code.tokens) {
             if (token instanceof WGSLName) {
@@ -12078,20 +9119,17 @@ class WGSLModule {
         };
     }
 }
-exports.WGSLModule = WGSLModule;
 class WGSLName {
     constructor(name) {
         this.name = name;
     }
 }
-exports.WGSLName = WGSLName;
 class WGSLRef {
     constructor(mod, name) {
         this.mod = mod;
         this.name = name;
     }
 }
-exports.WGSLRef = WGSLRef;
 // WGSLCode holds a snippet of code, without parsing.
 // This is used to allow mixing actual text representation of WGSL but also
 // Javascript references to other module - that are interpretated differently
@@ -12101,7 +9139,6 @@ class WGSLCode {
         this.tokens = [...tokens];
     }
 }
-exports.WGSLCode = WGSLCode;
 // Declare WGSLCode using template strings.
 function wgsl(strings, ...keys) {
     const tokens = [...wgslSplit(strings[0])];
@@ -12125,7 +9162,6 @@ function wgsl(strings, ...keys) {
     }
     return new WGSLCode(tokens);
 }
-exports.wgsl = wgsl;
 // https://gpuweb.github.io/gpuweb/wgsl/#identifiers
 const markersRE = /@@(([a-zA-Z_][0-9a-zA-Z][0-9a-zA-Z_]*)|([a-zA-Z][0-9a-zA-Z_]*))/g;
 // Split the content of a string containing WGSL code to extract all identifiers
@@ -12208,22 +9244,33 @@ function testWGSLModules() {
 
 /***/ }),
 
-/***/ "./src/wg/types.ts":
-/*!*************************!*\
-  !*** ./src/wg/types.ts ***!
-  \*************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ "./src/types.ts":
+/*!**********************!*\
+  !*** ./src/types.ts ***!
+  \**********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ArrayType": () => (/* binding */ ArrayType),
+/* harmony export */   "F32": () => (/* binding */ F32),
+/* harmony export */   "Mat4x4F32": () => (/* binding */ Mat4x4F32),
+/* harmony export */   "StructType": () => (/* binding */ StructType),
+/* harmony export */   "U16": () => (/* binding */ U16),
+/* harmony export */   "U32": () => (/* binding */ U32),
+/* harmony export */   "Vec3f32": () => (/* binding */ Vec3f32),
+/* harmony export */   "Vec3f32Type": () => (/* binding */ Vec3f32Type),
+/* harmony export */   "Vec4f32": () => (/* binding */ Vec4f32),
+/* harmony export */   "Vec4f32Type": () => (/* binding */ Vec4f32Type)
+/* harmony export */ });
+/* harmony import */ var _lang__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./lang */ "./src/lang.ts");
 // The following contains an attempt at making it easier to manipulate basic
 // uniforms - i.e., maintaing a buffer content with structured data from
 // Javascript.
 // It is a bit overcomplicated in order to keep typing work.
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.StructType = exports.ArrayType = exports.Mat4x4F32 = exports.Vec4f32 = exports.Vec3f32 = exports.U32 = exports.U16 = exports.F32 = void 0;
-const lang = __webpack_require__(/*! ./lang */ "./src/wg/lang.ts");
-const wgsl = lang.wgsl;
+
+const wgsl = _lang__WEBPACK_IMPORTED_MODULE_0__.wgsl;
 // Basic class to represent info about a given WGSL type. The template parameter
 // is the type of the value it maps to in javascript.
 class WGSLType {
@@ -12266,7 +9313,7 @@ class F32Type extends WGSLType {
         return wgsl `f32`;
     }
 }
-exports.F32 = new F32Type();
+const F32 = new F32Type();
 // Info about WGSL `u16` type.
 // This is not a real type in WGSL, but it can be used to map
 // vertex indices.
@@ -12280,7 +9327,7 @@ class U16Type extends WGSLType {
         return wgsl `u16`;
     }
 }
-exports.U16 = new U16Type();
+const U16 = new U16Type();
 // Info about WGSL `u32` type.
 class U32Type extends WGSLType {
     byteSize() { return 4; }
@@ -12292,15 +9339,15 @@ class U32Type extends WGSLType {
         return wgsl `u32`;
     }
 }
-exports.U32 = new U32Type();
+const U32 = new U32Type();
 // Info about WGSL `vec3<f32>` type.
 class Vec3f32Type extends WGSLType {
     byteSize() { return 12; }
     alignOf() { return 16; }
     dataViewSet(dv, offset, v) {
         dv.setFloat32(offset, v[0], true);
-        dv.setFloat32(offset + exports.F32.byteSize(), v[1], true);
-        dv.setFloat32(offset + 2 * exports.F32.byteSize(), v[2], true);
+        dv.setFloat32(offset + F32.byteSize(), v[1], true);
+        dv.setFloat32(offset + 2 * F32.byteSize(), v[2], true);
     }
     typename() {
         return wgsl `vec3<f32>`;
@@ -12309,16 +9356,16 @@ class Vec3f32Type extends WGSLType {
         return "float32x3";
     }
 }
-exports.Vec3f32 = new Vec3f32Type();
+const Vec3f32 = new Vec3f32Type();
 // Info about WGSL `vec4<f32>` type.
 class Vec4f32Type extends WGSLType {
     byteSize() { return 16; }
     alignOf() { return 16; }
     dataViewSet(dv, offset, v) {
         dv.setFloat32(offset, v[0], true);
-        dv.setFloat32(offset + exports.F32.byteSize(), v[1], true);
-        dv.setFloat32(offset + 2 * exports.F32.byteSize(), v[2], true);
-        dv.setFloat32(offset + 3 * exports.F32.byteSize(), v[3], true);
+        dv.setFloat32(offset + F32.byteSize(), v[1], true);
+        dv.setFloat32(offset + 2 * F32.byteSize(), v[2], true);
+        dv.setFloat32(offset + 3 * F32.byteSize(), v[3], true);
     }
     typename() {
         return wgsl `vec4<f32>`;
@@ -12327,7 +9374,7 @@ class Vec4f32Type extends WGSLType {
         return "float32x4";
     }
 }
-exports.Vec4f32 = new Vec4f32Type();
+const Vec4f32 = new Vec4f32Type();
 // mat4x4<f32> WGSL type.
 class Mat4x4F32Type extends WGSLType {
     byteSize() { return 64; }
@@ -12335,14 +9382,14 @@ class Mat4x4F32Type extends WGSLType {
     dataViewSet(dv, offset, v) {
         for (let i = 0; i < 16; i++) {
             dv.setFloat32(offset, v[i], true);
-            offset += exports.F32.byteSize();
+            offset += F32.byteSize();
         }
     }
     typename() {
         return wgsl `mat4x4<f32>`;
     }
 }
-exports.Mat4x4F32 = new Mat4x4F32Type();
+const Mat4x4F32 = new Mat4x4F32Type();
 // A WGSL array containing type T.
 class ArrayType extends WGSLType {
     constructor(etype, count) {
@@ -12370,7 +9417,6 @@ class ArrayType extends WGSLType {
         };
     }
 }
-exports.ArrayType = ArrayType;
 // Description of a WGSL struct allowing mapping between javascript and WGSL.
 // An instance of a StructType describes just the layout of the struct:
 //  - The MemberDescMap (aka MDM) describes the list of members - name, position in
@@ -12437,7 +9483,7 @@ class StructType extends WGSLType {
         if (!this.typemod) {
             this.typemod = this.genModule("buffer struct", false);
         }
-        return wgsl `${new lang.WGSLRef(this.typemod, "structname")}`;
+        return wgsl `${new _lang__WEBPACK_IMPORTED_MODULE_0__.WGSLRef(this.typemod, "structname")}`;
     }
     // Refer to that structure in a WGSL fragment. Similar to typename(), but it
     // will als insert the appropriate `location` info, making it suitable to
@@ -12447,7 +9493,7 @@ class StructType extends WGSLType {
         if (!this.vertexmod) {
             this.vertexmod = this.genModule("vertex struct", true);
         }
-        return wgsl `${new lang.WGSLRef(this.vertexmod, "structname")}`;
+        return wgsl `${new _lang__WEBPACK_IMPORTED_MODULE_0__.WGSLRef(this.vertexmod, "structname")}`;
     }
     genModule(label, locations) {
         const lines = [
@@ -12460,10 +9506,10 @@ class StructType extends WGSLType {
             if (locations) {
                 location = `@location(${member.idx}) `;
             }
-            lines.push(wgsl `  ${location}${member.name}: ${member.type.typename()};\n`);
+            lines.push(wgsl `  ${location}${member.name}: ${member.type.typename()},\n`);
         }
         lines.push(wgsl `};\n`);
-        return new lang.WGSLModule({
+        return new _lang__WEBPACK_IMPORTED_MODULE_0__.WGSLModule({
             label: label,
             code: wgsl `${lines}`,
         });
@@ -12491,16 +9537,15 @@ class StructType extends WGSLType {
         };
     }
 }
-exports.StructType = StructType;
 //-----------------------------------------------
 // Basic test
 function testBuffer() {
     console.group("testBuffer");
     const uniformsDesc = new StructType({
-        elapsedMs: { type: exports.F32, idx: 0 },
-        renderWidth: { type: exports.F32, idx: 1 },
-        renderHeight: { type: exports.F32, idx: 2 },
-        plop: { type: new ArrayType(exports.F32, 4), idx: 3 },
+        elapsedMs: { type: F32, idx: 0 },
+        renderWidth: { type: F32, idx: 1 },
+        renderHeight: { type: F32, idx: 2 },
+        plop: { type: new ArrayType(F32, 4), idx: 3 },
     });
     console.log("byteSize", uniformsDesc.byteSize);
     console.log("content", uniformsDesc.createArray({
@@ -16251,13 +13296,25 @@ __webpack_require__.r(__webpack_exports__);
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -16287,12 +13344,500 @@ __webpack_require__.r(__webpack_exports__);
 /******/ 	})();
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/index.ts");
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+/*!************************!*\
+  !*** ./demos/index.ts ***!
+  \************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "AppMain": () => (/* binding */ AppMain),
+/* harmony export */   "allDemos": () => (/* binding */ allDemos),
+/* harmony export */   "demoByID": () => (/* binding */ demoByID)
+/* harmony export */ });
+/* harmony import */ var lit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lit */ "./node_modules/lit/index.js");
+/* harmony import */ var lit_decorators_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lit/decorators.js */ "./node_modules/lit/decorators.js");
+/* harmony import */ var _palats_varpanel__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @palats/varpanel */ "./node_modules/@palats/varpanel/dist/varpanel.js");
+/* harmony import */ var _cameras__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./cameras */ "./demos/cameras.ts");
+/* harmony import */ var _demos_conway__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./demos/conway */ "./demos/demos/conway.ts");
+/* harmony import */ var _demos_fire__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./demos/fire */ "./demos/demos/fire.ts");
+/* harmony import */ var _demos_fade__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./demos/fade */ "./demos/demos/fade.ts");
+/* harmony import */ var _demos_minimal__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./demos/minimal */ "./demos/demos/minimal.ts");
+/* harmony import */ var _demos_conway2__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./demos/conway2 */ "./demos/demos/conway2.ts");
+/* harmony import */ var _demos_cube__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./demos/cube */ "./demos/demos/cube.ts");
+/* harmony import */ var _demos_multicubes__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./demos/multicubes */ "./demos/demos/multicubes.ts");
+/* harmony import */ var _demos_sphere__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./demos/sphere */ "./demos/demos/sphere.ts");
+/* harmony import */ var _demos_plane__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./demos/plane */ "./demos/demos/plane.ts");
+/* harmony import */ var _demos_viewer__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./demos/viewer */ "./demos/demos/viewer.ts");
+/// <reference types="@webgpu/types" />
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const allDemos = [
+    _demos_conway2__WEBPACK_IMPORTED_MODULE_8__.demo,
+    _demos_fire__WEBPACK_IMPORTED_MODULE_5__.demo,
+    _demos_conway__WEBPACK_IMPORTED_MODULE_4__.demo,
+    _demos_fade__WEBPACK_IMPORTED_MODULE_6__.demo,
+    _demos_minimal__WEBPACK_IMPORTED_MODULE_7__.demo,
+    _demos_cube__WEBPACK_IMPORTED_MODULE_9__.demo,
+    _demos_multicubes__WEBPACK_IMPORTED_MODULE_10__.demo,
+    _demos_sphere__WEBPACK_IMPORTED_MODULE_11__.demo,
+    _demos_plane__WEBPACK_IMPORTED_MODULE_12__.demo,
+    _demos_viewer__WEBPACK_IMPORTED_MODULE_13__.demo,
+];
+function demoByID(id) {
+    for (const d of allDemos) {
+        if (d.id === id) {
+            return d;
+        }
+    }
+    return allDemos[0];
+}
+let AppMain = class AppMain extends lit__WEBPACK_IMPORTED_MODULE_0__.LitElement {
+    constructor() {
+        super();
+        this.webGPUpresent = false;
+        this.error = "";
+        this._limitCanvas = false;
+        this.renderWidth = 0;
+        this.renderHeight = 0;
+        this.controlsExpanded = true;
+        this.extraControls = [];
+        this.paused = false;
+        this.step = false;
+        this.shiftPressed = false;
+        this.camera = new _cameras__WEBPACK_IMPORTED_MODULE_3__.Null();
+        this.limitCanvas = this.getBoolParam("l", false);
+        this._demoID = this.getStringParam("d", allDemos[0].id);
+        this.controlsExpanded = this.getBoolParam("c", true);
+    }
+    render() {
+        const demoValues = allDemos.map(d => d.id);
+        return lit__WEBPACK_IMPORTED_MODULE_0__.html `
+            <div id="display">
+                <canvas id="canvas" tabindex=0></canvas>
+            </div>
+
+            <div id="overlay">
+                <var-panel ?expanded=${this.controlsExpanded}>
+                    <style>${_palats_varpanel__WEBPACK_IMPORTED_MODULE_2__.commonStyle}</style>
+                    <vp-select .obj=${this} field="demoID" .values=${demoValues}>Demo</vp-select>
+                    <div class="doc">${demoByID(this.demoID).caption}</div>
+                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
+                    <vp-bool .obj=${this} field="limitCanvas">Limit canvas</vp-bool>
+                    <div class="doc">
+                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
+                    </div>
+                    ${this.extraControls}
+                </var-panel>
+                ${(!this.webGPUpresent || this.error) ? lit__WEBPACK_IMPORTED_MODULE_0__.html `
+                <div id="errors">
+                    ${this.webGPUpresent ? '' : lit__WEBPACK_IMPORTED_MODULE_0__.html `
+                        <div>
+                            Your browser does not support <a href="https://en.wikipedia.org/wiki/WebGPU">WebGPU</a>.
+                            WebGPU is a future web standard which is supported by Chrome and Firefox, but requires special configuration. See <a href="https://github.com/Palats/webgpu#activating-webgpu">README</a> for details on how to activate it.
+                        </div>
+                    `}
+                    ${this.error ? lit__WEBPACK_IMPORTED_MODULE_0__.html `
+                        <div><pre>${this.error}</pre></div>
+                        <div>See javascript console for more details.</div>
+                    ` : ``}
+                </div>
+                ` : ``}
+            </div>
+        `;
+    }
+    get limitCanvas() { return this._limitCanvas; }
+    set limitCanvas(v) {
+        if (v === this._limitCanvas) {
+            return;
+        }
+        this._limitCanvas = v;
+        this.updateURL("l", this._limitCanvas);
+        this.updateSize();
+        this.requestUpdate('limitCanvas', !v);
+    }
+    get demoID() { return this._demoID; }
+    set demoID(v) {
+        if (this._demoID === v) {
+            return;
+        }
+        this._demoID = v;
+        this.updateURL("d", this._demoID);
+        this.rebuild("changed demo");
+    }
+    firstUpdated(_changedProperties) {
+        super.firstUpdated(_changedProperties);
+        // Size & observe canvas.
+        this.canvas = this.renderRoot.querySelector('#canvas');
+        this.updateSize();
+        new ResizeObserver(() => {
+            this.updateSize();
+        }).observe(this.canvas);
+        this.loop(this.canvas);
+        // Setup listener
+        const eventElement = this.canvas;
+        eventElement.addEventListener('keydown', e => {
+            if (e.key == ' ') {
+                this.paused = !this.paused;
+            }
+            else if (e.key == '.') {
+                this.paused = true;
+                this.step = true;
+            }
+            else if (e.key == 'Shift') {
+                this.shiftPressed = true;
+            }
+            else if (e.key == 'Escape') {
+                this.camera.reset();
+            }
+        });
+        eventElement.addEventListener('keyup', e => {
+            if (e.key == 'Shift') {
+                this.shiftPressed = false;
+            }
+        });
+        eventElement.addEventListener('pointerdown', e => {
+            var _a;
+            if (e.button == 0) {
+                if (this.cameraStart) {
+                    console.error("missing pointerup");
+                }
+                this.cameraStart = e;
+                (_a = this.canvas) === null || _a === void 0 ? void 0 : _a.setPointerCapture(e.pointerId);
+            }
+        });
+        eventElement.addEventListener('pointermove', e => {
+            if (!this.cameraStart) {
+                return;
+            }
+            if (e.pointerId != this.cameraStart.pointerId) {
+                return;
+            }
+            this.cameraCurrent = e;
+        });
+        eventElement.addEventListener('pointerup', e => {
+            if (!this.cameraStart) {
+                return;
+            }
+            if (e.button != this.cameraStart.button || e.pointerId != this.cameraStart.pointerId) {
+                return;
+            }
+            if (this.cameraStart && this.cameraCurrent) {
+                this.camera.update(this.getCameraMoveInfo());
+            }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
+        eventElement.addEventListener('pointerout', e => {
+            if (!this.cameraStart) {
+                return;
+            }
+            if (e.pointerId != this.cameraStart.pointerId) {
+                return;
+            }
+            this.cameraStart = undefined;
+            this.cameraCurrent = undefined;
+        });
+        eventElement.addEventListener('wheel', e => {
+            this.camera.update({
+                deltaZoom: e.deltaY / this.canvas.clientHeight,
+                shift: this.shiftPressed,
+            });
+        });
+        // Make sure keyboard events go to the canvas initially.
+        this.canvas.focus();
+    }
+    getCameraMoveInfo() {
+        const mvt = {
+            shift: this.shiftPressed,
+        };
+        if (this.cameraStart && this.cameraCurrent) {
+            mvt.deltaX = (this.cameraCurrent.x - this.cameraStart.x) / this.canvas.clientWidth;
+            mvt.deltaY = (this.cameraCurrent.y - this.cameraStart.y) / this.canvas.clientHeight;
+        }
+        return mvt;
+    }
+    updateSize() {
+        if (!this.canvas) {
+            return;
+        }
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        let renderWidth = this.canvas.clientWidth * devicePixelRatio;
+        let renderHeight = this.canvas.clientHeight * devicePixelRatio;
+        if (this.limitCanvas && ((renderWidth > 816) || (renderHeight > 640))) {
+            // As of 2021-12-12, Chrome stable & unstable on a Linux (nvidia
+            // 460.91.03, 470.86) do not accept a pixel more than 816x640 somehow - "device
+            // lost" otherwise.
+            renderWidth = 816;
+            renderHeight = 640;
+        }
+        if (!renderWidth || !renderHeight) {
+            return;
+        }
+        if (renderWidth === this.renderWidth && renderHeight === this.renderHeight) {
+            return;
+        }
+        this.renderWidth = renderWidth;
+        this.renderHeight = renderHeight;
+        this.rebuild(`resize to ${renderWidth}x${renderHeight}`);
+    }
+    // rebuild tells to stop the current engine and create a new one.
+    rebuild(s) {
+        this.rebuildNeeded = s;
+    }
+    // loop is responsible for running each frame when needed, and recreating
+    // the engine when requested (e.g., on resize).
+    async loop(canvas) {
+        while (true) {
+            console.log("new engine:", this.rebuildNeeded);
+            this.rebuildNeeded = undefined;
+            this.webGPUpresent = false;
+            this.error = "";
+            try {
+                if (!navigator.gpu) {
+                    throw new Error("no webgpu extension");
+                }
+                let adapter = null;
+                try {
+                    // Firefox can have navigator.gpu but still throw when
+                    // calling requestAdapter.
+                    adapter = await navigator.gpu.requestAdapter();
+                }
+                catch (e) {
+                    console.error("navigator.gpu.requestAdapter failed:", e);
+                    throw new Error("requesting adapter failed");
+                }
+                if (!adapter) {
+                    throw new Error("no webgpu adapter");
+                }
+                const device = await adapter.requestDevice();
+                // As of 2021-12-11, Firefox nightly does not support device.lost.
+                device.lost.then((e) => {
+                    console.error("device lost", e);
+                    this.error = "device lost";
+                });
+                device.onuncapturederror = (ev) => {
+                    console.error("webgpu error", ev);
+                    this.error = "webgpu device error";
+                };
+                const context = canvas.getContext('webgpu');
+                if (!context) {
+                    throw new Error("no webgpu canvas context");
+                }
+                this.webGPUpresent = true;
+                const renderFormat = context.getPreferredFormat(adapter);
+                context.configure({
+                    device: device,
+                    format: renderFormat,
+                    compositingAlphaMode: 'opaque',
+                    size: {
+                        width: this.renderWidth,
+                        height: this.renderHeight,
+                    },
+                });
+                this.extraControls = [];
+                this.camera = new _cameras__WEBPACK_IMPORTED_MODULE_3__.Null();
+                const renderer = await demoByID(this.demoID).init({
+                    context: context,
+                    adapter: adapter,
+                    device: device,
+                    renderFormat: renderFormat,
+                    renderWidth: this.renderWidth,
+                    renderHeight: this.renderHeight,
+                    setCamera: (c) => { this.camera = c; },
+                    expose: (t) => { this.extraControls.push(t); },
+                });
+                if (this.error) {
+                    throw new Error("init failed");
+                }
+                // Render loop
+                let elapsedMs = 0;
+                let timestampMs = 0;
+                while (!this.rebuildNeeded) {
+                    const ts = await new Promise(window.requestAnimationFrame);
+                    let deltaMs = 0;
+                    if (timestampMs) {
+                        deltaMs = ts - timestampMs;
+                    }
+                    // Even when paused, continue updating timestampMs - this
+                    // way, when resuming, it will just count a delta of a
+                    // single frame instead of the full time since paused.
+                    timestampMs = ts;
+                    if (!this.paused || this.step) {
+                        elapsedMs += deltaMs;
+                    }
+                    else {
+                        deltaMs = 0;
+                    }
+                    this.step = false;
+                    await renderer({
+                        elapsedMs: elapsedMs,
+                        deltaMs: deltaMs,
+                        rng: Math.random(),
+                        cameraMvt: this.getCameraMoveInfo(),
+                    });
+                    if (this.error) {
+                        throw new Error("frame failed");
+                    }
+                }
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            catch (e) {
+                console.error("Run:", e);
+                if (e instanceof Error) {
+                    this.error = e.toString();
+                }
+                else {
+                    this.error = "generic error";
+                }
+                // And now, wait for something to tell us to retry.
+                // Could be better done with a proper event, but here we are.
+                while (!this.rebuildNeeded) {
+                    await new Promise(window.requestAnimationFrame);
+                }
+            }
+        }
+    }
+    updateURL(k, v) {
+        if (typeof v == "boolean") {
+            v = v === true ? "1" : "0";
+        }
+        const params = new URLSearchParams(window.location.search);
+        params.set(k, v);
+        history.pushState(null, '', window.location.pathname + '?' + params.toString());
+    }
+    getBoolParam(k, defvalue = false) {
+        const params = new URLSearchParams(window.location.search);
+        const v = params.get(k);
+        if (v === null) {
+            return defvalue;
+        }
+        if (v === "1" || v.toLowerCase() === "false") {
+            return true;
+        }
+        return false;
+    }
+    getStringParam(k, defvalue = "") {
+        const params = new URLSearchParams(window.location.search);
+        const v = params.get(k);
+        if (v === null) {
+            return defvalue;
+        }
+        return v;
+    }
+};
+AppMain.styles = lit__WEBPACK_IMPORTED_MODULE_0__.css `
+        /* Cover both shadow dom / non shadow dom cases */
+        :host, app-main {
+            background-color: #0f0f0f;
+            display: grid;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            grid-template-columns: 100fr;
+            grid-template-rows: 100fr;
+            box-sizing: border-box;
+        }
+
+        #display {
+            grid-column-start: 1;
+            grid-column-end: 2;
+            grid-row-start: 1;
+            grid-row-end: 2;
+            /* Avoid vertical scroll on canvas. */
+            min-height: 0;
+        }
+
+        #display canvas {
+            display: block;
+            height: 100%;
+            width: 100%;
+            background-color: black;
+        }
+
+        #overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 10;
+
+            display: grid;
+            grid-template-columns: 250px 100fr;
+            align-items: start;
+        }
+
+        #controls {
+            background-color: #d6d6d6f0;
+            border: #8b8b8b 1px solid;
+            grid-column-start: 1;
+            grid-column-end: 2;
+            font-size: 11px;
+        }
+
+        .doc {
+            font-style: italic;
+            font-size: 12px;
+            padding: 2px 1px 2px 1px;
+        }
+
+        .github {
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #4d4d4d;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        #errors {
+            background-color: #ffbebede;
+            grid-column-start: 2;
+            grid-column-end: 3;
+            padding: 2px;
+        }
+    `;
+__decorate([
+    (0,lit_decorators_js__WEBPACK_IMPORTED_MODULE_1__.property)({ type: Boolean })
+], AppMain.prototype, "webGPUpresent", void 0);
+__decorate([
+    (0,lit_decorators_js__WEBPACK_IMPORTED_MODULE_1__.property)()
+], AppMain.prototype, "error", void 0);
+__decorate([
+    (0,lit_decorators_js__WEBPACK_IMPORTED_MODULE_1__.property)()
+], AppMain.prototype, "_demoID", void 0);
+AppMain = __decorate([
+    (0,lit_decorators_js__WEBPACK_IMPORTED_MODULE_1__.customElement)('app-main')
+], AppMain);
+
+// Setup base document.
+const htmlElt = document.body.parentElement;
+htmlElt.style.height = '100%';
+document.body.style.height = '100%';
+document.body.style.margin = '0';
+document.body.style.backgroundColor = '#888800';
+document.body.appendChild(document.createElement("app-main"));
+
+})();
+
 /******/ })()
 ;
 //# sourceMappingURL=bundle.js.map
