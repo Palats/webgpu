@@ -1,9 +1,9 @@
-// Load gltf models.
+// Draw a sphere.
 
 /// <reference types="@webgpu/types" />
 import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
-import * as wg from '../wg';
+import * as wg from '../../src';
 import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
 import * as varpanel from '@palats/varpanel';
@@ -11,11 +11,12 @@ import * as models from '../models';
 
 
 export const demo = {
-    id: "viewer",
-    caption: "A gltf viewer",
+    id: "sphere",
+    caption: "A sphere",
 
     async init(params: demotypes.InitParams) {
         const d = new Demo(params);
+        // await d.init(params);
         return (f: demotypes.FrameInfo) => d.draw(f);
     }
 }
@@ -28,27 +29,9 @@ const uniformsDesc = new wg.StructType({
     renderHeight: { idx: 3, type: wg.F32 },
     rngSeed: { idx: 4, type: wg.F32 },
     camera: { idx: 5, type: wg.Mat4x4F32 },
-    modelTransform: { idx: 6, type: wg.Mat4x4F32 },
 })
 
 const depthFormat = "depth24plus";
-
-function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh> {
-    return async params => {
-        const mesh = await models.loadGLTF(u);
-        return new models.GPUMesh(params, mesh);
-    }
-}
-
-const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh> } = {
-    "sphere/builtin": async params => new models.GPUMesh(params, models.sphereMesh()),
-    "cube/builtin": async params => new models.GPUMesh(params, models.cubeMesh()),
-    "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
-    "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
-    "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
-    "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
-    "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
-}
 
 class Demo {
     params: demotypes.InitParams;
@@ -58,22 +41,18 @@ class Demo {
     bundles: GPURenderBundle[] = [];
     renderPipeline: GPURenderPipeline;
     renderBindGroup: GPUBindGroup;
-    showBasis = true;
-    basisBundle: GPURenderBundle;
-    modelTransform: glmatrix.mat4;
 
-    _model = "cube/gltf"
+    _model = "sphere"
     get model(): string { return this._model; }
     set model(s: string) {
         this._model = s;
-        allModels[s](this.params).then(mesh => this.setMesh(mesh));
+        if (s === "cube") this.setMesh(new models.GPUMesh(this.params, models.cubeMesh()))
+        else this.setMesh(new models.GPUMesh(this.params, models.sphereMesh()));
     }
 
     constructor(params: demotypes.InitParams) {
         this.params = params;
-        this.modelTransform = glmatrix.mat4.create();
-        params.expose(varpanel.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
-        params.expose(varpanel.newBool({ obj: this, field: 'showBasis' }));
+        params.expose(varpanel.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
 
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
@@ -98,16 +77,15 @@ class Demo {
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
-                    let pos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-
                     var out : Vertex;
                     out.pos =
                         uniforms.camera
                         * ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * pos;
-                    out.color = vec4<f32>(0.5 * (pos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                        * vec4<f32>(inp.pos, 1.0);
+                    // out.color = inp.color;
+                    out.color = vec4<f32>(0.5 * (inp.pos + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
                 }
 
@@ -176,22 +154,11 @@ class Demo {
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         }).createView();
 
-        // Orthonormals.
-        this.basisBundle = shaderlib.buildLineBundle({
-            device: params.device,
-            colorFormat: params.renderFormat,
-            depthFormat: depthFormat,
-            lines: shaderlib.ortholines,
-            mod: uniformsDesc,
-            buffer: this.uniformsBuffer,
-        });
-
         // Configuring camera.
         this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
         params.setCamera(this.camera);
 
-        // Force loading the initial model.
-        this.model = this.model;
+        this.setMesh(new models.GPUMesh(params, models.sphereMesh()));
     }
 
     setMesh(gpuMesh: models.GPUMesh) {
@@ -206,25 +173,6 @@ class Demo {
         renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
         gpuMesh.draw(renderBundleEncoder);
         this.bundles = [renderBundleEncoder.finish()];
-        if (this.showBasis) { this.bundles.push(this.basisBundle); }
-
-        if (gpuMesh.min && gpuMesh.max) {
-            const diff = glmatrix.vec3.sub(glmatrix.vec3.create(), gpuMesh.max, gpuMesh.min);
-            const maxDiff = Math.max(diff[0], diff[1], diff[2]);
-            // Make it of size 2 - i.e., fitting it in a box from -1 to +1, as
-            // it is rotating around the origin.
-            const scale = 2 / maxDiff;
-            const scaleVec = glmatrix.vec3.fromValues(scale, scale, scale);
-
-            const tr = glmatrix.vec3.clone(gpuMesh.min);
-            glmatrix.vec3.scaleAndAdd(tr, tr, diff, 0.5);
-            glmatrix.vec3.scale(tr, tr, -1);
-
-            glmatrix.mat4.fromScaling(this.modelTransform, scaleVec);
-            glmatrix.mat4.translate(this.modelTransform, this.modelTransform, tr);
-        } else {
-            glmatrix.mat4.identity(this.modelTransform);
-        }
     }
 
     // -- Single frame rendering.
@@ -237,7 +185,6 @@ class Demo {
             100.0, // far
         );
         this.camera.transform(viewproj, info.cameraMvt);
-
         this.params.device.queue.writeBuffer(this.uniformsBuffer, 0, uniformsDesc.createArray({
             elapsedMs: info.elapsedMs,
             deltaMs: info.deltaMs,
@@ -245,7 +192,6 @@ class Demo {
             renderHeight: this.params.renderHeight,
             rngSeed: info.rng,
             camera: Array.from(viewproj),
-            modelTransform: Array.from(this.modelTransform),
         }));
 
         const commandEncoder = this.params.device.createCommandEncoder();

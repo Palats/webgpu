@@ -1,26 +1,24 @@
-// A classic fire effect.
+// A basic game of life.
 
 /// <reference types="@webgpu/types" />
 import * as demotypes from '../demotypes';
 
-import * as wg from '../wg';
-import * as shaderlib from '../shaderlib';
+import * as wg from '../../src';
 
 const uniformsDesc = new wg.StructType({
     computeWidth: { type: wg.U32, idx: 0 },
     computeHeight: { type: wg.U32, idx: 1 },
-    rngSeed: { type: wg.F32, idx: 2 },
 })
 
 const computeTexFormat: GPUTextureFormat = "rgba8unorm";
 
 export const demo = {
-    id: "fire",
-    caption: "The classic fire effect.",
+    id: "conway",
+    caption: "A Conway game of life.",
 
     async init(params: demotypes.InitParams) {
-        const computeWidth = 160;
-        const computeHeight = 100;
+        const computeWidth = params.renderWidth;
+        const computeHeight = params.renderHeight;
 
         // Creates the various buffers & textures.
         const uniformsBuffer = params.device.createBuffer({
@@ -53,6 +51,26 @@ export const demo = {
             label: "sampler",
             magFilter: "linear",
         });
+
+        // Setup the initial texture1, with some initial data.
+        const buffer = new ArrayBuffer(computeWidth * computeHeight * 4);
+        const a = new Uint8Array(buffer);
+        for (let y = 0; y < computeHeight; y++) {
+            for (let x = 0; x < computeWidth; x++) {
+                const hasLife = Math.random() > 0.8;
+                const v = hasLife ? 255 : 0;
+                a[4 * (x + y * computeWidth) + 0] = v;
+                a[4 * (x + y * computeWidth) + 1] = v;
+                a[4 * (x + y * computeWidth) + 2] = v;
+                a[4 * (x + y * computeWidth) + 3] = 255;
+            }
+        }
+        await params.device.queue.writeTexture(
+            { texture: tex1 },
+            buffer,
+            { bytesPerRow: computeWidth * 4 },
+            { width: computeWidth, height: computeHeight }
+        );
 
         // Compute pipeline.
         const computePipeline = params.device.createComputePipeline({
@@ -90,14 +108,16 @@ export const demo = {
             compute: {
                 entryPoint: "main",
                 module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "update fire state",
+                    label: "Game of life step",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
 
-                        fn at(x: i32, y: i32) -> vec4<f32> {
-                            return textureLoad(srcTexture, vec2<i32>(x, y), 0);
+                        fn isOn(x: i32, y: i32) -> i32 {
+                            let v = textureLoad(srcTexture, vec2<i32>(x, y), 0);
+                            if (v.r < 0.5) { return 0;}
+                            return 1;
                         }
 
                         @stage(compute) @workgroup_size(8, 8)
@@ -109,21 +129,26 @@ export const demo = {
 
                             let x = i32(global_id.x);
                             let y = i32(global_id.y);
+                            let current = isOn(x, y);
+                            let neighbors =
+                                  isOn(x - 1, y - 1)
+                                + isOn(x, y - 1)
+                                + isOn(x + 1, y - 1)
+                                + isOn(x - 1, y)
+                                + isOn(x + 1, y)
+                                + isOn(x - 1, y + 1)
+                                + isOn(x, y + 1)
+                                + isOn(x + 1, y + 1);
 
-                            var v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-                            if (y == (i32(uniforms.computeHeight) - 1)) {
-                                if (${shaderlib.rand.ref("meh")}(uniforms.rngSeed, f32(x)) < 0.2) {
-                                    v = vec4<f32>(1.0, 1.0, 1.0, 1.0);
-                                } else {
-                                    v = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-                                }
-                            } else {
-                                let sum = at(x, y) + at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1);
-                                v = (sum / 4.0) - 0.005;
+                            var s = 0.0;
+                            if (current != 0 && (neighbors == 2 || neighbors == 3)) {
+                                s = 1.0;
                             }
-                            textureStore(dstTexture, vec2<i32>(x, y), v);
+                            if (current == 0 && neighbors == 3) {
+                                s = 1.0;
+                            }
+                            textureStore(dstTexture, vec2<i32>(x, y), vec4<f32>(s, s, s, 1.0));
                         }
-
 
                     `,
                 }).toDesc()),
@@ -232,18 +257,7 @@ export const demo = {
 
                         @stage(fragment)
                         fn main(inp: VSOut) -> @location(0) vec4<f32> {
-                            let v = textureSample(computeTexture, dstSampler, inp.coord);
-
-                            let key = v.r * 8.0;
-                            let c = (v.r * 256.0) % 32.0;
-                            if (key < 1.0) { return vec4<f32>(0.0, 0.0, c * 2.0 / 256.0, 1.0); }
-                            if (key < 2.0) { return vec4<f32>(c * 8.0 / 256.0, 0.0, (64.0 - c * 2.0) / 256.0, 1.0); }
-                            if (key < 3.0) { return vec4<f32>(1.0, c * 8.0 / 256.0, 0.0, 1.0); }
-                            if (key < 4.0) { return vec4<f32>(1.0, 1.0, c * 4.0 / 256.0, 1.0); }
-                            if (key < 5.0) { return vec4<f32>(1.0, 1.0, (64.0 + c * 4.0) / 256.0, 1.0); }
-                            if (key < 6.0) { return vec4<f32>(1.0, 1.0, (128.0 + c * 4.0) / 256.0, 1.0); }
-                            if (key < 7.0) { return vec4<f32>(1.0, 1.0, (192.0 + c * 4.0) / 256.0, 1.0); }
-                            return vec4<f32>(1.0, 1.0, (224.0 + c * 4.0) / 256.0, 1.0);
+                            return textureSample(computeTexture, dstSampler, inp.coord);
                         }
                     `,
                 }).toDesc()),
@@ -284,7 +298,6 @@ export const demo = {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
                 computeWidth: computeWidth,
                 computeHeight: computeHeight,
-                rngSeed: info.rng,
             }));
 
             // -- Do compute pass, where the actual effect is.

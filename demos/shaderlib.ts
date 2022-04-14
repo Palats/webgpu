@@ -1,4 +1,4 @@
-import * as wg from './wg';
+import * as wg from '../src';
 
 // Functions to calculate projection matrices.
 export const projection = new wg.WGSLModule({

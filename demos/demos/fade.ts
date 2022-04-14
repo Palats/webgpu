@@ -1,20 +1,19 @@
-// A basic game of life.
+// A minimal effect which works on a buffer and make it evolve over time.
 
 /// <reference types="@webgpu/types" />
 import * as demotypes from '../demotypes';
 
-import * as wg from '../wg';
+import * as wg from '../../src';
 
 const uniformsDesc = new wg.StructType({
-    computeWidth: { type: wg.U32, idx: 0 },
-    computeHeight: { type: wg.U32, idx: 1 },
+    elapsedMs: { type: wg.F32, idx: 0 },
 })
 
 const computeTexFormat: GPUTextureFormat = "rgba8unorm";
 
 export const demo = {
-    id: "conway",
-    caption: "A Conway game of life.",
+    id: "fade",
+    caption: "Cycling the red component over time.",
 
     async init(params: demotypes.InitParams) {
         const computeWidth = params.renderWidth;
@@ -57,11 +56,9 @@ export const demo = {
         const a = new Uint8Array(buffer);
         for (let y = 0; y < computeHeight; y++) {
             for (let x = 0; x < computeWidth; x++) {
-                const hasLife = Math.random() > 0.8;
-                const v = hasLife ? 255 : 0;
-                a[4 * (x + y * computeWidth) + 0] = v;
-                a[4 * (x + y * computeWidth) + 1] = v;
-                a[4 * (x + y * computeWidth) + 2] = v;
+                a[4 * (x + y * computeWidth) + 0] = 0;
+                a[4 * (x + y * computeWidth) + 1] = Math.floor(x * 256 / computeWidth);
+                a[4 * (x + y * computeWidth) + 2] = Math.floor(y * 256 / computeWidth);
                 a[4 * (x + y * computeWidth) + 3] = 255;
             }
         }
@@ -108,48 +105,19 @@ export const demo = {
             compute: {
                 entryPoint: "main",
                 module: params.device.createShaderModule(new wg.WGSLModule({
-                    label: "Game of life step",
+                    label: "Changing the red channel from previous buffer",
                     code: wg.wgsl`
                         @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
                         @group(0) @binding(1) var srcTexture : texture_2d<f32>;
                         @group(0) @binding(2) var dstTexture : texture_storage_2d<${computeTexFormat}, write>;
 
-                        fn isOn(x: i32, y: i32) -> i32 {
-                            let v = textureLoad(srcTexture, vec2<i32>(x, y), 0);
-                            if (v.r < 0.5) { return 0;}
-                            return 1;
-                        }
-
                         @stage(compute) @workgroup_size(8, 8)
                         fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-                            // Guard against out-of-bounds work group sizes
-                            if (global_id.x >= uniforms.computeWidth || global_id.y >= uniforms.computeHeight) {
-                                return;
-                            }
-
-                            let x = i32(global_id.x);
-                            let y = i32(global_id.y);
-                            let current = isOn(x, y);
-                            let neighbors =
-                                  isOn(x - 1, y - 1)
-                                + isOn(x, y - 1)
-                                + isOn(x + 1, y - 1)
-                                + isOn(x - 1, y)
-                                + isOn(x + 1, y)
-                                + isOn(x - 1, y + 1)
-                                + isOn(x, y + 1)
-                                + isOn(x + 1, y + 1);
-
-                            var s = 0.0;
-                            if (current != 0 && (neighbors == 2 || neighbors == 3)) {
-                                s = 1.0;
-                            }
-                            if (current == 0 && neighbors == 3) {
-                                s = 1.0;
-                            }
-                            textureStore(dstTexture, vec2<i32>(x, y), vec4<f32>(s, s, s, 1.0));
+                            let xy = vec2<i32>(global_id.xy);
+                            var v = textureLoad(srcTexture, xy, 0);
+                            v.r = (sin(modf(uniforms.elapsedMs / 1000.0 / 3.0).fract * 2.0 * 3.1415) + 1.0) / 2.0;
+                            textureStore(dstTexture, xy, v);
                         }
-
                     `,
                 }).toDesc()),
             }
@@ -296,8 +264,7 @@ export const demo = {
         // -- Single frame rendering.
         return async (info: demotypes.FrameInfo) => {
             params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
-                computeWidth: computeWidth,
-                computeHeight: computeHeight,
+                elapsedMs: info.elapsedMs,
             }));
 
             // -- Do compute pass, where the actual effect is.
