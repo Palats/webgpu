@@ -8221,12 +8221,13 @@ const allModels = {
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
     "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
     "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
+    "shaderball/glb": loadToGPU('https://raw.githubusercontent.com/gkjohnson/3d-demo-data/main/models/material-balls/material_ball_v2.glb'),
 };
 class Demo {
     constructor(params) {
         this.bundles = [];
         this.showBasis = true;
-        this._model = "cube/gltf";
+        this._model = "shaderball/glb";
         this.params = params;
         this.modelTransform = gl_matrix__WEBPACK_IMPORTED_MODULE_5__.create();
         params.expose(_palats_varpanel__WEBPACK_IMPORTED_MODULE_3__.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
@@ -8245,6 +8246,8 @@ class Demo {
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>,
                     @location(0) color: vec4<f32>,
+                    @location(1) world: vec4<f32>,
+                    @location(2) normal: vec4<f32>,
                 };
 
                 @stage(vertex)
@@ -8253,22 +8256,28 @@ class Demo {
                     let c = (uniforms.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
-                    let pos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-
-                    var out : Vertex;
-                    out.pos =
-                        uniforms.camera
-                        * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateZ")}(r.z)
+                    let tr = ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateZ")}(r.z)
                         * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateY")}(r.y)
                         * ${_shaderlib__WEBPACK_IMPORTED_MODULE_1__.tr.ref("rotateX")}(r.z)
-                        * pos;
-                    out.color = vec4<f32>(0.5 * (pos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                        * uniforms.modelTransform;
+
+                    var out : Vertex;
+                    out.pos = uniforms.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    out.world = tr * vec4<f32>(inp.pos, 1.0);
+                    out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
+
+                    let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
+                    out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
                 }
 
+                let light = vec4<f32>(4.0, 4.0, 10.0, 1.0);
+
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
-                    return vert.color;
+                    let ray = normalize(light - vert.world);
+                    let lum = clamp(dot(ray, vert.normal), .0, 1.0);
+                    return lum * vert.color;
                 }
             `,
         }).toDesc());
@@ -8453,6 +8462,7 @@ __webpack_require__.r(__webpack_exports__);
 const vertexDesc = new _src__WEBPACK_IMPORTED_MODULE_0__.StructType({
     pos: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 0 },
     color: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec4f32, idx: 1 },
+    normal: { type: _src__WEBPACK_IMPORTED_MODULE_0__.Vec3f32, idx: 2 },
 });
 class GPUMesh {
     constructor(params, mesh) {
@@ -8488,14 +8498,14 @@ function cubeMesh() {
     const r = 0.5;
     return {
         vertices: [
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1] },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1] },
-            { pos: [-r, r, -r], color: [0, 1, 0, 1] },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1] },
-            { pos: [r, -r, r], color: [1, 0, 1, 1] },
-            { pos: [r, r, r], color: [1, 1, 1, 1] },
-            { pos: [-r, r, r], color: [0, 1, 1, 1] },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, 0, 0] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [0, 0, 0] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 0, 0] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 0, 0] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, 0, 0] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [0, 0, 0] },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 0, 0] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 0, 0] },
         ],
         indices: [
             0, 3, 1,
@@ -8539,6 +8549,7 @@ function sphereMesh() {
                         p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
                     ],
                     color: [j / divisions, i / divisions, 0, 1],
+                    normal: [0, 0, 0],
                 });
             }
         }
@@ -8604,57 +8615,139 @@ var GLTFAccessorComponentType;
 })(GLTFAccessorComponentType || (GLTFAccessorComponentType = {}));
 ;
 async function loadGLTF(u) {
-    var _a;
+    var _a, _b;
     const loader = new gltf_loader_ts__WEBPACK_IMPORTED_MODULE_1__.GltfLoader();
     const asset = await loader.load(u);
     const content = asset.gltf;
-    if (!content.meshes) {
+    if (content.scene === undefined) {
+        throw new Error("no default scene");
+    }
+    if (content.nodes === undefined) {
+        throw new Error("missing nodes");
+    }
+    if (content.scenes === undefined) {
+        throw new Error("no scenes");
+    }
+    if (content.meshes === undefined) {
         throw new Error("no meshes");
     }
-    const rawMesh = content.meshes[0];
-    const primitive = rawMesh.primitives[0];
-    if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) {
-        throw new Error(`only triangles; got ${primitive.mode}`);
+    const scene = content.scenes[content.scene];
+    if (scene.nodes === undefined) {
+        throw new Error("no nodes in scene");
     }
-    if (!content.accessors) {
-        throw new Error("no accessors");
+    const nodelists = [scene.nodes];
+    const primitives = [];
+    while (nodelists.length > 0) {
+        const nl = nodelists.pop();
+        for (const nodeidx of nl) {
+            const node = content.nodes[nodeidx];
+            if (node.translation || node.scale || node.rotation || node.matrix) {
+                console.warn(`unimplemented node transform; tr=${node.translation} scale=${node.scale} rot=${node.rotation} mat=${node.matrix}`);
+            }
+            // Missing: node transform
+            if (node.mesh !== undefined) {
+                const mesh = content.meshes[node.mesh];
+                primitives.push(...mesh.primitives);
+            }
+            if (node.children !== undefined) {
+                nodelists.push(node.children);
+            }
+        }
     }
-    // Load vertices.
-    const vertAccIndex = primitive.attributes["POSITION"];
-    const vertAcc = content.accessors[vertAccIndex];
-    if (vertAcc.type != GLTFAccessorType.VEC3) {
-        throw new Error(`wrong type: ${vertAcc.type}`);
-    }
-    if (vertAcc.componentType != GLTFAccessorComponentType.F32) {
-        throw new Error(`wrong component type ${vertAcc.componentType}`);
-    }
-    const min = vertAcc.min ? vertAcc.min : undefined;
-    const max = vertAcc.max ? vertAcc.max : undefined;
-    // accessorData return the full bufferView, not just specific accessorData.
-    const posBufferView = await asset.accessorData(vertAccIndex);
-    const f32 = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + ((_a = vertAcc.byteOffset) !== null && _a !== void 0 ? _a : 0), vertAcc.count * 3);
+    console.log(`Loading ${primitives.length} primitives...`);
     const vertices = [];
-    for (let i = 0; i < vertAcc.count; i++) {
-        vertices.push({
-            pos: [f32[i * 3], f32[i * 3 + 1], f32[i * 3 + 2]],
-            color: [1, 0, 1, 1],
-        });
+    const indices = [];
+    let min = undefined;
+    let max = undefined;
+    for (const primitive of primitives) {
+        if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) {
+            throw new Error(`only triangles; got ${primitive.mode}`);
+        }
+        if (!content.accessors) {
+            throw new Error("no accessors");
+        }
+        // Keep track of how many vertices already exists to re-number index
+        // array.
+        const verticesIndexStart = vertices.length;
+        // Load vertices.
+        const posAccIndex = primitive.attributes["POSITION"];
+        const posAcc = content.accessors[posAccIndex];
+        if (posAcc.type != GLTFAccessorType.VEC3) {
+            throw new Error(`wrong type: ${posAcc.type}`);
+        }
+        if (posAcc.componentType != GLTFAccessorComponentType.F32) {
+            throw new Error(`wrong component type ${posAcc.componentType}`);
+        }
+        if (posAcc.min) {
+            const posMin = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(...posAcc.min);
+            if (!min) {
+                min = posMin;
+            }
+            else {
+                min = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.min(min, min, posMin);
+            }
+        }
+        if (posAcc.max) {
+            const posMax = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.fromValues(...posAcc.max);
+            if (!max) {
+                max = posMax;
+            }
+            else {
+                max = gl_matrix__WEBPACK_IMPORTED_MODULE_2__.max(max, max, posMax);
+            }
+        }
+        if (!posAcc.min || !posAcc.max) {
+            console.warn("missing min/max");
+        }
+        // accessorData return the full bufferView, not just specific accessorData.
+        const posBufferView = await asset.accessorData(posAccIndex);
+        const positions = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + ((_a = posAcc.byteOffset) !== null && _a !== void 0 ? _a : 0), posAcc.count * 3);
+        // Load normals, if avail.
+        const normalsAccIndex = primitive.attributes["NORMAL"];
+        let normals;
+        if (normalsAccIndex !== undefined) {
+            const normalsAcc = content.accessors[normalsAccIndex];
+            if (normalsAcc.type != GLTFAccessorType.VEC3) {
+                throw new Error(`wrong type: ${normalsAcc.type}`);
+            }
+            if (normalsAcc.componentType != GLTFAccessorComponentType.F32) {
+                throw new Error(`wrong component type ${normalsAcc.componentType}`);
+            }
+            const normalsBufferView = await asset.accessorData(normalsAccIndex);
+            normals = new Float32Array(normalsBufferView.buffer, normalsBufferView.byteOffset + ((_b = normalsAcc.byteOffset) !== null && _b !== void 0 ? _b : 0), normalsAcc.count * 3);
+        }
+        for (let i = 0; i < posAcc.count; i++) {
+            let normal = [0, 0, 0, 0];
+            if (normals) {
+                normal = [normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]];
+            }
+            vertices.push({
+                pos: [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]],
+                color: [1, 0, 1, 1],
+                normal: normal,
+            });
+        }
+        // Load indices
+        if (primitive.indices === undefined) {
+            throw new Error("no indices");
+        }
+        const idxAccIndex = primitive.indices;
+        const idxAcc = content.accessors[idxAccIndex];
+        if (idxAcc.type != GLTFAccessorType.SCALAR) {
+            throw new Error(`wrong type: ${idxAcc.type}`);
+        }
+        if (idxAcc.componentType != GLTFAccessorComponentType.U16) {
+            throw new Error(`wrong component type ${idxAcc.componentType}`);
+        }
+        const indicesData = await asset.accessorData(idxAccIndex);
+        const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
+        // Re-number indices as we're accumulating multiple vertices set.
+        // Terribly inefficient.
+        for (const idx of u16) {
+            indices.push(idx + verticesIndexStart);
+        }
     }
-    // Load indices
-    if (primitive.indices === undefined) {
-        throw new Error("no indices");
-    }
-    const idxAccIndex = primitive.indices;
-    const idxAcc = content.accessors[idxAccIndex];
-    if (idxAcc.type != GLTFAccessorType.SCALAR) {
-        throw new Error(`wrong type: ${idxAcc.type}`);
-    }
-    if (idxAcc.componentType != GLTFAccessorComponentType.U16) {
-        throw new Error(`wrong component type ${idxAcc.componentType}`);
-    }
-    const indicesData = await asset.accessorData(idxAccIndex);
-    const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-    const indices = Array.from(u16);
+    console.log(`${vertices.length} vertices, ${indices.length} indices`);
     return {
         vertices,
         indices,
