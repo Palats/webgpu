@@ -48,6 +48,7 @@ const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
     "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
     "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
+    "shaderball/glb": loadToGPU('https://raw.githubusercontent.com/gkjohnson/3d-demo-data/main/models/material-balls/material_ball_v2.glb'),
 }
 
 class Demo {
@@ -62,7 +63,7 @@ class Demo {
     basisBundle: GPURenderBundle;
     modelTransform: glmatrix.mat4;
 
-    _model = "cube/gltf"
+    _model = "shaderball/glb"
     get model(): string { return this._model; }
     set model(s: string) {
         this._model = s;

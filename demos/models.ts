@@ -13,8 +13,8 @@ export const vertexDesc = new wg.StructType({
 export type Mesh = {
     vertices: wg.types.WGSLJSType<typeof vertexDesc>[];
     indices: number[];
-    min?: [number, number, number];
-    max?: [number, number, number];
+    min?: glmatrix.ReadonlyVec3;
+    max?: glmatrix.ReadonlyVec3;
 }
 
 export class GPUMesh {
@@ -190,61 +190,111 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     const loader = new gltfloader.GltfLoader();
     const asset: gltfloader.GltfAsset = await loader.load(u);
     const content = asset.gltf;
-    if (!content.meshes) { throw new Error("no meshes"); }
-    const rawMesh = content.meshes[0];
-    const primitive = rawMesh.primitives[0];
+    if (content.scene === undefined) { throw new Error("no default scene"); }
+    if (content.nodes === undefined) { throw new Error("missing nodes"); }
+    if (content.scenes === undefined) { throw new Error("no scenes"); }
+    if (content.meshes === undefined) { throw new Error("no meshes"); }
+    const scene = content.scenes[content.scene];
+    if (scene.nodes === undefined) { throw new Error("no nodes in scene"); }
 
-    if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
-    if (!content.accessors) { throw new Error("no accessors"); }
-
-    // Load vertices.
-    const posAccIndex = primitive.attributes["POSITION"];
-    const posAcc = content.accessors[posAccIndex];
-    if (posAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${posAcc.type}`); }
-    if (posAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${posAcc.componentType}`); }
-
-    const min = posAcc.min ? posAcc.min as [number, number, number] : undefined;
-    const max = posAcc.max ? posAcc.max as [number, number, number] : undefined;
-
-    // accessorData return the full bufferView, not just specific accessorData.
-    const posBufferView = await asset.accessorData(posAccIndex);
-    const positions = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (posAcc.byteOffset ?? 0), posAcc.count * 3);
-
-    // Load normals, if avail.
-    const normalsAccIndex = primitive.attributes["NORMAL"];
-    let normals: Float32Array | undefined;
-    if (normalsAccIndex !== undefined) {
-        const normalsAcc = content.accessors[normalsAccIndex];
-        if (normalsAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${normalsAcc.type}`); }
-        if (normalsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${normalsAcc.componentType}`); }
-
-        const normalsBufferView = await asset.accessorData(normalsAccIndex);
-        normals = new Float32Array(normalsBufferView.buffer, normalsBufferView.byteOffset + (normalsAcc.byteOffset ?? 0), normalsAcc.count * 3);
+    const nodelists = [scene.nodes];
+    const primitives = [];
+    while (nodelists.length > 0) {
+        const nl = nodelists.pop()!;
+        for (const nodeidx of nl) {
+            const node = content.nodes[nodeidx];
+            if (node.translation || node.scale || node.rotation || node.matrix) {
+                console.warn(`unimplemented node transform; tr=${node.translation} scale=${node.scale} rot=${node.rotation} mat=${node.matrix}`);
+            }
+            // Missing: node transform
+            if (node.mesh !== undefined) {
+                const mesh = content.meshes[node.mesh];
+                primitives.push(...mesh.primitives);
+            }
+            if (node.children !== undefined) {
+                nodelists.push(node.children);
+            }
+        }
     }
+
+    console.log(`Loading ${primitives.length} primitives...`);
 
     const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
-    for (let i = 0; i < posAcc.count; i++) {
-        let normal = [0, 0, 0, 0];
-        if (normals) {
-            normal = [normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]];
+    const indices: number[] = [];
+    let min: glmatrix.vec3 | undefined = undefined;
+    let max: glmatrix.vec3 | undefined = undefined;
+
+    for (const primitive of primitives) {
+        if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
+        if (!content.accessors) { throw new Error("no accessors"); }
+
+        // Keep track of how many vertices already exists to re-number index
+        // array.
+        const verticesIndexStart = vertices.length;
+
+        // Load vertices.
+        const posAccIndex = primitive.attributes["POSITION"];
+        const posAcc = content.accessors[posAccIndex];
+        if (posAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${posAcc.type}`); }
+        if (posAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${posAcc.componentType}`); }
+
+        if (posAcc.min) {
+            const posMin = glmatrix.vec3.fromValues(...posAcc.min as [number, number, number]);
+            if (!min) { min = posMin; }
+            else { min = glmatrix.vec3.min(min, min, posMin); }
         }
-        vertices.push({
-            pos: [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]],
-            color: [1, 0, 1, 1],
-            normal: normal,
-        });
+        if (posAcc.max) {
+            const posMax = glmatrix.vec3.fromValues(...posAcc.max as [number, number, number]);
+            if (!max) { max = posMax; }
+            else { max = glmatrix.vec3.max(max, max, posMax); }
+        }
+        if (!posAcc.min || !posAcc.max) { console.warn("missing min/max"); }
+
+        // accessorData return the full bufferView, not just specific accessorData.
+        const posBufferView = await asset.accessorData(posAccIndex);
+        const positions = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (posAcc.byteOffset ?? 0), posAcc.count * 3);
+
+        // Load normals, if avail.
+        const normalsAccIndex = primitive.attributes["NORMAL"];
+        let normals: Float32Array | undefined;
+        if (normalsAccIndex !== undefined) {
+            const normalsAcc = content.accessors[normalsAccIndex];
+            if (normalsAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${normalsAcc.type}`); }
+            if (normalsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${normalsAcc.componentType}`); }
+
+            const normalsBufferView = await asset.accessorData(normalsAccIndex);
+            normals = new Float32Array(normalsBufferView.buffer, normalsBufferView.byteOffset + (normalsAcc.byteOffset ?? 0), normalsAcc.count * 3);
+        }
+
+        for (let i = 0; i < posAcc.count; i++) {
+            let normal = [0, 0, 0, 0];
+            if (normals) {
+                normal = [normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]];
+            }
+            vertices.push({
+                pos: [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]],
+                color: [1, 0, 1, 1],
+                normal: normal,
+            });
+        }
+
+        // Load indices
+        if (primitive.indices === undefined) { throw new Error("no indices"); }
+        const idxAccIndex = primitive.indices;
+        const idxAcc = content.accessors[idxAccIndex];
+        if (idxAcc.type != GLTFAccessorType.SCALAR) { throw new Error(`wrong type: ${idxAcc.type}`); }
+        if (idxAcc.componentType != GLTFAccessorComponentType.U16) { throw new Error(`wrong component type ${idxAcc.componentType}`); }
+        const indicesData = await asset.accessorData(idxAccIndex);
+        const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
+
+        // Re-number indices as we're accumulating multiple vertices set.
+        // Terribly inefficient.
+        for (const idx of u16) {
+            indices.push(idx + verticesIndexStart);
+        }
     }
 
-    // Load indices
-    if (primitive.indices === undefined) { throw new Error("no indices"); }
-    const idxAccIndex = primitive.indices;
-    const idxAcc = content.accessors[idxAccIndex];
-    if (idxAcc.type != GLTFAccessorType.SCALAR) { throw new Error(`wrong type: ${idxAcc.type}`); }
-    if (idxAcc.componentType != GLTFAccessorComponentType.U16) { throw new Error(`wrong component type ${idxAcc.componentType}`); }
-    const indicesData = await asset.accessorData(idxAccIndex);
-    const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-    const indices = Array.from(u16);
-
+    console.log(`${vertices.length} vertices, ${indices.length} indices`);
     return {
         vertices,
         indices,
