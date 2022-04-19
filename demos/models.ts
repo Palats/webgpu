@@ -114,14 +114,15 @@ export function sphereMesh(): Mesh {
                     face.origin[2] + step * (i * face.right[2] + j * face.up[2]),
                 );
                 const p2 = glmatrix.vec3.multiply(glmatrix.vec3.create(), p, p);
+                const pos = [
+                    p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
+                    p[1] * Math.sqrt(1 - 0.5 * (p2[2] + p2[0]) + p2[2] * p2[0] / 3),
+                    p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
+                ];
                 vertices.push({
-                    pos: [
-                        p[0] * Math.sqrt(1 - 0.5 * (p2[1] + p2[2]) + p2[1] * p2[2] / 3),
-                        p[1] * Math.sqrt(1 - 0.5 * (p2[2] + p2[0]) + p2[2] * p2[0] / 3),
-                        p[2] * Math.sqrt(1 - 0.5 * (p2[0] + p2[1]) + p2[0] * p2[1] / 3),
-                    ],
+                    pos: pos,
                     color: [j / divisions, i / divisions, 0, 1],
-                    normal: [0, 0, 0],
+                    normal: pos,
                 });
             }
         }
