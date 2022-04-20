@@ -225,6 +225,10 @@ export enum GLTFAccessorComponentType {
     F32 = 5126,
 };
 
+type vec3tuple = [number, number, number];
+type quattuple = [number, number, number, number];
+type mat4tuple = [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
+
 export async function loadGLTF(u: string): Promise<Mesh> {
     const loader = new gltfloader.GltfLoader();
     const asset: gltfloader.GltfAsset = await loader.load(u);
@@ -237,18 +241,36 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     if (scene.nodes === undefined) { throw new Error("no nodes in scene"); }
 
     const nodelists = [scene.nodes];
-    const primitives = [];
+    const primitives: [glmatrix.mat4, gltfloader.gltf.MeshPrimitive][] = [];
     while (nodelists.length > 0) {
         const nl = nodelists.pop()!;
         for (const nodeidx of nl) {
             const node = content.nodes[nodeidx];
-            if (node.translation || node.scale || node.rotation || node.matrix) {
-                console.warn(`unimplemented node transform; tr=${node.translation} scale=${node.scale} rot=${node.rotation} mat=${node.matrix}`);
+            let tr = glmatrix.mat4.create();
+            if (node.matrix) {
+                glmatrix.mat4.set(tr, ...node.matrix as mat4tuple);
+            } else {
+                // First the scale is applied to the vertices, then the rotation, and then the translation.
+                // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#transformations
+                if (node.scale) {
+                    glmatrix.mat4.scale(tr, tr, glmatrix.vec3.fromValues(...node.scale as vec3tuple));
+                }
+                if (node.rotation) {
+                    const rq = glmatrix.quat.fromValues(...node.rotation as quattuple);
+                    const r = glmatrix.mat4.fromQuat(glmatrix.mat4.create(), rq);
+                    glmatrix.mat4.multiply(tr, tr, r);
+                }
+                if (node.translation) {
+                    glmatrix.mat4.translate(tr, tr, glmatrix.vec3.fromValues(...node.translation as vec3tuple));
+                }
+                //if (node.translation || node.scale || node.rotation || node.matrix) {
+                //console.warn(`unimplemented node transform; tr=${node.translation} scale=${node.scale} rot=${node.rotation} mat=${node.matrix}`);
             }
             // Missing: node transform
             if (node.mesh !== undefined) {
-                const mesh = content.meshes[node.mesh];
-                primitives.push(...mesh.primitives);
+                for (const p of content.meshes[node.mesh].primitives) {
+                    primitives.push([tr, p]);
+                }
             }
             if (node.children !== undefined) {
                 nodelists.push(node.children);
@@ -263,7 +285,7 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     let min: glmatrix.vec3 | undefined = undefined;
     let max: glmatrix.vec3 | undefined = undefined;
 
-    for (const primitive of primitives) {
+    for (const [tr, primitive] of primitives) {
         if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
         if (!content.accessors) { throw new Error("no accessors"); }
 
@@ -278,12 +300,14 @@ export async function loadGLTF(u: string): Promise<Mesh> {
         if (posAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${posAcc.componentType}`); }
 
         if (posAcc.min) {
-            const posMin = glmatrix.vec3.fromValues(...posAcc.min as [number, number, number]);
+            const posMin = glmatrix.vec3.fromValues(...posAcc.min as vec3tuple);
+            glmatrix.vec3.transformMat4(posMin, posMin, tr);
             if (!min) { min = posMin; }
             else { min = glmatrix.vec3.min(min, min, posMin); }
         }
         if (posAcc.max) {
-            const posMax = glmatrix.vec3.fromValues(...posAcc.max as [number, number, number]);
+            const posMax = glmatrix.vec3.fromValues(...posAcc.max as vec3tuple);
+            glmatrix.vec3.transformMat4(posMax, posMax, tr);
             if (!max) { max = posMax; }
             else { max = glmatrix.vec3.max(max, max, posMax); }
         }
@@ -306,12 +330,16 @@ export async function loadGLTF(u: string): Promise<Mesh> {
         }
 
         for (let i = 0; i < posAcc.count; i++) {
-            let normal = [0, 0, 0, 0];
+            let normal = [0, 0, 0];
             if (normals) {
-                normal = [normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]];
+                const f = glmatrix.vec4.fromValues(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2], 0);
+                glmatrix.vec4.transformMat4(f, f, tr);
+                normal = [f[0], f[1], f[2]];
             }
+            const v = glmatrix.vec3.fromValues(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+            glmatrix.vec3.transformMat4(v, v, tr);
             vertices.push({
-                pos: [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]],
+                pos: [v[0], v[1], v[2]],
                 color: [1, 0, 1, 1],
                 normal: normal,
             });
