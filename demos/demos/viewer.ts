@@ -55,7 +55,7 @@ class Demo {
     depthTextureView: GPUTextureView;
     uniformsBuffer: GPUBuffer;
     camera: cameras.ArcBall;
-    bundles: GPURenderBundle[] = [];
+    modelBundle?: GPURenderBundle;
     renderPipeline: GPURenderPipeline;
     renderBindGroup: GPUBindGroup;
     showBasis = true;
@@ -213,8 +213,7 @@ class Demo {
         renderBundleEncoder.setPipeline(this.renderPipeline);
         renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
         gpuMesh.draw(renderBundleEncoder);
-        this.bundles = [renderBundleEncoder.finish()];
-        if (this.showBasis) { this.bundles.push(this.basisBundle); }
+        this.modelBundle = renderBundleEncoder.finish();
 
         if (gpuMesh.min && gpuMesh.max) {
             const diff = glmatrix.vec3.sub(glmatrix.vec3.create(), gpuMesh.max, gpuMesh.min);
@@ -275,7 +274,11 @@ class Demo {
                 depthStoreOp: 'store',
             },
         });
-        renderEncoder.executeBundles(this.bundles);
+
+        const bundles = [];
+        if (this.modelBundle) { bundles.push(this.modelBundle); }
+        if (this.showBasis) { bundles.push(this.basisBundle); }
+        renderEncoder.executeBundles(bundles);
         renderEncoder.end();
         commandEncoder.popDebugGroup();
 
