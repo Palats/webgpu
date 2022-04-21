@@ -6,7 +6,6 @@ import * as glmatrix from 'gl-matrix';
 import * as wg from '../../src';
 import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
-import * as varpanel from '@palats/varpanel';
 import * as models from '../models';
 
 
@@ -52,7 +51,7 @@ class Demo {
 
     constructor(params: demotypes.InitParams) {
         this.params = params;
-        params.expose(varpanel.newSelect({ obj: this, field: "model", values: ["sphere", "cube"] }));
+        params.gui.add(this, 'model', ["sphere", "cube"]);
 
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",

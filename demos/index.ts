@@ -3,8 +3,8 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import * as demotypes from './demotypes';
-import * as varpanel from '@palats/varpanel';
 import * as cameras from './cameras';
+import * as lilgui from 'lil-gui';
 
 import * as conway from './demos/conway';
 import * as fire from './demos/fire';
@@ -37,6 +37,24 @@ export function demoByID(id: string): demotypes.Demo {
         }
     }
     return allDemos[0];
+}
+
+class GUIComment {
+    private elt: HTMLElement;
+
+    constructor(parent: lilgui.GUI, content: string) {
+        this.elt = document.createElement("div");
+        this.elt.classList.add('controller');
+        this.elt.style.flexWrap = 'wrap';
+        this.elt.style.fontStyle = 'italic';
+        this.elt.style.marginLeft = '10px';
+        this.set(content);
+        parent.$children.appendChild(this.elt);
+    }
+
+    set(content: string) {
+        this.elt.innerHTML = content;
+    }
 }
 
 @customElement('app-main')
@@ -77,30 +95,8 @@ export class AppMain extends LitElement {
             z-index: 10;
 
             display: grid;
-            grid-template-columns: 250px 100fr;
+            grid-template-columns: 275px 100fr;
             align-items: start;
-        }
-
-        #controls {
-            background-color: #d6d6d6f0;
-            border: #8b8b8b 1px solid;
-            grid-column-start: 1;
-            grid-column-end: 2;
-            font-size: 11px;
-        }
-
-        .doc {
-            font-style: italic;
-            font-size: 12px;
-            padding: 2px 1px 2px 1px;
-        }
-
-        .github {
-            display: flex;
-            justify-content: center;
-            border-top: 1px solid #4d4d4d;
-            font-size: 14px;
-            font-style: italic;
         }
 
         #errors {
@@ -112,25 +108,12 @@ export class AppMain extends LitElement {
     `;
 
     render() {
-        const demoValues = allDemos.map(d => d.id);
-
         return html`
             <div id="display">
                 <canvas id="canvas" tabindex=0></canvas>
             </div>
 
             <div id="overlay">
-                <var-panel ?expanded=${this.controlsExpanded}>
-                    <style>${varpanel.commonStyle}</style>
-                    <vp-select .obj=${this} field="demoID" .values=${demoValues}>Demo</vp-select>
-                    <div class="doc">${demoByID(this.demoID).caption}</div>
-                    <div class="github"><a href="https://github.com/Palats/webgpu">Github source</a></div>
-                    <vp-bool .obj=${this} field="limitCanvas">Limit canvas</vp-bool>
-                    <div class="doc">
-                        Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a>
-                    </div>
-                    ${this.extraControls}
-                </var-panel>
                 ${(!this.webGPUpresent || this.error) ? html`
                 <div id="errors">
                     ${this.webGPUpresent ? '' : html`
@@ -173,6 +156,7 @@ export class AppMain extends LitElement {
         if (this._demoID === v) { return; }
         this._demoID = v;
         this.updateURL("d", this._demoID);
+        if (this.subtitle) { this.subtitle.set(demoByID(this._demoID).caption); }
         this.rebuild("changed demo");
     }
 
@@ -183,9 +167,9 @@ export class AppMain extends LitElement {
     renderWidth: number = 0;
     renderHeight: number = 0;
 
-    controlsExpanded = true;
-
-    private extraControls: TemplateResult[] = [];
+    private gui?: lilgui.GUI;
+    private guiDemo?: lilgui.GUI;
+    private subtitle?: GUIComment;
 
     private paused = false;
     private step = false;
@@ -202,11 +186,19 @@ export class AppMain extends LitElement {
         super();
         this.limitCanvas = this.getBoolParam("l", false);
         this._demoID = this.getStringParam("d", allDemos[0].id)
-        this.controlsExpanded = this.getBoolParam("c", true);
     }
 
     override firstUpdated(_changedProperties: any) {
         super.firstUpdated(_changedProperties);
+
+        // Setup control GUI.
+        this.gui = new lilgui.GUI({ title: "Controls | <a href='https://github.com/Palats/webgpu'>Github</a>" });
+        const demoValues = allDemos.map(d => d.id);
+        this.gui.add(this, 'demoID', demoValues).name("Demo");
+        this.subtitle = new GUIComment(this.gui, demoByID(this._demoID).caption);
+        this.gui.add(this, 'limitCanvas');
+        new GUIComment(this.gui, `<span>Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a></span>`);
+        this.guiDemo = this.gui.addFolder("Demo parameters");
 
         // Size & observe canvas.
         this.canvas = this.renderRoot.querySelector('#canvas') as HTMLCanvasElement;
@@ -369,7 +361,12 @@ export class AppMain extends LitElement {
                     },
                 });
 
-                this.extraControls = [];
+                // Clear up the content of custom controllers.
+                // Work on a copy, as destroy() modifies the children list.
+                for (const c of [...this.guiDemo!.children]) {
+                    c.destroy();
+                }
+
                 this.camera = new cameras.Null();
                 const renderer = await demoByID(this.demoID).init({
                     context: context,
@@ -379,7 +376,7 @@ export class AppMain extends LitElement {
                     renderWidth: this.renderWidth,
                     renderHeight: this.renderHeight,
                     setCamera: (c: cameras.Camera) => { this.camera = c; },
-                    expose: (t: TemplateResult) => { this.extraControls.push(t) },
+                    gui: this.guiDemo!,
                 });
                 if (this.error) {
                     throw new Error("init failed");
@@ -475,9 +472,29 @@ declare global {
 }
 
 // Setup base document.
-const htmlElt = document.body.parentElement!;
-htmlElt.style.height = '100%';
-document.body.style.height = '100%';
-document.body.style.margin = '0';
-document.body.style.backgroundColor = '#888800';
+document.head.appendChild(document.createElement("style") as HTMLStyleElement).textContent = css`
+    html { height: 100% }
+    body {
+        height: 100%;
+        margin: 0;
+        background-color: #888800;
+    }
+    .lil-gui {
+            --width: 275px;
+
+            --background-color: #c5c5c5;
+		    --text-color: #1f1e1e;
+		    --title-background-color: #efefef;
+		    --title-text-color: #3d3d3d;
+		    --widget-color: #eaeaea;
+		    --hover-color: #f0f0f0;
+		    --focus-color: #fafafa;
+		    --number-color: #07aacf;
+		    --string-color: #8da300;
+    }
+    .lil-gui.autoPlace {
+        left: 0;
+        right: unset;
+    }
+`.cssText;
 document.body.appendChild(document.createElement("app-main"));

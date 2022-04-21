@@ -6,7 +6,6 @@ import * as glmatrix from 'gl-matrix';
 import * as wg from '../../src';
 import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
-import * as varpanel from '@palats/varpanel';
 import * as models from '../models';
 
 
@@ -73,8 +72,8 @@ class Demo {
     constructor(params: demotypes.InitParams) {
         this.params = params;
         this.modelTransform = glmatrix.mat4.create();
-        params.expose(varpanel.newSelect({ obj: this, field: "model", values: Object.keys(allModels) }));
-        params.expose(varpanel.newBool({ obj: this, field: 'showBasis' }));
+        params.gui.add(this, 'model', Object.keys(allModels));
+        params.gui.add(this, 'showBasis');
 
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",

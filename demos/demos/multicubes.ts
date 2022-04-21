@@ -7,7 +7,6 @@ import * as demotypes from '../demotypes';
 import * as glmatrix from 'gl-matrix';
 import * as wg from '../../src';
 import * as shaderlib from '../shaderlib';
-import * as varpanel from '@palats/varpanel';
 import * as cameras from '../cameras';
 
 // Number of instances.
@@ -54,8 +53,8 @@ export const demo = {
             showBoundaries: true,
             showBasis: false,
         };
-        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBoundaries' }));
-        params.expose(varpanel.newBool({ obj: ctrls, field: 'showBasis' }));
+        params.gui.add(ctrls, 'showBoundaries');
+        params.gui.add(ctrls, 'showBasis');
 
         // Setup some initial positions for the cubes.
         const positions = [];

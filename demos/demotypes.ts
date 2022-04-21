@@ -1,6 +1,6 @@
-import * as glmatrix from 'gl-matrix';
 import * as cameras from './cameras';
 import { TemplateResult, html } from 'lit';
+import * as lilgui from 'lil-gui';
 
 // Description of a given effect.
 export interface Demo {
@@ -27,8 +27,8 @@ export interface InitParams {
     // transformations or any other calculations.
     setCamera(c: cameras.Camera): void;
 
-    // Add some controls in the control panel.
-    expose(t: TemplateResult): void;
+    // Control panel for the demo.
+    gui: lilgui.GUI;
 }
 
 export interface FrameInfo {
