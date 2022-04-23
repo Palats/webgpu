@@ -28,6 +28,8 @@ const uniformsDesc = new wg.StructType({
     rngSeed: { idx: 4, type: wg.F32 },
     camera: { idx: 5, type: wg.Mat4x4F32 },
     modelTransform: { idx: 6, type: wg.Mat4x4F32 },
+    useLight: { idx: 7, type: wg.F32 },
+    light: { idx: 8, type: wg.Vec4f32 },
 })
 
 const depthFormat = "depth24plus";
@@ -59,6 +61,10 @@ class Demo {
     renderPipeline: GPURenderPipeline;
     renderBindGroup: GPUBindGroup;
     showBasis = true;
+    useLight = true;
+    lightX = 4.0;
+    lightY = 4.0;
+    lightZ = 10.0;
     basisBundle: GPURenderBundle;
     modelTransform: glmatrix.mat4;
 
@@ -73,6 +79,11 @@ class Demo {
         this.params = params;
         this.modelTransform = glmatrix.mat4.create();
         params.gui.add(this, 'model', Object.keys(allModels));
+        const lightFolder = params.gui.addFolder("light");
+        lightFolder.add(this, 'useLight').name("use");
+        lightFolder.add(this, 'lightX', -20, 20).name("x");
+        lightFolder.add(this, 'lightY', -20, 20).name("y");
+        lightFolder.add(this, 'lightZ', -20, 20).name("z");
         params.gui.add(this, 'showBasis');
 
         this.uniformsBuffer = params.device.createBuffer({
@@ -115,11 +126,12 @@ class Demo {
                     return out;
                 }
 
-                let light = vec4<f32>(4.0, 4.0, 10.0, 1.0);
-
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
-                    let ray = normalize(light - vert.world);
+                    if (uniforms.useLight == 0.0) {
+                        return vert.color;
+                    }
+                    let ray = normalize(uniforms.light - vert.world);
                     let lum = clamp(dot(ray, vert.normal), .0, 1.0);
                     return lum * vert.color;
                 }
@@ -253,6 +265,8 @@ class Demo {
             rngSeed: info.rng,
             camera: Array.from(viewproj),
             modelTransform: Array.from(this.modelTransform),
+            useLight: this.useLight ? 1 : 0,
+            light: [this.lightX, this.lightY, this.lightZ, 1.0],
         }));
 
         const commandEncoder = this.params.device.createCommandEncoder();
