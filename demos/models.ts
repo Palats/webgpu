@@ -266,12 +266,13 @@ export async function loadGLTF(u: string): Promise<Mesh> {
                 //if (node.translation || node.scale || node.rotation || node.matrix) {
                 //console.warn(`unimplemented node transform; tr=${node.translation} scale=${node.scale} rot=${node.rotation} mat=${node.matrix}`);
             }
-            // Missing: node transform
             if (node.mesh !== undefined) {
                 for (const p of content.meshes[node.mesh].primitives) {
                     primitives.push([tr, p]);
                 }
             }
+
+            // Missing: transform of the children
             if (node.children !== undefined) {
                 nodelists.push(node.children);
             }
