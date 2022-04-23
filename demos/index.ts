@@ -198,6 +198,8 @@ export class AppMain extends LitElement {
         this.subtitle = new GUIComment(this.gui, demoByID(this._demoID).caption);
         this.gui.add(this, 'limitCanvas');
         new GUIComment(this.gui, `<span>Set canvas to 816x640, see <a href="https://crbug.com/dawn/1260">crbug.com/dawn/1260</a></span>`);
+        this.gui.add(this, 'paused').listen();
+        this.gui.add(this, 'doStep').name("step");
         this.guiDemo = this.gui.addFolder("Demo parameters");
 
         // Size & observe canvas.
@@ -214,8 +216,7 @@ export class AppMain extends LitElement {
             if (e.key == ' ') {
                 this.paused = !this.paused;
             } else if (e.key == '.') {
-                this.paused = true;
-                this.step = true;
+                this.doStep();
             } else if (e.key == 'Shift') {
                 this.shiftPressed = true;
             } else if (e.key == 'Escape') {
@@ -265,6 +266,11 @@ export class AppMain extends LitElement {
 
         // Make sure keyboard events go to the canvas initially.
         this.canvas.focus();
+    }
+
+    doStep() {
+        this.paused = true;
+        this.step = true;
     }
 
     getCameraMoveInfo(): cameras.MoveInfo {
