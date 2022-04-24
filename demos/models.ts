@@ -8,13 +8,20 @@ export const vertexDesc = new wg.StructType({
     pos: { type: wg.Vec3f32, idx: 0 },
     color: { type: wg.Vec4f32, idx: 1 },
     normal: { type: wg.Vec3f32, idx: 2 },
+    texcoord: { type: wg.Vec2f32, idx: 3 },
+    material: { type: wg.U32, idx: 4 },
 });
 
 export type Mesh = {
     vertices: wg.types.WGSLJSType<typeof vertexDesc>[];
     indices: number[];
+    materials?: Material[];
     min?: glmatrix.ReadonlyVec3;
     max?: glmatrix.ReadonlyVec3;
+}
+
+export type Material = {
+    baseColorTexture?: HTMLImageElement;
 }
 
 export class GPUMesh {
@@ -63,40 +70,40 @@ export function cubeMesh(): Mesh {
     return {
         vertices: [
             // back
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, 0, -1] },
-            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 0, -1] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 0, -1] },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [0, 0, -1] },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
 
             // right
-            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [1, 0, 0] },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [1, 0, 0] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [1, 0, 0] },
-            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [1, 0, 0] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
 
             // left
-            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [-1, 0, 0] },
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [-1, 0, 0] },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [-1, 0, 0] },
-            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [-1, 0, 0] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
 
             // front
-            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 0, 1] },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, 0, 1] },
-            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [0, 0, 1] },
-            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 0, 1] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
 
             // top
-            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 1, 0] },
-            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 1, 0] },
-            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 1, 0] },
-            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 1, 0] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
 
             // bottom
-            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, -1, 0] },
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, -1, 0] },
-            { pos: [r, -r, -r], color: [1, 0, 1, 1], normal: [0, -1, 0] },
-            { pos: [r, -r, r], color: [1, 0, 0, 1], normal: [0, -1, 0] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, -r, -r], color: [1, 0, 1, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, -r, r], color: [1, 0, 0, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
         ],
         indices: [
             // back
@@ -122,7 +129,7 @@ export function cubeMesh(): Mesh {
             // bottom
             20, 21, 22,
             22, 23, 20,
-        ]
+        ],
     };
 }
 
@@ -161,6 +168,8 @@ export function sphereMesh(): Mesh {
                     pos: pos,
                     color: [j / divisions, i / divisions, 0, 1],
                     normal: pos,
+                    texcoord: [0, 0],
+                    material: wg.U32Max,
                 });
             }
         }
@@ -281,6 +290,7 @@ export async function loadGLTF(u: string): Promise<Mesh> {
 
     console.log(`Loading ${primitives.length} primitives...`);
 
+    const materials: Material[] = [];
     const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
     const indices: number[] = [];
     let min: glmatrix.vec3 | undefined = undefined;
@@ -289,6 +299,19 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     for (const [tr, primitive] of primitives) {
         if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
         if (!content.accessors) { throw new Error("no accessors"); }
+
+        if (primitive.material !== undefined && content.materials) {
+            if (materials[primitive.material] === undefined) {
+                const mat: Material = {};
+                const gltfMat = content.materials[primitive.material];
+                const texinfo = gltfMat.pbrMetallicRoughness?.baseColorTexture;
+                if (texinfo?.index !== undefined) {
+                    const tex = content.textures![texinfo.index];
+                    mat.baseColorTexture = await asset.imageData.get(tex.source!);
+                }
+                materials[primitive.material] = mat;
+            }
+        }
 
         // Keep track of how many vertices already exists to re-number index
         // array.
@@ -330,19 +353,39 @@ export async function loadGLTF(u: string): Promise<Mesh> {
             normals = new Float32Array(normalsBufferView.buffer, normalsBufferView.byteOffset + (normalsAcc.byteOffset ?? 0), normalsAcc.count * 3);
         }
 
+        // Load texture coords, if avail.
+        const texcoordsAccIdx = primitive.attributes["TEXCOORD_0"];
+        let texcoords: Float32Array | undefined;
+        if (texcoordsAccIdx !== undefined) {
+            const texcoordsAcc = content.accessors[texcoordsAccIdx];
+            if (texcoordsAcc.type != GLTFAccessorType.VEC2) { throw new Error(`wrong type: ${texcoordsAcc.type}`); }
+            if (texcoordsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${texcoordsAcc.componentType}`); }
+
+            const texcoordsBufferView = await asset.accessorData(texcoordsAccIdx);
+            texcoords = new Float32Array(texcoordsBufferView.buffer, texcoordsBufferView.byteOffset + (texcoordsAcc.byteOffset ?? 0), texcoordsAcc.count * 2);
+        }
+
         for (let i = 0; i < posAcc.count; i++) {
+            const v = glmatrix.vec3.fromValues(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+            glmatrix.vec3.transformMat4(v, v, tr);
+
             let normal = [0, 0, 0];
             if (normals) {
                 const f = glmatrix.vec4.fromValues(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2], 0);
                 glmatrix.vec4.transformMat4(f, f, tr);
                 normal = [f[0], f[1], f[2]];
             }
-            const v = glmatrix.vec3.fromValues(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-            glmatrix.vec3.transformMat4(v, v, tr);
+
+            let texcoord: [number, number] = [0, 0];
+            if (texcoords) {
+                texcoord = [texcoords[i * 2], texcoords[i * 2 + 1]];
+            }
             vertices.push({
                 pos: [v[0], v[1], v[2]],
                 color: [1, 0, 1, 1],
                 normal: normal,
+                texcoord: texcoord,
+                material: wg.U32Max,
             });
         }
 
@@ -366,6 +409,7 @@ export async function loadGLTF(u: string): Promise<Mesh> {
     return {
         vertices,
         indices,
+        materials,
         min,
         max,
     }

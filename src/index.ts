@@ -14,10 +14,12 @@ export {
 export {
     U16,
     U32,
+    U32Max,
     F32,
     StructType,
     ArrayType,
     Mat4x4F32,
+    Vec2f32,
     Vec3f32,
     Vec4f32,
 } from './types';

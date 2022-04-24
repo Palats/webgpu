@@ -68,7 +68,7 @@ class Demo {
     basisBundle: GPURenderBundle;
     modelTransform: glmatrix.mat4;
 
-    _model = "shaderball/glb"
+    _model = "duck/gltf"
     get model(): string { return this._model; }
     set model(s: string) {
         this._model = s;
@@ -103,6 +103,7 @@ class Demo {
                     @location(0) color: vec4<f32>,
                     @location(1) world: vec4<f32>,
                     @location(2) normal: vec4<f32>,
+                    @location(3) texcoord: vec2<f32>,
                 };
 
                 @stage(vertex)
@@ -120,6 +121,7 @@ class Demo {
                     out.pos = uniforms.camera * tr * vec4<f32>(inp.pos, 1.0);
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
+                    out.texcoord = inp.texcoord;
 
                     let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
                     out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
@@ -128,6 +130,7 @@ class Demo {
 
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                    // return vec4<f32>(vert.texcoord.xy, 0., 1.);
                     if (uniforms.useLight == 0.0) {
                         return vert.color;
                     }

@@ -28,6 +28,7 @@ abstract class WGSLType<T> {
 
     // Return the GPUVertexFormat associated to this type.
     // If no vertex format exists, throw an exception.
+    // https://gpuweb.github.io/gpuweb/#vertex-formats
     vertexFormat(): GPUVertexFormat {
         throw new Error("type with no vertex format");
     }
@@ -92,7 +93,7 @@ class U16Type extends WGSLType<number> {
 export const U16 = new U16Type();
 
 // Info about WGSL `u32` type.
-class U32Type extends WGSLType<number> {
+export class U32Type extends WGSLType<number> {
     byteSize() { return 4; }
     alignOf() { return 4; }
 
@@ -103,8 +104,35 @@ class U32Type extends WGSLType<number> {
     typename(): lang.WGSLCode {
         return wgsl`u32`;
     }
+
+    vertexFormat(): GPUVertexFormat {
+        return "uint32";
+    }
 }
 export const U32 = new U32Type();
+
+export const U32Max = 2 ** 32 - 1;
+
+// Info about WGSL `vec2<f32>` type.
+export class Vec2f32Type extends WGSLType<[number, number]> {
+    byteSize() { return 8; }
+    alignOf() { return 8; }
+
+    dataViewSet(dv: DataView, offset: number, v: number[]) {
+        dv.setFloat32(offset, v[0], true);
+        dv.setFloat32(offset + F32.byteSize(), v[1], true);
+    }
+
+    typename(): lang.WGSLCode {
+        return wgsl`vec2<f32>`;
+    }
+
+    vertexFormat(): GPUVertexFormat {
+        return "float32x2";
+    }
+}
+export const Vec2f32 = new Vec2f32Type();
+
 
 // Info about WGSL `vec3<f32>` type.
 export class Vec3f32Type extends WGSLType<[number, number, number]> {
