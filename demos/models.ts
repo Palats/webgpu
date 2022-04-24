@@ -30,8 +30,10 @@ export class GPUMesh {
     private indicesCount: number;
     min?: glmatrix.ReadonlyVec3;
     max?: glmatrix.ReadonlyVec3;
+    mesh: Mesh;
 
     constructor(params: demotypes.InitParams, mesh: Mesh) {
+        this.mesh = mesh;
         this.min = mesh.min;
         this.max = mesh.max;
         const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
@@ -300,6 +302,8 @@ export async function loadGLTF(u: string): Promise<Mesh> {
         if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
         if (!content.accessors) { throw new Error("no accessors"); }
 
+        // This is all a horrible hack.
+        let hasTexture = false;
         if (primitive.material !== undefined && content.materials) {
             if (materials[primitive.material] === undefined) {
                 const mat: Material = {};
@@ -308,6 +312,7 @@ export async function loadGLTF(u: string): Promise<Mesh> {
                 if (texinfo?.index !== undefined) {
                     const tex = content.textures![texinfo.index];
                     mat.baseColorTexture = await asset.imageData.get(tex.source!);
+                    hasTexture = true;
                 }
                 materials[primitive.material] = mat;
             }
@@ -380,12 +385,13 @@ export async function loadGLTF(u: string): Promise<Mesh> {
             if (texcoords) {
                 texcoord = [texcoords[i * 2], texcoords[i * 2 + 1]];
             }
+
             vertices.push({
                 pos: [v[0], v[1], v[2]],
                 color: [1, 0, 1, 1],
                 normal: normal,
                 texcoord: texcoord,
-                material: wg.U32Max,
+                material: hasTexture ? 1.0 : wg.U32Max,
             });
         }
 

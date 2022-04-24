@@ -59,7 +59,6 @@ class Demo {
     camera: cameras.ArcBall;
     modelBundle?: GPURenderBundle;
     renderPipeline: GPURenderPipeline;
-    renderBindGroup: GPUBindGroup;
     showBasis = true;
     useLight = true;
     lightX = 4.0;
@@ -104,6 +103,7 @@ class Demo {
                     @location(1) world: vec4<f32>,
                     @location(2) normal: vec4<f32>,
                     @location(3) texcoord: vec2<f32>,
+                    @location(4) @interpolate(flat) material: u32,
                 };
 
                 @stage(vertex)
@@ -122,21 +122,30 @@ class Demo {
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
+                    out.material = inp.material;
 
                     let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
                     out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
                     return out;
                 }
 
+                @group(0) @binding(1) var smplr : sampler;
+                @group(0) @binding(2) var tex : texture_2d<f32>;
+
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                    var frag = vert.color;
                     // return vec4<f32>(vert.texcoord.xy, 0., 1.);
+                    if (vert.material != ${wg.U32Max.toString()}u) {
+                        frag = textureSample(tex, smplr, vert.texcoord);
+                    }
+
                     if (uniforms.useLight == 0.0) {
-                        return vert.color;
+                        return frag;
                     }
                     let ray = normalize(uniforms.light - vert.world);
                     let lum = clamp(dot(ray, vert.normal), .0, 1.0);
-                    return lum * vert.color;
+                    return lum * frag;
                 }
             `,
         }).toDesc());
@@ -153,6 +162,16 @@ class Demo {
                                 binding: 0,
                                 visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
                                 buffer: { type: 'uniform' },
+                            },
+                            {
+                                binding: 1,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                sampler: {},
+                            },
+                            {
+                                binding: 2,
+                                visibility: GPUShaderStage.FRAGMENT,
+                                texture: {},
                             },
                         ],
                     }),
@@ -181,17 +200,6 @@ class Demo {
             },
         });
 
-        this.renderBindGroup = params.device.createBindGroup({
-            label: "render pipeline bindgroup",
-            layout: this.renderPipeline.getBindGroupLayout(0),
-            entries: [
-                {
-                    binding: 0,
-                    resource: { buffer: this.uniformsBuffer }
-                },
-            ]
-        });
-
         this.depthTextureView = params.device.createTexture({
             label: "depth view",
             size: [params.renderWidth, params.renderHeight],
@@ -217,7 +225,65 @@ class Demo {
         this.model = this.model;
     }
 
-    setMesh(gpuMesh: models.GPUMesh) {
+    async setMesh(gpuMesh: models.GPUMesh) {
+        const textures: GPUTexture[] = [];
+        if (gpuMesh.mesh.materials) {
+            for (const mat of gpuMesh.mesh.materials) {
+                if (mat.baseColorTexture) {
+                    await mat.baseColorTexture.decode();
+                    const bitmap = await createImageBitmap(mat.baseColorTexture);
+
+                    const tex = this.params.device.createTexture({
+                        size: [bitmap.width, bitmap.height, 1],
+                        format: 'rgba8unorm',
+                        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+                    });
+                    this.params.device.queue.copyExternalImageToTexture(
+                        { source: bitmap },
+                        { texture: tex },
+                        [bitmap.width, bitmap.height]
+                    );
+                    textures.push(tex);
+                }
+            }
+        }
+
+        // No texture, add a dummy one, because I'm lazy.
+        if (textures.length < 1) {
+            textures.push(this.params.device.createTexture({
+                size: { width: 8, height: 8 },
+                format: 'rgba8unorm',
+                usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+            }));
+        }
+
+        const texView = textures[0].createView({});
+
+        const sampler = this.params.device.createSampler({
+            label: "sampler",
+            magFilter: "linear",
+        });
+
+        const renderBindGroup = this.params.device.createBindGroup({
+            label: "render pipeline bindgroup",
+            layout: this.renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: { buffer: this.uniformsBuffer }
+                },
+                {
+                    binding: 1,
+                    resource: sampler,
+                },
+                {
+                    binding: 2,
+                    resource: texView,
+                },
+
+            ]
+        });
+
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
             label: "main render bundle",
             depthReadOnly: false,
@@ -226,7 +292,7 @@ class Demo {
             depthStencilFormat: depthFormat,
         });
         renderBundleEncoder.setPipeline(this.renderPipeline);
-        renderBundleEncoder.setBindGroup(0, this.renderBindGroup);
+        renderBundleEncoder.setBindGroup(0, renderBindGroup);
         gpuMesh.draw(renderBundleEncoder);
         this.modelBundle = renderBundleEncoder.finish();
 
