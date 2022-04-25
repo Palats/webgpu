@@ -15,7 +15,7 @@ export const vertexDesc = new wg.StructType({
 export type Mesh = {
     vertices: wg.types.WGSLJSType<typeof vertexDesc>[];
     indices: number[];
-    materials?: Material[];
+    material?: Material;
     min?: glmatrix.ReadonlyVec3;
     max?: glmatrix.ReadonlyVec3;
 }
@@ -24,47 +24,86 @@ export type Material = {
     baseColorTexture?: HTMLImageElement;
 }
 
-export class GPUMesh {
-    private vertexBuffer: GPUBuffer;
-    private indexBuffer: GPUBuffer;
-    private indicesCount: number;
+export interface GPUMesh {
+    vertexBuffer: GPUBuffer;
+    indexBuffer: GPUBuffer;
+    indicesCount: number;
+    texture?: GPUTexture;
+    textureView?: GPUTextureView;
     min?: glmatrix.ReadonlyVec3;
     max?: glmatrix.ReadonlyVec3;
-    mesh: Mesh;
+}
 
-    constructor(params: demotypes.InitParams, mesh: Mesh) {
-        this.mesh = mesh;
-        this.min = mesh.min;
-        this.max = mesh.max;
-        const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
+export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh) {
+    // Vertices
+    const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
 
-        this.vertexBuffer = params.device.createBuffer({
-            label: `vertex buffer`,
-            size: verticesDesc.byteSize(),
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    const vertexBuffer = params.device.createBuffer({
+        label: `vertex buffer`,
+        size: verticesDesc.byteSize(),
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    params.device.queue.writeBuffer(vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
+
+    // Indices
+    const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
+    // Writing to buffer must be multiple of 4.
+    const indexSize = Math.ceil(indexDesc.byteSize() / 4) * 4;
+    const indexBuffer = params.device.createBuffer({
+        label: `index buffer`,
+        size: indexSize,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+    });
+    const indexArray = new ArrayBuffer(indexSize);
+    indexDesc.dataViewSet(new DataView(indexArray), 0, mesh.indices);
+    params.device.queue.writeBuffer(indexBuffer, 0, indexArray, 0, indexSize);
+    const indicesCount = mesh.indices.length;
+
+    // Material
+    let texture: GPUTexture;
+    const mat = mesh.material;
+    if (mat && mat.baseColorTexture) {
+        await mat.baseColorTexture.decode();
+        const bitmap = await createImageBitmap(mat.baseColorTexture);
+
+        texture = params.device.createTexture({
+            size: [bitmap.width, bitmap.height, 1],
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
         });
-        params.device.queue.writeBuffer(this.vertexBuffer, 0, verticesDesc.createArray(mesh.vertices));
-
-        const indexDesc = new wg.ArrayType(wg.U16, mesh.indices.length);
-        // Writing to buffer must be multiple of 4.
-        const indexSize = Math.ceil(indexDesc.byteSize() / 4) * 4;
-        this.indexBuffer = params.device.createBuffer({
-            label: `index buffer`,
-            size: indexSize,
-            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        params.device.queue.copyExternalImageToTexture(
+            { source: bitmap },
+            { texture: texture },
+            [bitmap.width, bitmap.height]
+        );
+    } else {
+        // No texture, add a dummy one, because I'm lazy.
+        texture = params.device.createTexture({
+            size: { width: 8, height: 8 },
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
         });
-        const indexArray = new ArrayBuffer(indexSize);
-        indexDesc.dataViewSet(new DataView(indexArray), 0, mesh.indices);
-        params.device.queue.writeBuffer(this.indexBuffer, 0, indexArray, 0, indexSize);
-        this.indicesCount = mesh.indices.length;
     }
+    const textureView = texture.createView({});
 
-    draw(encoder: GPURenderEncoderBase) {
-        encoder.setIndexBuffer(this.indexBuffer, 'uint16');
-        encoder.setVertexBuffer(0, this.vertexBuffer);
-        encoder.drawIndexed(this.indicesCount);
+    return {
+        vertexBuffer,
+        indexBuffer,
+        indicesCount,
+        texture,
+        textureView,
+        min: mesh.min,
+        max: mesh.max,
     }
 }
+
+
+export function drawGPUMesh(mesh: GPUMesh, encoder: GPURenderEncoderBase) {
+    encoder.setIndexBuffer(mesh.indexBuffer, 'uint16');
+    encoder.setVertexBuffer(0, mesh.vertexBuffer);
+    encoder.drawIndexed(mesh.indicesCount);
+}
+
 
 export function cubeMesh(): Mesh {
     const r = 0.5;
@@ -303,18 +342,19 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         if (!content.accessors) { throw new Error("no accessors"); }
 
         // This is all a horrible hack.
+        let material: Material | undefined;
         let hasTexture = false;
         if (primitive.material !== undefined && content.materials) {
             if (materials[primitive.material] === undefined) {
-                const mat: Material = {};
+                material = {};
                 const gltfMat = content.materials[primitive.material];
                 const texinfo = gltfMat.pbrMetallicRoughness?.baseColorTexture;
                 if (texinfo?.index !== undefined) {
                     const tex = content.textures![texinfo.index];
-                    mat.baseColorTexture = await asset.imageData.get(tex.source!);
+                    material.baseColorTexture = await asset.imageData.get(tex.source!);
                     hasTexture = true;
                 }
-                materials[primitive.material] = mat;
+                materials[primitive.material] = material;
             }
         }
 
@@ -405,7 +445,7 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         meshes.push({
             vertices,
             indices,
-            materials,
+            material,
             min,
             max,
         });

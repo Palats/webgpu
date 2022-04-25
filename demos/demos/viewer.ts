@@ -37,13 +37,13 @@ const depthFormat = "depth24plus";
 function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh[]> {
     return async params => {
         const meshes = await models.loadGLTF(u);
-        return meshes.map(m => new models.GPUMesh(params, m));
+        return Promise.all(meshes.map(m => models.buildGPUMesh(params, m)));
     }
 }
 
 const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh[]> } = {
-    "sphere/builtin": async params => [new models.GPUMesh(params, models.sphereMesh())],
-    "cube/builtin": async params => [new models.GPUMesh(params, models.cubeMesh())],
+    "sphere/builtin": async params => Promise.all([models.buildGPUMesh(params, models.sphereMesh())]),
+    "cube/builtin": async params => Promise.all([models.buildGPUMesh(params, models.cubeMesh())]),
     "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
     "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
@@ -277,39 +277,6 @@ class Demo {
     }
 
     async buildMesh(gpuMesh: models.GPUMesh): Promise<MeshInfo> {
-        const textures: GPUTexture[] = [];
-        if (gpuMesh.mesh.materials) {
-            for (const mat of gpuMesh.mesh.materials) {
-                if (mat.baseColorTexture) {
-                    await mat.baseColorTexture.decode();
-                    const bitmap = await createImageBitmap(mat.baseColorTexture);
-
-                    const tex = this.params.device.createTexture({
-                        size: [bitmap.width, bitmap.height, 1],
-                        format: 'rgba8unorm',
-                        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-                    });
-                    this.params.device.queue.copyExternalImageToTexture(
-                        { source: bitmap },
-                        { texture: tex },
-                        [bitmap.width, bitmap.height]
-                    );
-                    textures.push(tex);
-                }
-            }
-        }
-
-        // No texture, add a dummy one, because I'm lazy.
-        if (textures.length < 1) {
-            textures.push(this.params.device.createTexture({
-                size: { width: 8, height: 8 },
-                format: 'rgba8unorm',
-                usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-            }));
-        }
-
-        const texView = textures[0].createView({});
-
         const sampler = this.params.device.createSampler({
             label: "sampler",
             magFilter: "linear",
@@ -329,7 +296,7 @@ class Demo {
                 },
                 {
                     binding: 2,
-                    resource: texView,
+                    resource: gpuMesh.textureView!,
                 },
 
             ]
@@ -344,7 +311,7 @@ class Demo {
         });
         renderBundleEncoder.setPipeline(this.renderPipeline);
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
-        gpuMesh.draw(renderBundleEncoder);
+        models.drawGPUMesh(gpuMesh, renderBundleEncoder);
         const bundle = renderBundleEncoder.finish();
 
         return {
