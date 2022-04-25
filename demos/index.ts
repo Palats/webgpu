@@ -13,7 +13,6 @@ import * as minimal from './demos/minimal';
 import * as conway2 from './demos/conway2';
 import * as cube from './demos/cube';
 import * as multicubes from './demos/multicubes';
-import * as sphere from './demos/sphere';
 import * as plane from './demos/plane';
 import * as viewer from './demos/viewer';
 
@@ -25,7 +24,6 @@ export const allDemos: demotypes.Demo[] = [
     minimal.demo,
     cube.demo,
     multicubes.demo,
-    sphere.demo,
     plane.demo,
     viewer.demo,
 ];
