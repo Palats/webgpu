@@ -240,7 +240,7 @@ type vec3tuple = [number, number, number];
 type quattuple = [number, number, number, number];
 type mat4tuple = [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
 
-export async function loadGLTF(u: string): Promise<Mesh> {
+export async function loadGLTF(u: string): Promise<Mesh[]> {
     const loader = new gltfloader.GltfLoader();
     const asset: gltfloader.GltfAsset = await loader.load(u);
     const content = asset.gltf;
@@ -274,8 +274,6 @@ export async function loadGLTF(u: string): Promise<Mesh> {
                 if (node.translation) {
                     glmatrix.mat4.translate(tr, tr, glmatrix.vec3.fromValues(...node.translation as vec3tuple));
                 }
-                //if (node.translation || node.scale || node.rotation || node.matrix) {
-                //console.warn(`unimplemented node transform; tr=${node.translation} scale=${node.scale} rot=${node.rotation} mat=${node.matrix}`);
             }
             if (node.mesh !== undefined) {
                 for (const p of content.meshes[node.mesh].primitives) {
@@ -292,13 +290,15 @@ export async function loadGLTF(u: string): Promise<Mesh> {
 
     console.log(`Loading ${primitives.length} primitives...`);
 
+    // Cache of already loaded materials.
     const materials: Material[] = [];
-    const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
-    const indices: number[] = [];
-    let min: glmatrix.vec3 | undefined = undefined;
-    let max: glmatrix.vec3 | undefined = undefined;
+    const meshes: Mesh[] = [];
 
     for (const [tr, primitive] of primitives) {
+        const vertices: wg.types.WGSLJSType<typeof vertexDesc>[] = [];
+        let min: glmatrix.vec3 | undefined = undefined;
+        let max: glmatrix.vec3 | undefined = undefined;
+
         if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
         if (!content.accessors) { throw new Error("no accessors"); }
 
@@ -317,10 +317,6 @@ export async function loadGLTF(u: string): Promise<Mesh> {
                 materials[primitive.material] = mat;
             }
         }
-
-        // Keep track of how many vertices already exists to re-number index
-        // array.
-        const verticesIndexStart = vertices.length;
 
         // Load vertices.
         const posAccIndex = primitive.attributes["POSITION"];
@@ -403,20 +399,17 @@ export async function loadGLTF(u: string): Promise<Mesh> {
         if (idxAcc.componentType != GLTFAccessorComponentType.U16) { throw new Error(`wrong component type ${idxAcc.componentType}`); }
         const indicesData = await asset.accessorData(idxAccIndex);
         const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
+        const indices = Array.from(u16.values());
 
-        // Re-number indices as we're accumulating multiple vertices set.
-        // Terribly inefficient.
-        for (const idx of u16) {
-            indices.push(idx + verticesIndexStart);
-        }
+        console.log(`${vertices.length} vertices, ${indices.length} indices`);
+        meshes.push({
+            vertices,
+            indices,
+            materials,
+            min,
+            max,
+        });
     }
 
-    console.log(`${vertices.length} vertices, ${indices.length} indices`);
-    return {
-        vertices,
-        indices,
-        materials,
-        min,
-        max,
-    }
+    return meshes;
 }

@@ -34,16 +34,16 @@ const uniformsDesc = new wg.StructType({
 
 const depthFormat = "depth24plus";
 
-function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh> {
+function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh[]> {
     return async params => {
-        const mesh = await models.loadGLTF(u);
-        return new models.GPUMesh(params, mesh);
+        const meshes = await models.loadGLTF(u);
+        return meshes.map(m => new models.GPUMesh(params, m));
     }
 }
 
-const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh> } = {
-    "sphere/builtin": async params => new models.GPUMesh(params, models.sphereMesh()),
-    "cube/builtin": async params => new models.GPUMesh(params, models.cubeMesh()),
+const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh[]> } = {
+    "sphere/builtin": async params => [new models.GPUMesh(params, models.sphereMesh())],
+    "cube/builtin": async params => [new models.GPUMesh(params, models.cubeMesh())],
     "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
     "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
@@ -52,12 +52,16 @@ const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models
     "shaderball/glb": loadToGPU('https://raw.githubusercontent.com/gkjohnson/3d-demo-data/main/models/material-balls/material_ball_v2.glb'),
 }
 
+interface MeshInfo {
+    bundle: GPURenderBundle;
+}
+
 class Demo {
     params: demotypes.InitParams;
     depthTextureView: GPUTextureView;
     uniformsBuffer: GPUBuffer;
     camera: cameras.ArcBall;
-    modelBundle?: GPURenderBundle;
+
     renderPipeline: GPURenderPipeline;
     showBasis = true;
     useLight = true;
@@ -66,12 +70,13 @@ class Demo {
     lightZ = 10.0;
     basisBundle: GPURenderBundle;
     modelTransform: glmatrix.mat4;
+    meshes: MeshInfo[] = [];
 
     _model = "duck/gltf"
     get model(): string { return this._model; }
     set model(s: string) {
         this._model = s;
-        allModels[s](this.params).then(mesh => this.setMesh(mesh));
+        allModels[s](this.params).then(meshes => this.setMeshes(meshes));
     }
 
     constructor(params: demotypes.InitParams) {
@@ -225,7 +230,53 @@ class Demo {
         this.model = this.model;
     }
 
-    async setMesh(gpuMesh: models.GPUMesh) {
+    async setMeshes(gpuMeshes: models.GPUMesh[]) {
+        const waitOn: Promise<MeshInfo>[] = [];
+
+        let meshMin: glmatrix.vec3 | undefined;
+        let meshMax: glmatrix.vec3 | undefined;
+        for (const gpuMesh of gpuMeshes) {
+            waitOn.push(this.buildMesh(gpuMesh));
+
+            if (gpuMesh.min) {
+                if (!meshMin) {
+                    meshMin = glmatrix.vec3.clone(gpuMesh.min);
+                } else {
+                    glmatrix.vec3.min(meshMin, meshMin, gpuMesh.min);
+                }
+            }
+            if (gpuMesh.max) {
+                if (!meshMax) {
+                    meshMax = glmatrix.vec3.clone(gpuMesh.max);
+                } else {
+                    glmatrix.vec3.max(meshMax, meshMax, gpuMesh.max);
+                }
+            }
+        }
+
+        if (meshMin && meshMax) {
+            const diff = glmatrix.vec3.sub(glmatrix.vec3.create(), meshMax, meshMin);
+            const maxDiff = Math.max(diff[0], diff[1], diff[2]);
+            // Make it of size 2 - i.e., fitting it in a box from -1 to +1, as
+            // it is rotating around the origin.
+            const scale = 2 / maxDiff;
+            const scaleVec = glmatrix.vec3.fromValues(scale, scale, scale);
+
+            const tr = glmatrix.vec3.clone(meshMin);
+            glmatrix.vec3.scaleAndAdd(tr, tr, diff, 0.5);
+            glmatrix.vec3.scale(tr, tr, -1);
+
+
+            glmatrix.mat4.fromScaling(this.modelTransform, scaleVec);
+            glmatrix.mat4.translate(this.modelTransform, this.modelTransform, tr);
+        } else {
+            glmatrix.mat4.identity(this.modelTransform);
+        }
+
+        this.meshes = await Promise.all(waitOn);
+    }
+
+    async buildMesh(gpuMesh: models.GPUMesh): Promise<MeshInfo> {
         const textures: GPUTexture[] = [];
         if (gpuMesh.mesh.materials) {
             for (const mat of gpuMesh.mesh.materials) {
@@ -294,24 +345,10 @@ class Demo {
         renderBundleEncoder.setPipeline(this.renderPipeline);
         renderBundleEncoder.setBindGroup(0, renderBindGroup);
         gpuMesh.draw(renderBundleEncoder);
-        this.modelBundle = renderBundleEncoder.finish();
+        const bundle = renderBundleEncoder.finish();
 
-        if (gpuMesh.min && gpuMesh.max) {
-            const diff = glmatrix.vec3.sub(glmatrix.vec3.create(), gpuMesh.max, gpuMesh.min);
-            const maxDiff = Math.max(diff[0], diff[1], diff[2]);
-            // Make it of size 2 - i.e., fitting it in a box from -1 to +1, as
-            // it is rotating around the origin.
-            const scale = 2 / maxDiff;
-            const scaleVec = glmatrix.vec3.fromValues(scale, scale, scale);
-
-            const tr = glmatrix.vec3.clone(gpuMesh.min);
-            glmatrix.vec3.scaleAndAdd(tr, tr, diff, 0.5);
-            glmatrix.vec3.scale(tr, tr, -1);
-
-            glmatrix.mat4.fromScaling(this.modelTransform, scaleVec);
-            glmatrix.mat4.translate(this.modelTransform, this.modelTransform, tr);
-        } else {
-            glmatrix.mat4.identity(this.modelTransform);
+        return {
+            bundle,
         }
     }
 
@@ -359,7 +396,9 @@ class Demo {
         });
 
         const bundles = [];
-        if (this.modelBundle) { bundles.push(this.modelBundle); }
+        for (const mesh of this.meshes) {
+            bundles.push(mesh.bundle);
+        }
         if (this.showBasis) { bundles.push(this.basisBundle); }
         renderEncoder.executeBundles(bundles);
         renderEncoder.end();
