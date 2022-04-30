@@ -266,6 +266,16 @@ export enum GLTFAccessorType {
     MAT4 = "MAT4",
 };
 
+export const GLTFComponentCount: { [k in GLTFAccessorType]: number } = {
+    SCALAR: 1,
+    VEC2: 2,
+    VEC3: 3,
+    VEC4: 4,
+    MAT2: 4,
+    MAT3: 9,
+    MAT4: 16,
+}
+
 export enum GLTFAccessorComponentType {
     S8 = 5120,
     U8 = 5121,
@@ -275,10 +285,48 @@ export enum GLTFAccessorComponentType {
     F32 = 5126,
 };
 
+type TypedArray =
+    | Int8Array
+    | Uint8Array
+    | Uint8ClampedArray
+    | Int16Array
+    | Uint16Array
+    | Int32Array
+    | Uint32Array
+    | Float32Array
+    | Float64Array;
+
 type vec3tuple = [number, number, number];
 type vec4tuple = [number, number, number, number];
 type quattuple = [number, number, number, number];
 type mat4tuple = [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
+
+async function loadAnyBuffer<T extends TypedArray>(asset: gltfloader.GltfAsset, accessorIdx: number | undefined, comptype: GLTFAccessorComponentType, build: new (...args: any[]) => T, expect?: GLTFAccessorType): Promise<T | undefined> {
+    const content = asset.gltf;
+    if (!content.accessors) {
+        throw new Error("missing accessors");
+    }
+    if (accessorIdx === undefined) {
+        return undefined;
+    }
+
+    const accessor = content.accessors[accessorIdx];
+    if (accessor.componentType != comptype) { throw new Error(`wrong component type ${accessor.componentType}`); }
+
+    if (expect !== undefined && accessor.type != expect) { throw new Error(`wrong type: ${accessor.type}`); }
+    const stride = GLTFComponentCount[accessor.type as GLTFAccessorType];
+
+    const bufferView = await asset.accessorData(accessorIdx);
+    return new build(bufferView.buffer, bufferView.byteOffset + (accessor.byteOffset ?? 0), accessor.count * stride);
+}
+
+async function loadF32Buffer(asset: gltfloader.GltfAsset, accessorIdx: number | undefined, expect?: GLTFAccessorType): Promise<Float32Array | undefined> {
+    return loadAnyBuffer(asset, accessorIdx, GLTFAccessorComponentType.F32, Float32Array, expect);
+}
+
+async function loadU16Buffer(asset: gltfloader.GltfAsset, accessorIdx: number | undefined, expect?: GLTFAccessorType): Promise<Uint16Array | undefined> {
+    return loadAnyBuffer(asset, accessorIdx, GLTFAccessorComponentType.U16, Uint16Array, expect);
+}
 
 export async function loadGLTF(u: string): Promise<Mesh[]> {
     console.group(`Loading ${u} ...`);
@@ -366,11 +414,11 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         }
 
         // Load vertices.
+        const positions = await loadF32Buffer(asset, primitive.attributes["POSITION"], GLTFAccessorType.VEC3);
+        if (!positions) { throw new Error("missing POSITION data"); }
+
         const posAccIndex = primitive.attributes["POSITION"];
         const posAcc = content.accessors[posAccIndex];
-        if (posAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${posAcc.type}`); }
-        if (posAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${posAcc.componentType}`); }
-
         if (posAcc.min) {
             const posMin = glmatrix.vec3.fromValues(...posAcc.min as vec3tuple);
             glmatrix.vec3.transformMat4(posMin, posMin, tr);
@@ -385,46 +433,16 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         }
         if (!posAcc.min || !posAcc.max) { console.warn("missing min/max"); }
 
-        // accessorData return the full bufferView, not just specific accessorData.
-        const posBufferView = await asset.accessorData(posAccIndex);
-        const positions = new Float32Array(posBufferView.buffer, posBufferView.byteOffset + (posAcc.byteOffset ?? 0), posAcc.count * 3);
-
         // Load normals, if avail.
-        const normalsAccIndex = primitive.attributes["NORMAL"];
-        let normals: Float32Array | undefined;
-        if (normalsAccIndex !== undefined) {
-            const normalsAcc = content.accessors[normalsAccIndex];
-            if (normalsAcc.type != GLTFAccessorType.VEC3) { throw new Error(`wrong type: ${normalsAcc.type}`); }
-            if (normalsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${normalsAcc.componentType}`); }
-
-            const normalsBufferView = await asset.accessorData(normalsAccIndex);
-            normals = new Float32Array(normalsBufferView.buffer, normalsBufferView.byteOffset + (normalsAcc.byteOffset ?? 0), normalsAcc.count * 3);
-        }
+        const normals = await loadF32Buffer(asset, primitive.attributes["NORMAL"], GLTFAccessorType.VEC3);
 
         // Load texture coords, if avail.
-        const texcoordsAccIdx = primitive.attributes["TEXCOORD_0"];
-        let texcoords: Float32Array | undefined;
-        if (texcoordsAccIdx !== undefined) {
-            const texcoordsAcc = content.accessors[texcoordsAccIdx];
-            if (texcoordsAcc.type != GLTFAccessorType.VEC2) { throw new Error(`wrong type: ${texcoordsAcc.type}`); }
-            if (texcoordsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${texcoordsAcc.componentType}`); }
-
-            const texcoordsBufferView = await asset.accessorData(texcoordsAccIdx);
-            texcoords = new Float32Array(texcoordsBufferView.buffer, texcoordsBufferView.byteOffset + (texcoordsAcc.byteOffset ?? 0), texcoordsAcc.count * 2);
-        }
+        const texcoords = await loadF32Buffer(asset, primitive.attributes["TEXCOORD_0"], GLTFAccessorType.VEC2);
 
         // Load colors per vertex, if avail.
-        const colorsAccIdx = primitive.attributes["COLOR_0"];
-        let colors: Float32Array | undefined;
-        if (colorsAccIdx !== undefined) {
-            const colorsAcc = content.accessors[colorsAccIdx];
-            if (colorsAcc.type != GLTFAccessorType.VEC4) { throw new Error(`wrong type: ${colorsAcc.type}`); }
-            if (colorsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${colorsAcc.componentType}`); }
+        const colors = await loadF32Buffer(asset, primitive.attributes["COLOR_0"], GLTFAccessorType.VEC4);
 
-            const colorsBufferView = await asset.accessorData(colorsAccIdx);
-            colors = new Float32Array(colorsBufferView.buffer, colorsBufferView.byteOffset + (colorsAcc.byteOffset ?? 0), colorsAcc.count * 4);
-        }
-
+        // And generate the vertex data.
         for (let i = 0; i < posAcc.count; i++) {
             const v = glmatrix.vec3.fromValues(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
             glmatrix.vec3.transformMat4(v, v, tr);
@@ -456,19 +474,13 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         }
 
         // Load indices
-        if (primitive.indices === undefined) { throw new Error("no indices"); }
-        const idxAccIndex = primitive.indices;
-        const idxAcc = content.accessors[idxAccIndex];
-        if (idxAcc.type != GLTFAccessorType.SCALAR) { throw new Error(`wrong type: ${idxAcc.type}`); }
-        if (idxAcc.componentType != GLTFAccessorComponentType.U16) { throw new Error(`wrong component type ${idxAcc.componentType}`); }
-        const indicesData = await asset.accessorData(idxAccIndex);
-        const u16 = new Uint16Array(indicesData.buffer, indicesData.byteOffset, indicesData.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-        const indices = Array.from(u16.values());
+        const indices = await loadU16Buffer(asset, primitive.indices, GLTFAccessorType.SCALAR);
+        if (indices === undefined) { throw new Error("no indices"); }
 
         console.log(`${vertices.length} vertices, ${indices.length} indices`);
         meshes.push({
             vertices,
-            indices,
+            indices: Array.from(indices),
             material,
             min,
             max,
