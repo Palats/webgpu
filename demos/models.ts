@@ -276,10 +276,13 @@ export enum GLTFAccessorComponentType {
 };
 
 type vec3tuple = [number, number, number];
+type vec4tuple = [number, number, number, number];
 type quattuple = [number, number, number, number];
 type mat4tuple = [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
 
 export async function loadGLTF(u: string): Promise<Mesh[]> {
+    console.group(`Loading ${u} ...`);
+
     const loader = new gltfloader.GltfLoader();
     const asset: gltfloader.GltfAsset = await loader.load(u);
     const content = asset.gltf;
@@ -341,6 +344,9 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         if (primitive.mode && primitive.mode != GLTFPrimitiveMode.TRIANGLES) { throw new Error(`only triangles; got ${primitive.mode}`); }
         if (!content.accessors) { throw new Error("no accessors"); }
 
+        console.log("primitives keys", Object.keys(primitive));
+        console.log("primitives attributes", Object.keys(primitive.attributes));
+
         // This is all a horrible hack.
         let material: Material | undefined;
         let hasTexture = false;
@@ -348,6 +354,7 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
             if (materials[primitive.material] === undefined) {
                 material = {};
                 const gltfMat = content.materials[primitive.material];
+                console.log(`material ${primitive.material} keys`, Object.keys(gltfMat));
                 const texinfo = gltfMat.pbrMetallicRoughness?.baseColorTexture;
                 if (texinfo?.index !== undefined) {
                     const tex = content.textures![texinfo.index];
@@ -406,6 +413,18 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
             texcoords = new Float32Array(texcoordsBufferView.buffer, texcoordsBufferView.byteOffset + (texcoordsAcc.byteOffset ?? 0), texcoordsAcc.count * 2);
         }
 
+        // Load colors per vertex, if avail.
+        const colorsAccIdx = primitive.attributes["COLOR_0"];
+        let colors: Float32Array | undefined;
+        if (colorsAccIdx !== undefined) {
+            const colorsAcc = content.accessors[colorsAccIdx];
+            if (colorsAcc.type != GLTFAccessorType.VEC4) { throw new Error(`wrong type: ${colorsAcc.type}`); }
+            if (colorsAcc.componentType != GLTFAccessorComponentType.F32) { throw new Error(`wrong component type ${colorsAcc.componentType}`); }
+
+            const colorsBufferView = await asset.accessorData(colorsAccIdx);
+            colors = new Float32Array(colorsBufferView.buffer, colorsBufferView.byteOffset + (colorsAcc.byteOffset ?? 0), colorsAcc.count * 4);
+        }
+
         for (let i = 0; i < posAcc.count; i++) {
             const v = glmatrix.vec3.fromValues(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
             glmatrix.vec3.transformMat4(v, v, tr);
@@ -422,9 +441,14 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
                 texcoord = [texcoords[i * 2], texcoords[i * 2 + 1]];
             }
 
+            let color: vec4tuple = [1, 0, 1, 1];
+            if (colors) {
+                color = Array.from(colors.slice(i * 4, i * 4 + 4)) as vec4tuple;
+            }
+
             vertices.push({
                 pos: [v[0], v[1], v[2]],
-                color: [1, 0, 1, 1],
+                color: color,
                 normal: normal,
                 texcoord: texcoord,
                 material: hasTexture ? 1.0 : wg.U32Max,
@@ -450,6 +474,8 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
             max,
         });
     }
+
+    console.groupEnd();
 
     return meshes;
 }

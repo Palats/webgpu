@@ -49,10 +49,11 @@ const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models
     "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
     "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
     "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
+    "boxvertexcolors/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxVertexColors/glTF/BoxVertexColors.gltf'),
     "shaderball/glb": loadToGPU('https://raw.githubusercontent.com/gkjohnson/3d-demo-data/main/models/material-balls/material_ball_v2.glb'),
 }
 
-interface MeshInfo {
+interface GPUMeshInfo {
     bundle: GPURenderBundle;
 }
 
@@ -70,7 +71,7 @@ class Demo {
     lightZ = 10.0;
     basisBundle: GPURenderBundle;
     modelTransform: glmatrix.mat4;
-    meshes: MeshInfo[] = [];
+    meshes: GPUMeshInfo[] = [];
 
     _model = "duck/gltf"
     get model(): string { return this._model; }
@@ -101,6 +102,8 @@ class Demo {
             label: "vertex shader",
             code: wg.wgsl`
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+                @group(0) @binding(1) var smplr : sampler;
+                @group(0) @binding(2) var tex : texture_2d<f32>;
 
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>,
@@ -130,12 +133,11 @@ class Demo {
                     out.material = inp.material;
 
                     let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                    // out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                    out.color = inp.color;
                     return out;
                 }
 
-                @group(0) @binding(1) var smplr : sampler;
-                @group(0) @binding(2) var tex : texture_2d<f32>;
 
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
@@ -231,7 +233,7 @@ class Demo {
     }
 
     async setMeshes(gpuMeshes: models.GPUMesh[]) {
-        const waitOn: Promise<MeshInfo>[] = [];
+        const waitOn: Promise<GPUMeshInfo>[] = [];
 
         let meshMin: glmatrix.vec3 | undefined;
         let meshMax: glmatrix.vec3 | undefined;
@@ -276,7 +278,7 @@ class Demo {
         this.meshes = await Promise.all(waitOn);
     }
 
-    async buildMesh(gpuMesh: models.GPUMesh): Promise<MeshInfo> {
+    async buildMesh(gpuMesh: models.GPUMesh): Promise<GPUMeshInfo> {
         const sampler = this.params.device.createSampler({
             label: "sampler",
             magFilter: "linear",
