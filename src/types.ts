@@ -255,6 +255,11 @@ type MemberDesc<T> = {
     // Index of the field in the struct is mandatory, to reduce renaming and moving mistakes.
     idx: number;
     type: T;
+    default?: WGSLJSType<T>;
+}
+
+type WithDefault = {
+    default: any;
 }
 
 // Extract the WGSL type class of a field descriptor.
@@ -269,11 +274,37 @@ type MemberDescMap = { [k: string]: MemberDesc<any> }
 export type Member<T> = {
     type: WGSLType<T>,
     idx: number,
-    name: string
-    sizeOf: number
-    alignOf: number
-    offset: number
+    name: string,
+    sizeOf: number,
+    alignOf: number,
+    offset: number,
+    default?: WGSLJSType<T>,
 }
+
+// A structure representing in javascript the content of the provided
+// MemberDescMap. It splits the declaration between mandatory fields and
+// optional ones, based on the presence of a default value in the member
+// descriptor.
+export type MemberDescMapJSType<MDM> =
+    { [k in keyof MDM as MDM[k] extends WithDefault ? k : never]?: WGSLJSType<MemberWGSLType<MDM[k]>>; }
+    & { [k in keyof MDM as MDM[k] extends WithDefault ? never : k]: WGSLJSType<MemberWGSLType<MDM[k]>>; }
+
+// Extract the type a MemberDesc holds - e.g.,
+//    MemberDescType<typeof {type: F32, idx:0}> -> F32
+type MemberDescType<MD> = MD extends MemberDesc<infer T> ? T : never;
+
+// MemberMap takes a MemberDescMap and creates a map to the full member info
+// (instead of the initial MemberDesc info).
+type MemberMap<MDM> = {
+    [k in keyof MDM]: Member<MemberDescType<MDM[k]>>;
+}
+
+// Extract the member map for the given struct type.
+export type StructMemberDescMap<ST> = ST extends StructType<infer MDM> ? MDM : never;
+
+// Type definition for a mapping member name / javascript value, suitable to
+// feed into a descriptor value. I.e., the actual structure as javascript.
+export type StructJSType<ST> = MemberDescMapJSType<StructMemberDescMap<ST>>;
 
 // Description of a WGSL struct allowing mapping between javascript and WGSL.
 // An instance of a StructType describes just the layout of the struct:
@@ -319,6 +350,7 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
                 alignOf: memberdesc.type.alignOf(),
                 // Calculated below
                 offset: 0,
+                default: memberdesc.default as any,
             }
             this.members[name as keyof MemberMap<MDM>] = member;
             this.byIndex[memberdesc.idx] = member;
@@ -351,7 +383,12 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
     // in the provided data view.
     dataViewSet(dv: DataView, offset: number, v: MemberDescMapJSType<MDM>): void {
         for (const member of this.byIndex) {
-            member.type.dataViewSet(dv, offset + member.offset, v[member.name]);
+            // Help the type system to connect the dots - we're iterating over
+            // the members here, so we're guaranteed that member.name is
+            // actually a key of the structure.
+            const k = member.name as keyof typeof v;
+            let data = (v[k] === undefined) ? member.default as any : v[k];
+            member.type.dataViewSet(dv, offset + member.offset, data);
         }
     }
 
@@ -422,53 +459,38 @@ export class StructType<MDM extends MemberDescMap> extends WGSLType<MemberDescMa
     }
 }
 
-// A structure representing in javascript the content of the provided MemberDescMap.
-type MemberDescMapJSType<MDM> = {
-    [k in keyof MDM]: WGSLJSType<MemberWGSLType<MDM[k]>>;
-}
-
-// Extract the type a MemberDesc holds - e.g.,
-//    MemberDescType<typeof {type: F32, idx:0}> -> F32
-type MemberDescType<MD> = MD extends MemberDesc<infer T> ? T : never;
-
-// MemberMap takes a MemberDescMap and creates a map to the full member info
-// (instead of the initial MemberDesc info).
-type MemberMap<MDM> = {
-    [k in keyof MDM]: Member<MemberDescType<MDM[k]>>;
-}
-
-// Extract the member map for the given struct type.
-export type StructMemberDescMap<ST> = ST extends StructType<infer MDM> ? MDM : never;
-
-// Type definition for a mapping member name / javascript value, suitable to
-// feed into a descriptor value. I.e., the actual structure as javascript.
-type StructJSType<ST> = MemberDescMapJSType<StructMemberDescMap<ST>>;
-
 //-----------------------------------------------
 // Basic test
 
 function testBuffer() {
     console.group("testBuffer");
-    const uniformsDesc = new StructType({
+
+    const mpm = {
         elapsedMs: { type: F32, idx: 0 },
-        renderWidth: { type: F32, idx: 1 },
-        renderHeight: { type: F32, idx: 2 },
-        plop: { type: new ArrayType(F32, 4), idx: 3 },
-    })
+        plop: { type: new ArrayType(F32, 4), idx: 1 },
+        opt: { type: F32, idx: 2, default: 42 },
+    }
+
+    const uniformsDesc = new StructType(mpm)
+
+    const data: MemberDescMapJSType<typeof mpm> = {
+        elapsedMs: 10,
+        plop: [1, 2],
+        // extra: 12,
+    }
 
     console.log("byteSize", uniformsDesc.byteSize);
-    console.log("content", uniformsDesc.createArray({
-        elapsedMs: 10,
-        renderWidth: 320,
-        renderHeight: 200,
-        plop: [1, 2, 3],
-    }));
+    console.log("content", uniformsDesc.createArray(data));
 
-    const foo = new ArrayType(uniformsDesc, 4);
+    const foo = new ArrayType(uniformsDesc, 2);
 
     const a = new ArrayBuffer(foo.byteSize());
     foo.dataViewSet(new DataView(a), 0, [
-        { elapsedMs: 10, renderWidth: 320, renderHeight: 200, plop: [0, 1, 3] },
+        data,
+        {
+            elapsedMs: 11,
+            plop: [0, 1, 3],
+        },
     ]);
 
     console.groupEnd();
