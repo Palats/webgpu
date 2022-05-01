@@ -30,6 +30,7 @@ const uniformsDesc = new wg.StructType({
     modelTransform: { idx: 6, type: wg.Mat4x4F32 },
     useLight: { idx: 7, type: wg.F32 },
     light: { idx: 8, type: wg.Vec4f32 },
+    debugCoords: { idx: 9, type: wg.F32 },
 })
 
 const depthFormat = "depth24plus";
@@ -72,6 +73,7 @@ class Demo {
     basisBundle: GPURenderBundle;
     modelTransform: glmatrix.mat4;
     meshes: GPUMeshInfo[] = [];
+    debugCoords = false;
 
     _model = "duck/gltf"
     get model(): string { return this._model; }
@@ -90,6 +92,7 @@ class Demo {
         lightFolder.add(this, 'lightY', -20, 20).name("y");
         lightFolder.add(this, 'lightZ', -20, 20).name("z");
         params.gui.add(this, 'showBasis');
+        params.gui.add(this, 'debugCoords');
 
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
@@ -133,8 +136,11 @@ class Demo {
                     out.material = inp.material;
 
                     let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    // out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
-                    out.color = inp.color;
+                    if (uniforms.debugCoords == 1.0) {
+                        out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                    } else {
+                        out.color = inp.color;
+                    }
                     return out;
                 }
 
@@ -142,8 +148,7 @@ class Demo {
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
                     var frag = vert.color;
-                    // return vec4<f32>(vert.texcoord.xy, 0., 1.);
-                    if (vert.material != ${wg.U32Max.toString()}u) {
+                    if (vert.material != ${wg.U32Max.toString()}u && uniforms.debugCoords == 0.0) {
                         frag = textureSample(tex, smplr, vert.texcoord);
                     }
 
@@ -342,6 +347,7 @@ class Demo {
             modelTransform: Array.from(this.modelTransform),
             useLight: this.useLight ? 1 : 0,
             light: [this.lightX, this.lightY, this.lightZ, 1.0],
+            debugCoords: this.debugCoords ? 1 : 0,
         }));
 
         const commandEncoder = this.params.device.createCommandEncoder();
