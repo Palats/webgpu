@@ -13,8 +13,8 @@ export {
 
 export {
     U16,
-    U32,
-    U32Max,
+    U32, U32Max,
+    I32, I32Max,
     F32,
     StructType,
     ArrayType,

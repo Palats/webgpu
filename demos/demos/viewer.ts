@@ -28,9 +28,9 @@ const uniformsDesc = new wg.StructType({
     rngSeed: { idx: 4, type: wg.F32 },
     camera: { idx: 5, type: wg.Mat4x4F32 },
     modelTransform: { idx: 6, type: wg.Mat4x4F32 },
-    useLight: { idx: 7, type: wg.F32 },
+    useLight: { idx: 7, type: wg.I32 },
     light: { idx: 8, type: wg.Vec4f32 },
-    debugCoords: { idx: 9, type: wg.F32 },
+    debugCoords: { idx: 9, type: wg.I32 },
 })
 
 const depthFormat = "depth24plus";
@@ -105,8 +105,9 @@ class Demo {
             label: "vertex shader",
             code: wg.wgsl`
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
-                @group(0) @binding(1) var smplr : sampler;
-                @group(0) @binding(2) var tex : texture_2d<f32>;
+                @group(0) @binding(1) var<uniform> material: ${models.materialDesc.typename()};
+                @group(0) @binding(2) var smplr : sampler;
+                @group(0) @binding(3) var tex : texture_2d<f32>;
 
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>,
@@ -114,7 +115,6 @@ class Demo {
                     @location(1) world: vec4<f32>,
                     @location(2) normal: vec4<f32>,
                     @location(3) texcoord: vec2<f32>,
-                    @location(4) @interpolate(flat) material: u32,
                 };
 
                 @stage(vertex)
@@ -133,13 +133,17 @@ class Demo {
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
-                    out.material = inp.material;
 
                     let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    if (uniforms.debugCoords == 1.0) {
-                        out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                    if (uniforms.debugCoords == 0) {
+                        if (material.hasColor == 0) {
+                            // No provided color? Use a flashy green.
+                            out.color = vec4<f32>(0., 1., 0., 1.);
+                        } else {
+                            out.color = inp.color;
+                        }
                     } else {
-                        out.color = inp.color;
+                        out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
                     }
                     return out;
                 }
@@ -148,11 +152,11 @@ class Demo {
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
                     var frag = vert.color;
-                    if (vert.material != ${wg.U32Max.toString()}u && uniforms.debugCoords == 0.0) {
+                    if (material.hasTexture != 0 && uniforms.debugCoords == 0) {
                         frag = textureSample(tex, smplr, vert.texcoord);
                     }
 
-                    if (uniforms.useLight == 0.0) {
+                    if (uniforms.useLight == 0 || material.hasNormals == 0) {
                         return frag;
                     }
                     let ray = normalize(uniforms.light - vert.world);
@@ -177,11 +181,17 @@ class Demo {
                             },
                             {
                                 binding: 1,
+                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                                buffer: { type: 'uniform' },
+                            },
+                            {
+
+                                binding: 2,
                                 visibility: GPUShaderStage.FRAGMENT,
                                 sampler: {},
                             },
                             {
-                                binding: 2,
+                                binding: 3,
                                 visibility: GPUShaderStage.FRAGMENT,
                                 texture: {},
                             },
@@ -299,14 +309,17 @@ class Demo {
                 },
                 {
                     binding: 1,
-                    resource: sampler,
+                    resource: { buffer: gpuMesh.materialBuffer },
                 },
                 {
                     binding: 2,
+                    resource: sampler,
+                },
+                {
+                    binding: 3,
                     resource: gpuMesh.textureView!,
                 },
-
-            ]
+            ],
         });
 
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({

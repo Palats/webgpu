@@ -9,18 +9,25 @@ export const vertexDesc = new wg.StructType({
     color: { type: wg.Vec4f32, idx: 1 },
     normal: { type: wg.Vec3f32, idx: 2 },
     texcoord: { type: wg.Vec2f32, idx: 3 },
-    material: { type: wg.U32, idx: 4 },
 });
+
+export const materialDesc = new wg.StructType({
+    hasTexture: { type: wg.I32, idx: 0 },
+    hasColor: { type: wg.I32, idx: 1 },
+    hasNormals: { type: wg.I32, idx: 2 },
+})
 
 export type Mesh = {
     vertices: wg.types.WGSLJSType<typeof vertexDesc>[];
     indices: number[];
-    material?: Material;
+    material: Material;
     min?: glmatrix.ReadonlyVec3;
     max?: glmatrix.ReadonlyVec3;
 }
 
 export type Material = {
+    hasColor: boolean;
+    hasNormals: boolean;
     baseColorTexture?: HTMLImageElement;
 }
 
@@ -30,11 +37,12 @@ export interface GPUMesh {
     indicesCount: number;
     texture?: GPUTexture;
     textureView?: GPUTextureView;
+    materialBuffer: GPUBuffer;
     min?: glmatrix.ReadonlyVec3;
     max?: glmatrix.ReadonlyVec3;
 }
 
-export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh) {
+export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh): Promise<GPUMesh> {
     // Vertices
     const verticesDesc = new wg.ArrayType(vertexDesc, mesh.vertices.length);
 
@@ -60,8 +68,8 @@ export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh) {
     const indicesCount = mesh.indices.length;
 
     // Material
-    let texture: GPUTexture;
     const mat = mesh.material;
+    let texture: GPUTexture;
     if (mat && mat.baseColorTexture) {
         await mat.baseColorTexture.decode();
         const bitmap = await createImageBitmap(mat.baseColorTexture);
@@ -77,7 +85,7 @@ export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh) {
             [bitmap.width, bitmap.height]
         );
     } else {
-        // No texture, add a dummy one, because I'm lazy.
+        // No texture, add a dummy one to satisfy bindings.
         texture = params.device.createTexture({
             size: { width: 8, height: 8 },
             format: 'rgba8unorm',
@@ -86,12 +94,26 @@ export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh) {
     }
     const textureView = texture.createView({});
 
+    const materialBuffer = params.device.createBuffer({
+        label: `material buffer`,
+        size: materialDesc.byteSize(),
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    params.device.queue.writeBuffer(materialBuffer, 0, materialDesc.createArray({
+        hasColor: mat.hasColor ? 1 : 0,
+        hasNormals: mat.hasNormals ? 1 : 0,
+        hasTexture: mat.baseColorTexture ? 1 : 0,
+    }));
+
+
     return {
         vertexBuffer,
         indexBuffer,
         indicesCount,
         texture,
         textureView,
+        materialBuffer,
         min: mesh.min,
         max: mesh.max,
     }
@@ -107,44 +129,49 @@ export function drawGPUMesh(mesh: GPUMesh, encoder: GPURenderEncoderBase) {
 
 export function cubeMesh(): Mesh {
     const r = 0.5;
+    const material: Material = {
+        hasColor: true,
+        hasNormals: true,
+    }
 
     return {
+        material: material,
         vertices: [
             // back
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [0, 0, -1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, 0, -1], texcoord: [0, 0] },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 0, -1], texcoord: [0, 0] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 0, -1], texcoord: [0, 0] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [0, 0, -1], texcoord: [0, 0] },
 
             // right
-            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [1, 0, 0], texcoord: [0, 0] },
+            { pos: [r, -r, -r], color: [1, 0, 0, 1], normal: [1, 0, 0], texcoord: [0, 0] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [1, 0, 0], texcoord: [0, 0] },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [1, 0, 0], texcoord: [0, 0] },
 
             // left
-            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [-1, 0, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [-1, 0, 0], texcoord: [0, 0] },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [-1, 0, 0], texcoord: [0, 0] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [-1, 0, 0], texcoord: [0, 0] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [-1, 0, 0], texcoord: [0, 0] },
 
             // front
-            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 0, 1], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 0, 1], texcoord: [0, 0] },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, 0, 1], texcoord: [0, 0] },
+            { pos: [r, -r, r], color: [1, 0, 1, 1], normal: [0, 0, 1], texcoord: [0, 0] },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 0, 1], texcoord: [0, 0] },
 
             // top
-            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, r, -r], color: [0, 1, 0, 1], normal: [0, 1, 0], texcoord: [0, 0] },
+            { pos: [-r, r, r], color: [0, 1, 1, 1], normal: [0, 1, 0], texcoord: [0, 0] },
+            { pos: [r, r, r], color: [1, 1, 1, 1], normal: [0, 1, 0], texcoord: [0, 0] },
+            { pos: [r, r, -r], color: [1, 1, 0, 1], normal: [0, 1, 0], texcoord: [0, 0] },
 
             // bottom
-            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, -r, -r], color: [1, 0, 1, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
-            { pos: [r, -r, r], color: [1, 0, 0, 1], normal: [0, -1, 0], texcoord: [0, 0], material: wg.U32Max, },
+            { pos: [-r, -r, r], color: [0, 0, 1, 1], normal: [0, -1, 0], texcoord: [0, 0] },
+            { pos: [-r, -r, -r], color: [0, 0, 0, 1], normal: [0, -1, 0], texcoord: [0, 0] },
+            { pos: [r, -r, -r], color: [1, 0, 1, 1], normal: [0, -1, 0], texcoord: [0, 0] },
+            { pos: [r, -r, r], color: [1, 0, 0, 1], normal: [0, -1, 0], texcoord: [0, 0] },
         ],
         indices: [
             // back
@@ -210,7 +237,6 @@ export function sphereMesh(): Mesh {
                     color: [j / divisions, i / divisions, 0, 1],
                     normal: pos,
                     texcoord: [0, 0],
-                    material: wg.U32Max,
                 });
             }
         }
@@ -238,7 +264,13 @@ export function sphereMesh(): Mesh {
         }
     }
 
+    const material: Material = {
+        hasColor: true,
+        hasNormals: true,
+    }
+
     return {
+        material,
         vertices: vertices,
         indices: indices,
     };
@@ -395,24 +427,6 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         console.log("primitives keys", Object.keys(primitive));
         console.log("primitives attributes", Object.keys(primitive.attributes));
 
-        // This is all a horrible hack.
-        let material: Material | undefined;
-        let hasTexture = false;
-        if (primitive.material !== undefined && content.materials) {
-            if (materials[primitive.material] === undefined) {
-                material = {};
-                const gltfMat = content.materials[primitive.material];
-                console.log(`material ${primitive.material} keys`, Object.keys(gltfMat));
-                const texinfo = gltfMat.pbrMetallicRoughness?.baseColorTexture;
-                if (texinfo?.index !== undefined) {
-                    const tex = content.textures![texinfo.index];
-                    material.baseColorTexture = await asset.imageData.get(tex.source!);
-                    hasTexture = true;
-                }
-                materials[primitive.material] = material;
-            }
-        }
-
         // Load vertices.
         const positions = await loadF32Buffer(asset, primitive.attributes["POSITION"], GLTFAccessorType.VEC3);
         if (!positions) { throw new Error("missing POSITION data"); }
@@ -442,6 +456,25 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
         // Load colors per vertex, if avail.
         const colors = await loadF32Buffer(asset, primitive.attributes["COLOR_0"], GLTFAccessorType.VEC4);
 
+        let material: Material = {
+            hasColor: colors !== undefined,
+            hasNormals: normals !== undefined,
+        };
+
+        if (primitive.material !== undefined && content.materials) {
+            if (materials[primitive.material] === undefined) {
+                const gltfMat = content.materials[primitive.material];
+                console.log(`material ${primitive.material} keys`, Object.keys(gltfMat));
+                const texinfo = gltfMat.pbrMetallicRoughness?.baseColorTexture;
+                if (texinfo?.index !== undefined) {
+                    const tex = content.textures![texinfo.index];
+                    material.baseColorTexture = await asset.imageData.get(tex.source!);
+                }
+                materials[primitive.material] = material;
+            }
+        }
+
+
         // And generate the vertex data.
         for (let i = 0; i < posAcc.count; i++) {
             const v = glmatrix.vec3.fromValues(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
@@ -469,7 +502,6 @@ export async function loadGLTF(u: string): Promise<Mesh[]> {
                 color: color,
                 normal: normal,
                 texcoord: texcoord,
-                material: hasTexture ? 1.0 : wg.U32Max,
             });
         }
 

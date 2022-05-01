@@ -110,8 +110,27 @@ export class U32Type extends WGSLType<number> {
     }
 }
 export const U32 = new U32Type();
-
 export const U32Max = 2 ** 32 - 1;
+
+// Info about WGSL `i32` type.
+export class I32Type extends WGSLType<number> {
+    byteSize() { return 4; }
+    alignOf() { return 4; }
+
+    dataViewSet(dv: DataView, offset: number, v: number) {
+        dv.setUint32(offset, v, true);
+    }
+
+    typename(): lang.WGSLCode {
+        return wgsl`i32`;
+    }
+
+    vertexFormat(): GPUVertexFormat {
+        return "sint32";
+    }
+}
+export const I32 = new I32Type();
+export const I32Max = 2 ** 31 - 1;
 
 // Info about WGSL `vec2<f32>` type.
 export class Vec2f32Type extends WGSLType<[number, number]> {
