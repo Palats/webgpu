@@ -105,8 +105,8 @@ class Demo {
             label: "vertex shader",
             code: wg.wgsl`
                 @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
-                @group(0) @binding(1) var<uniform> material: ${models.materialDesc.typename()};
-                @group(0) @binding(2) var smplr : sampler;
+                @group(0) @binding(2) var<uniform> material: ${models.materialDesc.typename()};
+                @group(0) @binding(1) var smplr : sampler;
                 @group(0) @binding(3) var tex : texture_2d<f32>;
 
                 struct Vertex {
@@ -180,13 +180,13 @@ class Demo {
                                 buffer: { type: 'uniform' },
                             },
                             {
-                                binding: 1,
+                                binding: 2,
                                 visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
                                 buffer: { type: 'uniform' },
                             },
                             {
 
-                                binding: 2,
+                                binding: 1,
                                 visibility: GPUShaderStage.FRAGMENT,
                                 sampler: {},
                             },
@@ -308,11 +308,11 @@ class Demo {
                     resource: { buffer: this.uniformsBuffer }
                 },
                 {
-                    binding: 1,
+                    binding: 2,
                     resource: { buffer: gpuMesh.materialBuffer },
                 },
                 {
-                    binding: 2,
+                    binding: 1,
                     resource: sampler,
                 },
                 {
