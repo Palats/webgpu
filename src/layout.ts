@@ -1,15 +1,20 @@
 // Manage layout, layout binding and corresponding WGSL declarations.
 
-import * as types from './types';
+import { lang, types } from '.';
 
 export class Layout {
+    label: string;
+
     private _desc: GPUBindGroupLayoutDescriptor;
+    private perIndex: EntryInfo[];
+    // Per binding group.
+    private modules: lang.WGSLModule[] = [];
 
     constructor(desc: LayoutDesc) {
+        this.label = desc.label ?? "unnamed layout";
         const entries = desc.entries ?? {};
-        const perIndex: LayoutEntryDesc[] = [];
-        const names: string[] = [];
-        // First, find fixed binding index, to avoid using them.
+        this.perIndex = [];
+
         let nextIndex = 0;
         let entriesCount = 0;
         for (const [name, entry] of Object.entries(entries)) {
@@ -20,35 +25,58 @@ export class Layout {
                 idx = nextIndex;
             } else {
                 // Forced binding, verify there is no redundancy.
-                if (perIndex[entry.binding]) {
+                if (this.perIndex[entry.binding]) {
                     throw new Error(`Binding ${entry.binding} already declared.`);
                 }
                 idx = entry.binding;
-
             }
-            perIndex[idx] = entry;
-            names[idx] = name;
 
-            // Update nextIndex to an available one.
-            while (perIndex[nextIndex] !== undefined) { nextIndex++; }
-        }
-
-        // Verify there is no gap in indexes.
-        if (perIndex.length != entriesCount) {
-            throw new Error(`forced binding lead to gap in binding indexes; ${perIndex.length} vs ${entriesCount}`);
-        }
-
-        const _entries: GPUBindGroupLayoutEntry[] = [];
-        for (const [i, entry] of perIndex.entries()) {
-            console.log("layout", i, names[i]);
             const _entry: GPUBindGroupLayoutEntry = {
                 visibility: desc.visibility ?? entry.visibility ?? (GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE),
-                binding: i,
+                binding: idx,
                 buffer: entry.buffer,
                 sampler: entry.sampler,
                 texture: entry.texture,
             };
-            _entries[i] = _entry;
+
+            var type: lang.WGSLCode;
+            var addressSpace: lang.WGSLCode;
+            if (entry.buffer) {
+                if (!entry.buffer.wgtype) { throw new Error(`missing wgtype for entry ${name}`); }
+                type = entry.buffer.wgtype.typename();
+                addressSpace = lang.wgsl`<uniform>`;
+            } else if (entry.sampler) {
+                type = lang.wgsl`sampler`;
+                addressSpace = lang.wgsl``;
+            } else if (entry.texture) {
+                type = lang.wgsl`texture_2d<f32>`;
+                addressSpace = lang.wgsl``;
+            } else {
+                throw new Error(`missing entry type`);
+            }
+
+            const info: EntryInfo = {
+                index: idx,
+                name: name,
+                type: type,
+                addressSpace: addressSpace,
+                srcDesc: entry,
+                dstDesc: _entry,
+            };
+            this.perIndex[idx] = info;
+
+            // Update nextIndex to an available one.
+            while (this.perIndex[nextIndex] !== undefined) { nextIndex++; }
+        }
+
+        // Verify there is no gap in indexes.
+        if (this.perIndex.length != entriesCount) {
+            throw new Error(`forced binding lead to gap in binding indexes; ${this.perIndex.length} vs ${entriesCount}`);
+        }
+
+        const _entries: GPUBindGroupLayoutEntry[] = [];
+        for (const nfo of this.perIndex) {
+            _entries[nfo.index] = nfo.dstDesc;
         }
 
         this._desc = {
@@ -58,6 +86,31 @@ export class Layout {
     }
 
     Desc(): GPUBindGroupLayoutDescriptor { return this._desc; }
+
+    Module(group: number): lang.WGSLModule {
+        if (this.modules[group] === undefined) {
+            const lines = [
+                lang.wgsl`// Layout ${this.label}\n`,
+            ];
+            for (const nfo of this.perIndex) {
+                lines.push(lang.wgsl`@group(${group.toString()}) @binding(${nfo.index.toString()}) var${nfo.addressSpace} ${new lang.WGSLName(nfo.name)}: ${nfo.type};\n`);
+            }
+            this.modules[group] = new lang.WGSLModule({
+                label: this.label,
+                code: lang.wgsl`${lines}`,
+            });
+        }
+        return this.modules[group];
+    }
+}
+
+interface EntryInfo {
+    index: number;
+    name: string;
+    type: lang.WGSLCode;
+    addressSpace: lang.WGSLCode;
+    srcDesc: LayoutEntryDesc;
+    dstDesc: GPUBindGroupLayoutEntry;
 }
 
 export interface LayoutDesc {

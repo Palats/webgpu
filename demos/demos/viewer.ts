@@ -100,15 +100,27 @@ class Demo {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
+        const layout = new wg.layout.Layout({
+            label: "render pipeline layout",
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            entries: {
+                uniforms: { buffer: { wgtype: uniformsDesc } },
+                material: { buffer: { wgtype: models.materialDesc } },
+                smplr: {
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {},
+                },
+                tex: {
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: {},
+                },
+            },
+        });
+
         // -- Render pipeline.
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
-                @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
-                @group(0) @binding(1) var<uniform> material: ${models.materialDesc.typename()};
-                @group(0) @binding(2) var smplr : sampler;
-                @group(0) @binding(3) var tex : texture_2d<f32>;
-
                 struct Vertex {
                     @builtin(position) pos: vec4<f32>,
                     @location(0) color: vec4<f32>,
@@ -120,23 +132,23 @@ class Demo {
                 @stage(vertex)
                 fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
-                    let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                    let c = (${layout.Module(0).ref("uniforms")}.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
                     let tr = ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * uniforms.modelTransform;
+                        * ${layout.Module(0).ref("uniforms")}.modelTransform;
 
                     var out : Vertex;
-                    out.pos = uniforms.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    out.pos = ${layout.Module(0).ref("uniforms")}.camera * tr * vec4<f32>(inp.pos, 1.0);
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
 
-                    let modelPos = uniforms.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    if (uniforms.debugCoords == 0) {
-                        if (material.hasColor == 0) {
+                    let modelPos = ${layout.Module(0).ref("uniforms")}.modelTransform * vec4<f32>(inp.pos, 1.0);
+                    if (${layout.Module(0).ref("uniforms")}.debugCoords == 0) {
+                        if (${layout.Module(0).ref("material")}.hasColor == 0) {
                             // No provided color? Use a flashy green.
                             out.color = vec4<f32>(0., 1., 0., 1.);
                         } else {
@@ -152,66 +164,26 @@ class Demo {
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
                     var frag = vert.color;
-                    if (material.hasTexture != 0 && uniforms.debugCoords == 0) {
-                        frag = textureSample(tex, smplr, vert.texcoord);
+                    if (${layout.Module(0).ref("material")}.hasTexture != 0 && ${layout.Module(0).ref("uniforms")}.debugCoords == 0) {
+                        frag = textureSample(${layout.Module(0).ref("tex")}, ${layout.Module(0).ref("smplr")}, vert.texcoord);
                     }
 
-                    if (uniforms.useLight == 0 || material.hasNormals == 0) {
+                    if (${layout.Module(0).ref("uniforms")}.useLight == 0 || ${layout.Module(0).ref("material")}.hasNormals == 0) {
                         return frag;
                     }
-                    let ray = normalize(uniforms.light - vert.world);
+                    let ray = normalize(${layout.Module(0).ref("uniforms")}.light - vert.world);
                     let lum = clamp(dot(ray, vert.normal), .0, 1.0);
                     return lum * frag;
                 }
             `,
         }).toDesc());
 
-        const layout = new wg.layout.Layout({
-            label: "render pipeline layout",
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            entries: {
-                uniforms: { buffer: {} },
-                material: { buffer: {} },
-                smplr: {
-                    visibility: GPUShaderStage.FRAGMENT,
-                },
-                tex: {
-                    visibility: GPUShaderStage.FRAGMENT,
-                },
-            },
-        });
-
         this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
             layout: params.device.createPipelineLayout({
                 label: "render pipeline layouts",
                 bindGroupLayouts: [
-                    params.device.createBindGroupLayout({
-                        label: "render pipeline layout",
-                        entries: [
-                            {
-                                binding: 0,
-                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                                buffer: { type: 'uniform' },
-                            },
-                            {
-                                binding: 1,
-                                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                                buffer: { type: 'uniform' },
-                            },
-                            {
-
-                                binding: 2,
-                                visibility: GPUShaderStage.FRAGMENT,
-                                sampler: {},
-                            },
-                            {
-                                binding: 3,
-                                visibility: GPUShaderStage.FRAGMENT,
-                                texture: {},
-                            },
-                        ],
-                    }),
+                    params.device.createBindGroupLayout(layout.Desc()),
                 ]
             }),
             vertex: {
