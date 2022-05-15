@@ -5,6 +5,7 @@
 
 export * as types from './types';
 export * as lang from './lang';
+export * as layout from './layout';
 
 export {
     WGSLModule,

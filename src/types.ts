@@ -9,7 +9,7 @@ const wgsl = lang.wgsl;
 
 // Basic class to represent info about a given WGSL type. The template parameter
 // is the type of the value it maps to in javascript.
-abstract class WGSLType<T> {
+export abstract class WGSLType<T> {
     // If a template parameter is not used, it means the template type not being resolved,
     // leading to unexpected results.
     private unused?: T;

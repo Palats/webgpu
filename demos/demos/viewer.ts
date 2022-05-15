@@ -166,6 +166,21 @@ class Demo {
             `,
         }).toDesc());
 
+        const layout = new wg.layout.Layout({
+            label: "render pipeline layout",
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            entries: {
+                uniforms: { buffer: {} },
+                material: { buffer: {} },
+                smplr: {
+                    visibility: GPUShaderStage.FRAGMENT,
+                },
+                tex: {
+                    visibility: GPUShaderStage.FRAGMENT,
+                },
+            },
+        });
+
         this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
             layout: params.device.createPipelineLayout({
