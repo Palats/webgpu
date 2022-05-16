@@ -31,7 +31,24 @@ const uniformsDesc = new wg.StructType({
     useLight: { idx: 7, type: wg.I32 },
     light: { idx: 8, type: wg.Vec4f32 },
     debugCoords: { idx: 9, type: wg.I32 },
-})
+});
+
+const layout = new wg.layout.Layout({
+    label: "render pipeline layout",
+    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+    entries: {
+        uniforms: { buffer: { wgtype: uniformsDesc } },
+        material: { buffer: { wgtype: models.materialDesc } },
+        smplr: {
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: {},
+        },
+        tex: {
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {},
+        },
+    },
+});
 
 const depthFormat = "depth24plus";
 
@@ -100,22 +117,6 @@ class Demo {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-        const layout = new wg.layout.Layout({
-            label: "render pipeline layout",
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            entries: {
-                uniforms: { buffer: { wgtype: uniformsDesc } },
-                material: { buffer: { wgtype: models.materialDesc } },
-                smplr: {
-                    visibility: GPUShaderStage.FRAGMENT,
-                    sampler: {},
-                },
-                tex: {
-                    visibility: GPUShaderStage.FRAGMENT,
-                    texture: {},
-                },
-            },
-        });
 
         // -- Render pipeline.
         const shader = params.device.createShaderModule(new wg.WGSLModule({
@@ -286,28 +287,15 @@ class Demo {
             magFilter: "linear",
         });
 
-        const renderBindGroup = this.params.device.createBindGroup({
-            label: "render pipeline bindgroup",
-            layout: this.renderPipeline.getBindGroupLayout(0),
-            entries: [
-                {
-                    binding: 0,
-                    resource: { buffer: this.uniformsBuffer }
-                },
-                {
-                    binding: 1,
-                    resource: { buffer: gpuMesh.materialBuffer },
-                },
-                {
-                    binding: 2,
-                    resource: sampler,
-                },
-                {
-                    binding: 3,
-                    resource: gpuMesh.textureView!,
-                },
-            ],
-        });
+        const renderBindGroup = this.params.device.createBindGroup(layout.BindGroupDesc(
+            this.renderPipeline.getBindGroupLayout(0),
+            {
+                uniforms: this.uniformsBuffer,
+                material: gpuMesh.materialBuffer,
+                smplr: sampler,
+                tex: gpuMesh.textureView!,
+            },
+        ));
 
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
             label: "main render bundle",

@@ -7,6 +7,7 @@ export class Layout {
 
     private _desc: GPUBindGroupLayoutDescriptor;
     private perIndex: EntryInfo[];
+    private perName: { [k in string]: EntryInfo };
     // Per binding group.
     private modules: lang.WGSLModule[] = [];
 
@@ -14,6 +15,7 @@ export class Layout {
         this.label = desc.label ?? "unnamed layout";
         const entries = desc.entries ?? {};
         this.perIndex = [];
+        this.perName = {};
 
         let nextIndex = 0;
         let entriesCount = 0;
@@ -41,16 +43,27 @@ export class Layout {
 
             var type: lang.WGSLCode;
             var addressSpace: lang.WGSLCode;
+            var resource: (data: any) => GPUBindingResource;
             if (entry.buffer) {
                 if (!entry.buffer.wgtype) { throw new Error(`missing wgtype for entry ${name}`); }
                 type = entry.buffer.wgtype.typename();
                 addressSpace = lang.wgsl`<uniform>`;
+                resource = (data: any) => {
+                    return { buffer: data as GPUBuffer };
+
+                };
             } else if (entry.sampler) {
                 type = lang.wgsl`sampler`;
                 addressSpace = lang.wgsl``;
+                resource = (data: any) => {
+                    return data as GPUSampler;
+                }
             } else if (entry.texture) {
                 type = lang.wgsl`texture_2d<f32>`;
                 addressSpace = lang.wgsl``;
+                resource = (data: any) => {
+                    return data as GPUTextureView;
+                }
             } else {
                 throw new Error(`missing entry type`);
             }
@@ -62,8 +75,10 @@ export class Layout {
                 addressSpace: addressSpace,
                 srcDesc: entry,
                 dstDesc: _entry,
+                resource: resource,
             };
             this.perIndex[idx] = info;
+            this.perName[name] = info;
 
             // Update nextIndex to an available one.
             while (this.perIndex[nextIndex] !== undefined) { nextIndex++; }
@@ -102,6 +117,23 @@ export class Layout {
         }
         return this.modules[group];
     }
+
+    BindGroupDesc(layout: GPUBindGroupLayout, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
+        const entries: GPUBindGroupEntry[] = [];
+        for (const [name, bind] of Object.entries(bindings)) {
+            const nfo = this.perName[name];
+            if (!nfo) { throw new Error(`unknown key "${name}"`); }
+            entries.push({
+                binding: nfo.index,
+                resource: nfo.resource(bind),
+            });
+        }
+        return {
+            label: this.label,
+            layout: layout,
+            entries: entries,
+        }
+    }
 }
 
 interface EntryInfo {
@@ -111,6 +143,7 @@ interface EntryInfo {
     addressSpace: lang.WGSLCode;
     srcDesc: LayoutEntryDesc;
     dstDesc: GPUBindGroupLayoutEntry;
+    resource: (data: any) => GPUBindingResource;
 }
 
 export interface LayoutDesc {
