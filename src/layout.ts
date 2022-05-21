@@ -120,13 +120,22 @@ export class Layout {
 
     BindGroupDesc(layout: GPUBindGroupLayout, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
         const entries: GPUBindGroupEntry[] = [];
+        let found = 0;
         for (const [name, bind] of Object.entries(bindings)) {
             const nfo = this.perName[name];
             if (!nfo) { throw new Error(`unknown key "${name}"`); }
+            found++;
             entries.push({
                 binding: nfo.index,
                 resource: nfo.resource(bind),
             });
+        }
+        if (found !== this.perIndex.length) {
+            // Only track what missing/extra on failure, to avoid the extra
+            // bookkeeping cost.
+            const provided = new Set(Object.keys(bindings));
+            const missing = Object.keys(this.perName).filter(x => !provided.has(x));
+            throw new Error(`invalid bindings; missing: ${missing}`);
         }
         return {
             label: this.label,
