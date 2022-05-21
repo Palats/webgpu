@@ -1,5 +1,4 @@
 import * as cameras from './cameras';
-import { TemplateResult, html } from 'lit';
 import * as lilgui from 'lil-gui';
 
 // Description of a given effect.
@@ -32,6 +31,8 @@ export interface InitParams {
 }
 
 export interface FrameInfo {
+    // A reference to what was used during initialization.
+    params: InitParams;
     // Elapsed time in millisecond since the demo was started.
     // Stopped when demo is paused.
     elapsedMs: DOMHighResTimeStamp;

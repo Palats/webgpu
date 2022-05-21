@@ -1,4 +1,7 @@
 import * as wg from '../src';
+import * as demotypes from './demotypes';
+import * as glmatrix from 'gl-matrix';
+
 
 // Functions to calculate projection matrices.
 export const projection = new wg.WGSLModule({
@@ -112,7 +115,43 @@ export const rand = new wg.WGSLModule({
             return fract(sin(dot(vec2<f32>(a, b), vec2<f32>(12.9898,78.233)))*43758.5453123);
         }
     `,
-})
+});
+
+// Common information coming from the demo subsystem.
+export const demoDesc = new wg.StructType({
+    elapsedMs: { idx: 0, type: wg.F32 },
+    deltaMs: { idx: 1, type: wg.F32 },
+    renderWidth: { idx: 2, type: wg.F32 },
+    renderHeight: { idx: 3, type: wg.F32 },
+    rngSeed: { idx: 4, type: wg.F32 },
+    camera: { idx: 5, type: wg.Mat4x4F32 },
+});
+
+export class DemoBuffer {
+    buffer: GPUBuffer;
+    desc: typeof demoDesc;
+
+    constructor(params: demotypes.InitParams) {
+        this.desc = demoDesc;
+        this.buffer = params.device.createBuffer({
+            label: "Demo params buffer",
+            size: demoDesc.byteSize(),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+    }
+
+    // Update the demo buffer info for the current frame.
+    refresh(info: demotypes.FrameInfo, viewproj: glmatrix.mat4) {
+        info.params.device.queue.writeBuffer(this.buffer, 0, demoDesc.createArray({
+            elapsedMs: info.elapsedMs,
+            deltaMs: info.deltaMs,
+            renderWidth: info.params.renderWidth,
+            renderHeight: info.params.renderHeight,
+            rngSeed: info.rng,
+            camera: Array.from(viewproj),
+        }));
+    }
+}
 
 export type Point = {
     pos: [number, number, number];
@@ -134,9 +173,8 @@ export type LineDesc = {
     // line. Each line will connect one point to the next.
     lines: Point[][];
 
-    // temporary hack to get the camera transform.
-    mod: wg.StructType<any>;
-    buffer: GPUBuffer;
+    // Info for rendering.
+    demoBuffer: DemoBuffer;
 }
 
 // Prepare a bundle which will draw a bunch of lines.
@@ -179,7 +217,7 @@ export function buildLineBundle(lineDesc: LineDesc) {
     const shader = lineDesc.device.createShaderModule(new wg.WGSLModule({
         label: `${label} - render shader`,
         code: wg.wgsl`
-            @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.mod.typename()};
+            @group(0) @binding(0) var<uniform> uniforms : ${lineDesc.demoBuffer.desc.typename()};
 
             struct Input {
                 @location(0) pos: vec3<f32>,
@@ -251,7 +289,7 @@ export function buildLineBundle(lineDesc: LineDesc) {
         label: `${label} - bindgroup`,
         layout: pipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: { buffer: lineDesc.buffer } },
+            { binding: 0, resource: { buffer: lineDesc.demoBuffer.buffer } },
         ]
     });
 

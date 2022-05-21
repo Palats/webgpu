@@ -61,7 +61,7 @@ export abstract class WGSLType<T> {
 }
 
 // Info about WGSL `f32` type.
-class F32Type extends WGSLType<number> {
+export class F32Type extends WGSLType<number> {
     byteSize() { return 4; }
     alignOf() { return 4; }
 
@@ -197,7 +197,7 @@ export class Vec4f32Type extends WGSLType<[number, number, number, number]> {
 export const Vec4f32 = new Vec4f32Type();
 
 // mat4x4<f32> WGSL type.
-class Mat4x4F32Type extends WGSLType<number[]> {
+export class Mat4x4F32Type extends WGSLType<number[]> {
     byteSize() { return 64; }
     alignOf() { return 16; }
 

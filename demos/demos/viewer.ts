@@ -19,24 +19,18 @@ export const demo = {
     }
 }
 
-// Basic parameters provided to all the shaders.
 const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
-    modelTransform: { idx: 6, type: wg.Mat4x4F32 },
-    useLight: { idx: 7, type: wg.I32 },
-    light: { idx: 8, type: wg.Vec4f32 },
-    debugCoords: { idx: 9, type: wg.I32 },
+    modelTransform: { idx: 0, type: wg.Mat4x4F32 },
+    useLight: { idx: 1, type: wg.I32 },
+    light: { idx: 2, type: wg.Vec4f32 },
+    debugCoords: { idx: 3, type: wg.I32 },
 });
 
 const layout = new wg.layout.Layout({
     label: "render pipeline layout",
     visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
     entries: {
+        demo: { buffer: { wgtype: shaderlib.demoDesc } },
         uniforms: { buffer: { wgtype: uniformsDesc } },
         material: { buffer: { wgtype: models.materialDesc } },
         smplr: {
@@ -78,6 +72,7 @@ interface GPUMeshInfo {
 class Demo {
     params: demotypes.InitParams;
     depthTextureView: GPUTextureView;
+    demoBuffer: shaderlib.DemoBuffer;
     uniformsBuffer: GPUBuffer;
     camera: cameras.ArcBall;
 
@@ -111,6 +106,8 @@ class Demo {
         params.gui.add(this, 'showBasis');
         params.gui.add(this, 'debugCoords');
 
+        this.demoBuffer = new shaderlib.DemoBuffer(params);
+
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
             size: uniformsDesc.byteSize(),
@@ -133,7 +130,7 @@ class Demo {
                 @stage(vertex)
                 fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
-                    let c = (${layout.Module(0).ref("uniforms")}.elapsedMs / 1000.0) % TAU;
+                    let c = (${layout.Module(0).ref("demo")}.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
                     let tr = ${shaderlib.tr.ref("rotateZ")}(r.z)
@@ -142,7 +139,7 @@ class Demo {
                         * ${layout.Module(0).ref("uniforms")}.modelTransform;
 
                     var out : Vertex;
-                    out.pos = ${layout.Module(0).ref("uniforms")}.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    out.pos = ${layout.Module(0).ref("demo")}.camera * tr * vec4<f32>(inp.pos, 1.0);
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
@@ -223,8 +220,7 @@ class Demo {
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
             lines: shaderlib.ortholines,
-            mod: uniformsDesc,
-            buffer: this.uniformsBuffer,
+            demoBuffer: this.demoBuffer,
         });
 
         // Configuring camera.
@@ -288,13 +284,13 @@ class Demo {
         });
 
         const renderBindGroup = this.params.device.createBindGroup(layout.BindGroupDesc(
-            this.renderPipeline.getBindGroupLayout(0),
-            {
-                uniforms: this.uniformsBuffer,
-                material: gpuMesh.materialBuffer,
-                smplr: sampler,
-                tex: gpuMesh.textureView!,
-            },
+            this.renderPipeline.getBindGroupLayout(0), {
+            demo: this.demoBuffer.buffer,
+            uniforms: this.uniformsBuffer,
+            material: gpuMesh.materialBuffer,
+            smplr: sampler,
+            tex: gpuMesh.textureView!,
+        },
         ));
 
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
@@ -325,13 +321,9 @@ class Demo {
         );
         this.camera.transform(viewproj, info.cameraMvt);
 
+        this.demoBuffer.refresh(info, viewproj);
+
         this.params.device.queue.writeBuffer(this.uniformsBuffer, 0, uniformsDesc.createArray({
-            elapsedMs: info.elapsedMs,
-            deltaMs: info.deltaMs,
-            renderWidth: this.params.renderWidth,
-            renderHeight: this.params.renderHeight,
-            rngSeed: info.rng,
-            camera: Array.from(viewproj),
             modelTransform: Array.from(this.modelTransform),
             useLight: this.useLight ? 1 : 0,
             light: [this.lightX, this.lightY, this.lightZ, 1.0],

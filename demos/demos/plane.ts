@@ -7,20 +7,6 @@ import * as wg from '../../src';
 import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
 
-// Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
-    revCamera: { idx: 6, type: wg.Mat4x4F32 },
-})
-
-// Parameters from Javascript to the computer shader
-// for each instance.
-
 export const demo = {
     id: "plane",
     caption: "An infinite plane",
@@ -34,11 +20,7 @@ export const demo = {
         params.gui.add(ctrls, 'showBoundaries');
         params.gui.add(ctrls, 'showBasis');
 
-        const uniformsBuffer = params.device.createBuffer({
-            label: "Compute uniforms buffer",
-            size: uniformsDesc.byteSize(),
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
+        const demoBuffer = new shaderlib.DemoBuffer(params);
 
         // -- Render pipeline.
         // It takes the projection matrix from the compute output
@@ -50,7 +32,7 @@ export const demo = {
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
-                @group(0) @binding(0) var<uniform> uniforms: ${uniformsDesc.typename()};
+                @group(0) @binding(0) var<uniform> demo: ${demoBuffer.desc.typename()};
 
                 // An XY plane described using 4 triangles.
                 let mesh = array<vec4<f32>, 12>(
@@ -81,7 +63,7 @@ export const demo = {
                     let pos = mesh[idx];
 
                     var out : VertexOut;
-                    out.pos = uniforms.camera * pos;
+                    out.pos = demo.camera * pos;
                     out.coord = pos;
                     return out;
                 }
@@ -171,10 +153,7 @@ export const demo = {
             label: "render pipeline bindgroup",
             layout: renderPipeline.getBindGroupLayout(0),
             entries: [
-                {
-                    binding: 0,
-                    resource: { buffer: uniformsBuffer }
-                },
+                { binding: 0, resource: { buffer: demoBuffer.buffer } },
             ]
         });
 
@@ -204,8 +183,7 @@ export const demo = {
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
             lines: shaderlib.ortholines,
-            mod: uniformsDesc,
-            buffer: uniformsBuffer,
+            demoBuffer: demoBuffer,
         });
         // Cube surrounding the scene.
         const boundariesBundle = shaderlib.buildLineBundle({
@@ -214,8 +192,7 @@ export const demo = {
             depthFormat: depthFormat,
             lines: shaderlib.cubelines(1.0),
             depthCompare: 'less',
-            mod: uniformsDesc,
-            buffer: uniformsBuffer,
+            demoBuffer: demoBuffer,
         });
 
         // Configuring camera.
@@ -232,15 +209,7 @@ export const demo = {
                 100.0, // far
             );
             camera.transform(viewproj, info.cameraMvt);
-            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
-                elapsedMs: info.elapsedMs,
-                deltaMs: info.deltaMs,
-                renderWidth: params.renderWidth,
-                renderHeight: params.renderHeight,
-                rngSeed: info.rng,
-                camera: Array.from(viewproj),
-                revCamera: Array.from(glmatrix.mat4.invert(glmatrix.mat4.create(), viewproj)),
-            }));
+            demoBuffer.refresh(info, viewproj);
 
             const commandEncoder = params.device.createCommandEncoder();
             commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');

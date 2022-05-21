@@ -372,7 +372,7 @@ export class AppMain extends LitElement {
                 }
 
                 this.camera = new cameras.Null();
-                const renderer = await demoByID(this.demoID).init({
+                const params: demotypes.InitParams = {
                     context: context,
                     adapter: adapter,
                     device: device,
@@ -381,7 +381,8 @@ export class AppMain extends LitElement {
                     renderHeight: this.renderHeight,
                     setCamera: (c: cameras.Camera) => { this.camera = c; },
                     gui: this.guiDemo!,
-                });
+                };
+                const renderer = await demoByID(this.demoID).init(params);
                 if (this.error) {
                     throw new Error("init failed");
                 }
@@ -410,6 +411,7 @@ export class AppMain extends LitElement {
                     this.step = false;
 
                     await renderer({
+                        params: params,
                         elapsedMs: elapsedMs,
                         deltaMs: deltaMs,
                         rng: Math.random(),

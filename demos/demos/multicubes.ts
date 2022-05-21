@@ -21,19 +21,8 @@ const boxSize = 20;
 const cameraOffset = glmatrix.vec3.fromValues(0, 0, 25);
 const spaceLimit = boxSize / 2.0;
 
-// Basic parameters provided to all the shaders.
-const uniformsDesc = new wg.StructType({
-    elapsedMs: { idx: 0, type: wg.F32 },
-    deltaMs: { idx: 1, type: wg.F32 },
-    renderWidth: { idx: 2, type: wg.F32 },
-    renderHeight: { idx: 3, type: wg.F32 },
-    rngSeed: { idx: 4, type: wg.F32 },
-    camera: { idx: 5, type: wg.Mat4x4F32 },
-})
-
 // Parameters from Javascript to the computer shader
 // for each instance.
-
 const instanceParamsDesc = new wg.StructType({
     'pos': { type: wg.Vec3f32, idx: 0 },
     'rot': { type: wg.Vec3f32, idx: 1 },
@@ -90,11 +79,7 @@ export const demo = {
         instanceArrayDesc.dataViewSet(new DataView(a), 0, positions);
         params.device.queue.writeBuffer(instancesBuffer, 0, a);
 
-        const uniformsBuffer = params.device.createBuffer({
-            label: "Compute uniforms buffer",
-            size: uniformsDesc.byteSize(),
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
+        const demoBuffer = new shaderlib.DemoBuffer(params);
 
         const computeResult = params.device.createBuffer({
             label: "Compute output for vertex shaders",
@@ -138,7 +123,7 @@ export const demo = {
                 module: params.device.createShaderModule(new wg.WGSLModule({
                     label: "Rendering matrix compute",
                     code: wg.wgsl`
-                        @group(0) @binding(0) var<uniform> uniforms : ${uniformsDesc.typename()};
+                        @group(0) @binding(0) var<uniform> demo : ${demoBuffer.desc.typename()};
                         @group(0) @binding(1) var<storage, read_write> params : ${instanceArrayDesc.typename()};
 
                         struct InstanceState {
@@ -153,7 +138,7 @@ export const demo = {
 
                             var pos = params[idx].pos;
 
-                            if (uniforms.deltaMs > 0.0) {
+                            if (demo.deltaMs > 0.0) {
                                 let nextpos = pos + params[idx].move;
                                 // This is probably horribly inefficient.
                                 if (nextpos.x < -${spaceLimit.toFixed(1)} || nextpos.x >= ${spaceLimit.toFixed(1)}) {
@@ -170,11 +155,11 @@ export const demo = {
                             }
 
                             let TAU = 6.283185;
-                            let c = (uniforms.elapsedMs / 1000.0) % TAU;
+                            let c = (demo.elapsedMs / 1000.0) % TAU;
                             let r = params[idx].rot + vec3<f32>(c, c, c);
 
                             outp[idx].mvp =
-                                uniforms.camera
+                                demo.camera
                                 * ${shaderlib.tr.ref("translate")}(pos)
                                 * ${shaderlib.tr.ref("rotateZ")}(r.z)
                                 * ${shaderlib.tr.ref("rotateY")}(r.y)
@@ -191,7 +176,7 @@ export const demo = {
             layout: computePipeline.getBindGroupLayout(0),
             entries: [{
                 binding: 0,
-                resource: { buffer: uniformsBuffer }
+                resource: { buffer: demoBuffer.buffer }
             }, {
                 binding: 1,
                 resource: { buffer: instancesBuffer }
@@ -320,8 +305,7 @@ export const demo = {
             colorFormat: params.renderFormat,
             depthFormat: depthFormat,
             lines: shaderlib.ortholines,
-            mod: uniformsDesc,
-            buffer: uniformsBuffer,
+            demoBuffer: demoBuffer,
         });
         // Cube surrounding the scene.
         const boundariesBundle = shaderlib.buildLineBundle({
@@ -330,8 +314,7 @@ export const demo = {
             depthFormat: depthFormat,
             lines: shaderlib.cubelines(spaceLimit),
             depthCompare: 'less',
-            mod: uniformsDesc,
-            buffer: uniformsBuffer,
+            demoBuffer: demoBuffer,
         });
 
         // Configuring camera.
@@ -348,14 +331,7 @@ export const demo = {
                 100.0, // far
             );
             camera.transform(viewproj, info.cameraMvt);
-            params.device.queue.writeBuffer(uniformsBuffer, 0, uniformsDesc.createArray({
-                elapsedMs: info.elapsedMs,
-                deltaMs: info.deltaMs,
-                renderWidth: params.renderWidth,
-                renderHeight: params.renderHeight,
-                rngSeed: info.rng,
-                camera: Array.from(viewproj),
-            }));
+            demoBuffer.refresh(info, viewproj);
 
             // -- Do compute pass, to create projection matrices.
             const commandEncoder = params.device.createCommandEncoder();
