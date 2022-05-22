@@ -2,17 +2,19 @@
 
 import { lang, types } from '.';
 
-export class Layout {
+// Store a layout of a bind group, usable for declaring the layout, create the
+// bing group and usable from WGSL.
+export class BindGroup {
     label: string;
 
     private _desc: GPUBindGroupLayoutDescriptor;
-    private perIndex: EntryInfo[];
-    private perName: { [k in string]: EntryInfo };
+    private perIndex: BingGroupEntryInfo[];
+    private perName: { [k in string]: BingGroupEntryInfo };
     // Per binding group.
     private modules: lang.WGSLModule[] = [];
 
-    constructor(desc: LayoutDesc) {
-        this.label = desc.label ?? "unnamed layout";
+    constructor(desc: BindGroupDesc) {
+        this.label = desc.label ?? "unnamed bindgroup layout";
         const entries = desc.entries ?? {};
         this.perIndex = [];
         this.perName = {};
@@ -68,7 +70,7 @@ export class Layout {
                 throw new Error(`missing entry type`);
             }
 
-            const info: EntryInfo = {
+            const info: BingGroupEntryInfo = {
                 index: idx,
                 name: name,
                 type: type,
@@ -100,7 +102,7 @@ export class Layout {
         }
     }
 
-    Desc(): GPUBindGroupLayoutDescriptor { return this._desc; }
+    Layout(): GPUBindGroupLayoutDescriptor { return this._desc; }
 
     Module(group: number): lang.WGSLModule {
         if (this.modules[group] === undefined) {
@@ -118,7 +120,7 @@ export class Layout {
         return this.modules[group];
     }
 
-    BindGroupDesc(layout: GPUBindGroupLayout, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
+    Desc(layout: GPUBindGroupLayout, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
         const entries: GPUBindGroupEntry[] = [];
         let found = 0;
         for (const [name, bind] of Object.entries(bindings)) {
@@ -145,23 +147,23 @@ export class Layout {
     }
 }
 
-interface EntryInfo {
+interface BingGroupEntryInfo {
     index: number;
     name: string;
     type: lang.WGSLCode;
     addressSpace: lang.WGSLCode;
-    srcDesc: LayoutEntryDesc;
+    srcDesc: BindGroupEntry;
     dstDesc: GPUBindGroupLayoutEntry;
     resource: (data: any) => GPUBindingResource;
 }
 
-export interface LayoutDesc {
+export interface BindGroupDesc {
     label?: string;
     visibility?: GPUShaderStageFlags;
-    entries?: { [k: string]: LayoutEntryDesc };
+    entries?: { [k: string]: BindGroupEntry };
 }
 
-export interface LayoutEntryDesc {
+export interface BindGroupEntry {
     visibility?: GPUShaderStageFlags;
     binding?: number;
     buffer?: GPUBufferBindingLayout & BufferDesc;
@@ -170,34 +172,5 @@ export interface LayoutEntryDesc {
 }
 
 export interface BufferDesc {
-    // type?: GPUBuffer;
     wgtype?: types.WGSLType<any>;
-    //hasDynamicOffset?: boolean;
-    // minBindingSize?: number;
-}
-
-/*export interface SamplerDesc {
-    type?: GPUSamplerBindingType;
-}
-
-export interface TextureDesc {
-    sampleType?: GPUTextureSampleType;
-    viewDimension?: GPUTextureViewDimension;
-    multisampled?: boolean;
-}*/
-
-// storagetexture
-// externaltexture
-
-/*export type LayoutFields = {
-    [k: string]: Entry,
-}*/
-
-function test1() {
-    const desc = new Layout({
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        entries: {
-            uniforms: { buffer: {} },
-        }
-    })
 }

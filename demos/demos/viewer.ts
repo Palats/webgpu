@@ -26,7 +26,7 @@ const uniformsDesc = new wg.StructType({
     debugCoords: { idx: 3, type: wg.I32 },
 });
 
-const layout = new wg.layout.Layout({
+const layout = new wg.layout.BindGroup({
     label: "render pipeline layout",
     visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
     entries: {
@@ -114,7 +114,6 @@ class Demo {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-
         // -- Render pipeline.
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
@@ -181,7 +180,7 @@ class Demo {
             layout: params.device.createPipelineLayout({
                 label: "render pipeline layouts",
                 bindGroupLayouts: [
-                    params.device.createBindGroupLayout(layout.Desc()),
+                    params.device.createBindGroupLayout(layout.Layout()),
                 ]
             }),
             vertex: {
@@ -283,7 +282,7 @@ class Demo {
             magFilter: "linear",
         });
 
-        const renderBindGroup = this.params.device.createBindGroup(layout.BindGroupDesc(
+        const renderBindGroup = this.params.device.createBindGroup(layout.Desc(
             this.renderPipeline.getBindGroupLayout(0), {
             demo: this.demoBuffer.buffer,
             uniforms: this.uniformsBuffer,
