@@ -13,6 +13,8 @@ export class BindGroup {
     // Per binding group.
     private modules: lang.WGSLModule[] = [];
 
+    private layoutCache: Map<GPUDevice, GPUBindGroupLayout> = new Map();
+
     constructor(desc: BindGroupDesc) {
         this.label = desc.label ?? "unnamed bindgroup layout";
         const entries = desc.entries ?? {};
@@ -102,7 +104,16 @@ export class BindGroup {
         }
     }
 
-    Layout(): GPUBindGroupLayoutDescriptor { return this._desc; }
+    LayoutDesc(): GPUBindGroupLayoutDescriptor { return this._desc; }
+
+    Layout(device: GPUDevice): GPUBindGroupLayout {
+        let l = this.layoutCache.get(device);
+        if (!l) {
+            l = device.createBindGroupLayout(this.LayoutDesc());
+            this.layoutCache.set(device, l);
+        }
+        return l;
+    }
 
     Module(group: number): lang.WGSLModule {
         if (this.modules[group] === undefined) {
@@ -120,7 +131,7 @@ export class BindGroup {
         return this.modules[group];
     }
 
-    Desc(layout: GPUBindGroupLayout, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
+    Desc(device: GPUDevice, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
         const entries: GPUBindGroupEntry[] = [];
         let found = 0;
         for (const [name, bind] of Object.entries(bindings)) {
@@ -141,10 +152,15 @@ export class BindGroup {
         }
         return {
             label: this.label,
-            layout: layout,
+            layout: this.Layout(device),
             entries: entries,
         }
     }
+
+    Create(device: GPUDevice, bindings: { [k in string]: any }): GPUBindGroup {
+        return device.createBindGroup(this.Desc(device, bindings));
+    }
+
 }
 
 interface BingGroupEntryInfo {
@@ -173,4 +189,77 @@ export interface BindGroupEntry {
 
 export interface BufferDesc {
     wgtype?: types.WGSLType<any>;
+}
+
+// Describe the bindgroups necessary to run a pipeline.
+export class Pipeline {
+    label: string;
+
+    private perIndex: PipelineEntryInfo[];
+    private perName: { [k in string]: PipelineEntryInfo };
+    private layoutCache: Map<GPUDevice, GPUPipelineLayout> = new Map();
+
+    constructor(desc: PipelineDesc) {
+        this.label = desc.label ?? "unknown pipeline layout";
+        this.perIndex = [];
+        this.perName = {};
+
+        const entries = desc.entries ?? {};
+
+        // For now, no support to force index.
+        for (const [name, entry] of Object.entries(entries)) {
+            const nfo: PipelineEntryInfo = {
+                index: this.perIndex.length,
+                name: name,
+                bindGroup: entry.bindGroup,
+            }
+            this.perIndex.push(nfo);
+            this.perName[name] = nfo;
+        }
+    }
+
+    LayoutDesc(device: GPUDevice): GPUPipelineLayoutDescriptor {
+        const layouts: GPUBindGroupLayout[] = [];
+        for (const nfo of this.perIndex) {
+            layouts.push(nfo.bindGroup.Layout(device));
+        }
+        return {
+            label: this.label,
+            bindGroupLayouts: layouts,
+        }
+    }
+
+    Layout(device: GPUDevice): GPUPipelineLayout {
+        let l = this.layoutCache.get(device);
+        if (!l) {
+            l = device.createPipelineLayout(this.LayoutDesc(device));
+            this.layoutCache.set(device, l);
+        }
+        return l;
+    }
+
+    // Give access to all the layout of the pipeline to WGSL code.
+    // Keys are the
+    WGSL(): { [k in string]: lang.WGSLModule } {
+        const mods: { [k in string]: lang.WGSLModule } = {};
+        for (const nfo of this.perIndex) {
+            mods[nfo.name] = nfo.bindGroup.Module(nfo.index);
+        }
+        return mods;
+    }
+}
+
+export interface PipelineDesc {
+    label?: string;
+    entries?: { [k: string]: PipelineEntry };
+}
+
+export interface PipelineEntry {
+    bindGroup: BindGroup;
+}
+
+interface PipelineEntryInfo {
+    index: number;
+    name: string;
+    bindGroup: BindGroup;
 }

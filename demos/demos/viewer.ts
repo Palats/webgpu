@@ -26,8 +26,8 @@ const uniformsDesc = new wg.StructType({
     debugCoords: { idx: 3, type: wg.I32 },
 });
 
-const layout = new wg.layout.BindGroup({
-    label: "render pipeline layout",
+const bgLayout = new wg.layout.BindGroup({
+    label: "all data",
     visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
     entries: {
         demo: { buffer: { wgtype: shaderlib.demoDesc } },
@@ -43,6 +43,13 @@ const layout = new wg.layout.BindGroup({
         },
     },
 });
+
+const pipelineLayout = new wg.layout.Pipeline({
+    label: "render",
+    entries: {
+        all: { bindGroup: bgLayout },
+    }
+})
 
 const depthFormat = "depth24plus";
 
@@ -115,6 +122,7 @@ class Demo {
         });
 
         // -- Render pipeline.
+        const inp = pipelineLayout.WGSL();
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
@@ -129,23 +137,23 @@ class Demo {
                 @stage(vertex)
                 fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
-                    let c = (${layout.Module(0).ref("demo")}.elapsedMs / 1000.0) % TAU;
+                    let c = (${inp.all.ref("demo")}.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
                     let tr = ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * ${layout.Module(0).ref("uniforms")}.modelTransform;
+                        * ${inp.all.ref("uniforms")}.modelTransform;
 
                     var out : Vertex;
-                    out.pos = ${layout.Module(0).ref("demo")}.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    out.pos = ${inp.all.ref("demo")}.camera * tr * vec4<f32>(inp.pos, 1.0);
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
 
-                    let modelPos = ${layout.Module(0).ref("uniforms")}.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    if (${layout.Module(0).ref("uniforms")}.debugCoords == 0) {
-                        if (${layout.Module(0).ref("material")}.hasColor == 0) {
+                    let modelPos = ${inp.all.ref("uniforms")}.modelTransform * vec4<f32>(inp.pos, 1.0);
+                    if (${inp.all.ref("uniforms")}.debugCoords == 0) {
+                        if (${inp.all.ref("material")}.hasColor == 0) {
                             // No provided color? Use a flashy green.
                             out.color = vec4<f32>(0., 1., 0., 1.);
                         } else {
@@ -161,14 +169,14 @@ class Demo {
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
                     var frag = vert.color;
-                    if (${layout.Module(0).ref("material")}.hasTexture != 0 && ${layout.Module(0).ref("uniforms")}.debugCoords == 0) {
-                        frag = textureSample(${layout.Module(0).ref("tex")}, ${layout.Module(0).ref("smplr")}, vert.texcoord);
+                    if (${inp.all.ref("material")}.hasTexture != 0 && ${inp.all.ref("uniforms")}.debugCoords == 0) {
+                        frag = textureSample(${inp.all.ref("tex")}, ${inp.all.ref("smplr")}, vert.texcoord);
                     }
 
-                    if (${layout.Module(0).ref("uniforms")}.useLight == 0 || ${layout.Module(0).ref("material")}.hasNormals == 0) {
+                    if (${inp.all.ref("uniforms")}.useLight == 0 || ${inp.all.ref("material")}.hasNormals == 0) {
                         return frag;
                     }
-                    let ray = normalize(${layout.Module(0).ref("uniforms")}.light - vert.world);
+                    let ray = normalize(${inp.all.ref("uniforms")}.light - vert.world);
                     let lum = clamp(dot(ray, vert.normal), .0, 1.0);
                     return lum * frag;
                 }
@@ -177,12 +185,7 @@ class Demo {
 
         this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
-            layout: params.device.createPipelineLayout({
-                label: "render pipeline layouts",
-                bindGroupLayouts: [
-                    params.device.createBindGroupLayout(layout.Layout()),
-                ]
-            }),
+            layout: pipelineLayout.Layout(params.device),
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
@@ -282,15 +285,16 @@ class Demo {
             magFilter: "linear",
         });
 
-        const renderBindGroup = this.params.device.createBindGroup(layout.Desc(
-            this.renderPipeline.getBindGroupLayout(0), {
-            demo: this.demoBuffer.buffer,
-            uniforms: this.uniformsBuffer,
-            material: gpuMesh.materialBuffer,
-            smplr: sampler,
-            tex: gpuMesh.textureView!,
-        },
-        ));
+        const renderBindGroup = bgLayout.Create(
+            this.params.device,
+            {
+                demo: this.demoBuffer.buffer,
+                uniforms: this.uniformsBuffer,
+                material: gpuMesh.materialBuffer,
+                smplr: sampler,
+                tex: gpuMesh.textureView!,
+            },
+        );
 
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
             label: "main render bundle",
@@ -363,4 +367,3 @@ class Demo {
         this.params.device.queue.submit([commandEncoder.finish()]);
     }
 }
-
