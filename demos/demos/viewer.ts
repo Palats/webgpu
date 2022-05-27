@@ -122,7 +122,7 @@ class Demo {
         });
 
         // -- Render pipeline.
-        const inp = pipelineLayout.WGSL();
+        const inp = pipelineLayout.wgsl();
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
@@ -185,7 +185,7 @@ class Demo {
 
         this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
-            layout: pipelineLayout.Layout(params.device),
+            layout: pipelineLayout.layout(params.device),
             vertex: {
                 entryPoint: 'vertex',
                 module: shader,
@@ -284,17 +284,6 @@ class Demo {
             label: "sampler",
             magFilter: "linear",
         });
-
-        const renderBindGroup = bgLayout.Create(
-            this.params.device,
-            {
-                demo: this.demoBuffer.buffer,
-                uniforms: this.uniformsBuffer,
-                material: gpuMesh.materialBuffer,
-                smplr: sampler,
-                tex: gpuMesh.textureView!,
-            },
-        );
 
         const renderBundleEncoder = this.params.device.createRenderBundleEncoder({
             label: "main render bundle",

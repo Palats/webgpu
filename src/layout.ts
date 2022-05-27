@@ -104,18 +104,18 @@ export class BindGroup {
         }
     }
 
-    LayoutDesc(): GPUBindGroupLayoutDescriptor { return this._desc; }
+    layoutDesc(): GPUBindGroupLayoutDescriptor { return this._desc; }
 
-    Layout(device: GPUDevice): GPUBindGroupLayout {
+    layout(device: GPUDevice): GPUBindGroupLayout {
         let l = this.layoutCache.get(device);
         if (!l) {
-            l = device.createBindGroupLayout(this.LayoutDesc());
+            l = device.createBindGroupLayout(this.layoutDesc());
             this.layoutCache.set(device, l);
         }
         return l;
     }
 
-    Module(group: number): lang.WGSLModule {
+    module(group: number): lang.WGSLModule {
         if (this.modules[group] === undefined) {
             const lines = [
                 lang.wgsl`// Layout ${this.label}\n`,
@@ -131,7 +131,7 @@ export class BindGroup {
         return this.modules[group];
     }
 
-    Desc(device: GPUDevice, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
+    desc(device: GPUDevice, bindings: { [k in string]: any }): GPUBindGroupDescriptor {
         const entries: GPUBindGroupEntry[] = [];
         let found = 0;
         for (const [name, bind] of Object.entries(bindings)) {
@@ -152,13 +152,13 @@ export class BindGroup {
         }
         return {
             label: this.label,
-            layout: this.Layout(device),
+            layout: this.layout(device),
             entries: entries,
         }
     }
 
     Create(device: GPUDevice, bindings: { [k in string]: any }): GPUBindGroup {
-        return device.createBindGroup(this.Desc(device, bindings));
+        return device.createBindGroup(this.desc(device, bindings));
     }
 
 }
@@ -218,10 +218,10 @@ export class Pipeline {
         }
     }
 
-    LayoutDesc(device: GPUDevice): GPUPipelineLayoutDescriptor {
+    layoutDesc(device: GPUDevice): GPUPipelineLayoutDescriptor {
         const layouts: GPUBindGroupLayout[] = [];
         for (const nfo of this.perIndex) {
-            layouts.push(nfo.bindGroup.Layout(device));
+            layouts.push(nfo.bindGroup.layout(device));
         }
         return {
             label: this.label,
@@ -229,10 +229,10 @@ export class Pipeline {
         }
     }
 
-    Layout(device: GPUDevice): GPUPipelineLayout {
+    layout(device: GPUDevice): GPUPipelineLayout {
         let l = this.layoutCache.get(device);
         if (!l) {
-            l = device.createPipelineLayout(this.LayoutDesc(device));
+            l = device.createPipelineLayout(this.layoutDesc(device));
             this.layoutCache.set(device, l);
         }
         return l;
@@ -246,10 +246,10 @@ export class Pipeline {
 
     // Give access to all the layout of the pipeline to WGSL code.
     // Keys are the
-    WGSL(): { [k in string]: lang.WGSLModule } {
+    wgsl(): { [k in string]: lang.WGSLModule } {
         const mods: { [k in string]: lang.WGSLModule } = {};
         for (const nfo of this.perIndex) {
-            mods[nfo.name] = nfo.bindGroup.Module(nfo.index);
+            mods[nfo.name] = nfo.bindGroup.module(nfo.index);
         }
         return mods;
     }
