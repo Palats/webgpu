@@ -303,8 +303,17 @@ class Demo {
             colorFormats: [this.params.renderFormat],
             depthStencilFormat: depthFormat,
         });
+
         renderBundleEncoder.setPipeline(this.renderPipeline);
-        renderBundleEncoder.setBindGroup(0, renderBindGroup);
+        pipelineLayout.setBindGroups(renderBundleEncoder, {
+            all: bgLayout.Create(this.params.device, {
+                demo: this.demoBuffer.buffer,
+                uniforms: this.uniformsBuffer,
+                material: gpuMesh.materialBuffer,
+                smplr: sampler,
+                tex: gpuMesh.textureView!,
+            }),
+        });
         models.drawGPUMesh(gpuMesh, renderBundleEncoder);
         const bundle = renderBundleEncoder.finish();
 

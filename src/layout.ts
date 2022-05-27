@@ -238,6 +238,12 @@ export class Pipeline {
         return l;
     }
 
+    setBindGroups(encoder: GPUBindingCommandsMixin, bindGroups: { [k in string]: GPUBindGroup }) {
+        for (const nfo of this.perIndex) {
+            encoder.setBindGroup(nfo.index, bindGroups[nfo.name]);
+        }
+    }
+
     // Give access to all the layout of the pipeline to WGSL code.
     // Keys are the
     WGSL(): { [k in string]: lang.WGSLModule } {
@@ -262,4 +268,11 @@ interface PipelineEntryInfo {
     index: number;
     name: string;
     bindGroup: BindGroup;
+}
+
+// Partial definition; see
+// https://gpuweb.github.io/gpuweb/#gpubindingcommandsmixin
+// Implemented by GPUComputePassEncoder & GPURenderPassEncoder.
+interface GPUBindingCommandsMixin {
+    setBindGroup: (index: number, bindGroup: GPUBindGroup, dynamicOffset?: GPUBufferDynamicOffset[]) => void;
 }
