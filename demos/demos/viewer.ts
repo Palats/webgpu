@@ -122,7 +122,7 @@ class Demo {
         });
 
         // -- Render pipeline.
-        const inp = pipelineLayout.wgsl();
+        const refs = pipelineLayout.wgsl();
         const shader = params.device.createShaderModule(new wg.WGSLModule({
             label: "vertex shader",
             code: wg.wgsl`
@@ -137,23 +137,23 @@ class Demo {
                 @stage(vertex)
                 fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
                     let TAU = 6.283185;
-                    let c = (${inp.all.ref("demo")}.elapsedMs / 1000.0) % TAU;
+                    let c = (${refs.all.demo}.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
                     let tr = ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * ${inp.all.ref("uniforms")}.modelTransform;
+                        * ${refs.all.uniforms}.modelTransform;
 
                     var out : Vertex;
-                    out.pos = ${inp.all.ref("demo")}.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    out.pos = ${refs.all.demo}.camera * tr * vec4<f32>(inp.pos, 1.0);
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
 
-                    let modelPos = ${inp.all.ref("uniforms")}.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    if (${inp.all.ref("uniforms")}.debugCoords == 0) {
-                        if (${inp.all.ref("material")}.hasColor == 0) {
+                    let modelPos = ${refs.all.uniforms}.modelTransform * vec4<f32>(inp.pos, 1.0);
+                    if (${refs.all.uniforms}.debugCoords == 0) {
+                        if (${refs.all.material}.hasColor == 0) {
                             // No provided color? Use a flashy green.
                             out.color = vec4<f32>(0., 1., 0., 1.);
                         } else {
@@ -169,14 +169,14 @@ class Demo {
                 @stage(fragment)
                 fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
                     var frag = vert.color;
-                    if (${inp.all.ref("material")}.hasTexture != 0 && ${inp.all.ref("uniforms")}.debugCoords == 0) {
-                        frag = textureSample(${inp.all.ref("tex")}, ${inp.all.ref("smplr")}, vert.texcoord);
+                    if (${refs.all.material}.hasTexture != 0 && ${refs.all.uniforms}.debugCoords == 0) {
+                        frag = textureSample(${refs.all.tex}, ${refs.all.smplr}, vert.texcoord);
                     }
 
-                    if (${inp.all.ref("uniforms")}.useLight == 0 || ${inp.all.ref("material")}.hasNormals == 0) {
+                    if (${refs.all.uniforms}.useLight == 0 || ${refs.all.material}.hasNormals == 0) {
                         return frag;
                     }
-                    let ray = normalize(${inp.all.ref("uniforms")}.light - vert.world);
+                    let ray = normalize(${refs.all.uniforms}.light - vert.world);
                     let lum = clamp(dot(ray, vert.normal), .0, 1.0);
                     return lum * frag;
                 }

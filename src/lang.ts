@@ -13,6 +13,7 @@ export class WGSLModule {
     private imports: WGSLModule[] = [];
     private code: WGSLCode;
     symbols = new Set<string>();
+    public refs: { [k in string]: WGSLRef } = {};
 
     constructor(cfg: WGSLModuleConfig) {
         if (cfg.imports) {
@@ -27,6 +28,7 @@ export class WGSLModule {
                     throw new Error("duplicate symbol");
                 }
                 this.symbols.add(token.name);
+                this.refs[token.name] = new WGSLRef(this, token.name);
             } else if (token instanceof WGSLRef) {
                 if (!token.mod.symbols.has(token.name)) {
                     throw new Error(`reference to unknown symbol "${token.name}" in module "${token.mod.label}" from module "${this.label}"`);
@@ -38,7 +40,7 @@ export class WGSLModule {
 
     // Create a reference to a symbol this module "exports".
     ref(name: string) {
-        return new WGSLRef(this, name);
+        return this.refs[name];
     }
 
     private importOrder(): WGSLModule[] {

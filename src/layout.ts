@@ -1,6 +1,7 @@
 // Manage layout, layout binding and corresponding WGSL declarations.
 
 import { lang, types } from '.';
+import { WGSLRef } from './lang';
 
 // Store a layout of a bind group, usable for declaring the layout, create the
 // bing group and usable from WGSL.
@@ -246,10 +247,10 @@ export class Pipeline {
 
     // Give access to all the layout of the pipeline to WGSL code.
     // Keys are the
-    wgsl(): { [k in string]: lang.WGSLModule } {
-        const mods: { [k in string]: lang.WGSLModule } = {};
+    wgsl(): { [k in string]: { [k in string]: WGSLRef } } {
+        const mods: { [k in string]: { [k in string]: WGSLRef } } = {};
         for (const nfo of this.perIndex) {
-            mods[nfo.name] = nfo.bindGroup.module(nfo.index);
+            mods[nfo.name] = nfo.bindGroup.module(nfo.index).refs;
         }
         return mods;
     }
