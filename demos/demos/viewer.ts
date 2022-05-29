@@ -8,6 +8,7 @@ import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
 import * as models from '../models';
 
+// ---- Demo parameter
 
 export const demo = {
     id: "viewer",
@@ -18,6 +19,129 @@ export const demo = {
         return (f: demotypes.FrameInfo) => d.draw(f);
     }
 }
+
+
+// ---- Rendering setup & UI
+
+const depthFormat = "depth24plus";
+
+function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh[]> {
+    return async params => {
+        const meshes = await models.loadGLTF(u);
+        return Promise.all(meshes.map(m => models.buildGPUMesh(params, m)));
+    }
+}
+
+const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh[]> } = {
+    "sphere/builtin": async params => Promise.all([models.buildGPUMesh(params, models.sphereMesh())]),
+    "cube/builtin": async params => Promise.all([models.buildGPUMesh(params, models.cubeMesh())]),
+    "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
+    "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
+    "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
+    "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
+    "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
+    "boxvertexcolors/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxVertexColors/glTF/BoxVertexColors.gltf'),
+    "shaderball/glb": loadToGPU('https://raw.githubusercontent.com/gkjohnson/3d-demo-data/main/models/material-balls/material_ball_v2.glb'),
+}
+
+interface GPUMeshInfo {
+    bundle: GPURenderBundle;
+}
+
+class Demo {
+    params: demotypes.InitParams;
+    demoBuffer: shaderlib.DemoBuffer;
+    modelRenderer: ModelRenderer;
+
+    camera: cameras.ArcBall;
+    showBasis = true;
+    basisBundle: GPURenderBundle;
+    depthTextureView: GPUTextureView;
+
+    _model = "duck/gltf"
+    get model(): string { return this._model; }
+    set model(s: string) {
+        this._model = s;
+        allModels[s](this.params).then(meshes => this.modelRenderer.setMeshes(meshes));
+    }
+
+    constructor(params: demotypes.InitParams) {
+        this.params = params;
+        this.demoBuffer = new shaderlib.DemoBuffer(params);
+        this.modelRenderer = new ModelRenderer(params, this.demoBuffer);
+
+        params.gui.add(this, 'model', Object.keys(allModels));
+        const lightFolder = params.gui.addFolder("light");
+        lightFolder.add(this.modelRenderer, 'useLight').name("use");
+        lightFolder.add(this.modelRenderer, 'lightX', -20, 20).name("x");
+        lightFolder.add(this.modelRenderer, 'lightY', -20, 20).name("y");
+        lightFolder.add(this.modelRenderer, 'lightZ', -20, 20).name("z");
+        params.gui.add(this, 'showBasis');
+        params.gui.add(this.modelRenderer, 'debugCoords');
+
+        // Setup basic render.
+        this.depthTextureView = params.device.createTexture({
+            label: "depth view",
+            size: [params.renderWidth, params.renderHeight],
+            format: depthFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        }).createView();
+
+        // Orthonormals.
+        this.basisBundle = shaderlib.buildLineBundle({
+            device: params.device,
+            colorFormat: params.renderFormat,
+            depthFormat: depthFormat,
+            lines: shaderlib.ortholines,
+            demoBuffer: this.demoBuffer,
+        });
+
+        // Configuring camera.
+        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
+        params.setCamera(this.camera);
+
+        // Force loading the initial model.
+        this.model = this.model;
+    }
+
+    // -- Single frame rendering.
+    async draw(info: demotypes.FrameInfo) {
+        const viewproj = glmatrix.mat4.perspective(
+            glmatrix.mat4.create(),
+            2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
+            this.params.renderWidth / this.params.renderHeight, // aspect
+            1.0, // near
+            100.0, // far
+        );
+        this.camera.transform(viewproj, info.cameraMvt);
+
+        this.demoBuffer.refresh(info, viewproj);
+
+        const commandEncoder = this.params.device.createCommandEncoder();
+        commandEncoder.pushDebugGroup('Frame time ${info.elapsedMs}');
+        const renderEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: this.params.context.getCurrentTexture().createView(),
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            }],
+            depthStencilAttachment: {
+                view: this.depthTextureView,
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            },
+        });
+        this.modelRenderer.draw(info, renderEncoder);
+        if (this.showBasis) { renderEncoder.executeBundles([this.basisBundle]); }
+        renderEncoder.end();
+        commandEncoder.popDebugGroup();
+        this.params.device.queue.submit([commandEncoder.finish()]);
+    }
+}
+
+// ---- Model renderer
 
 const uniformsDesc = new wg.StructType({
     modelTransform: { idx: 0, type: wg.Mat4x4F32 },
@@ -51,69 +175,24 @@ const pipelineLayout = new wg.layout.Pipeline({
     }
 })
 
-const depthFormat = "depth24plus";
-
-function loadToGPU(u: string): (params: demotypes.InitParams) => Promise<models.GPUMesh[]> {
-    return async params => {
-        const meshes = await models.loadGLTF(u);
-        return Promise.all(meshes.map(m => models.buildGPUMesh(params, m)));
-    }
-}
-
-const allModels: { [k: string]: (params: demotypes.InitParams) => Promise<models.GPUMesh[]> } = {
-    "sphere/builtin": async params => Promise.all([models.buildGPUMesh(params, models.sphereMesh())]),
-    "cube/builtin": async params => Promise.all([models.buildGPUMesh(params, models.cubeMesh())]),
-    "cube/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF/Box.gltf'),
-    "triangle/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Triangle/glTF/Triangle.gltf'),
-    "avocado/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf'),
-    "suzanne/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Suzanne/glTF/Suzanne.gltf'),
-    "duck/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf'),
-    "boxvertexcolors/gltf": loadToGPU('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxVertexColors/glTF/BoxVertexColors.gltf'),
-    "shaderball/glb": loadToGPU('https://raw.githubusercontent.com/gkjohnson/3d-demo-data/main/models/material-balls/material_ball_v2.glb'),
-}
-
-interface GPUMeshInfo {
-    bundle: GPURenderBundle;
-}
-
-class Demo {
-    params: demotypes.InitParams;
-    depthTextureView: GPUTextureView;
-    demoBuffer: shaderlib.DemoBuffer;
-    uniformsBuffer: GPUBuffer;
-    camera: cameras.ArcBall;
-
-    renderPipeline: GPURenderPipeline;
-    showBasis = true;
+class ModelRenderer {
     useLight = true;
     lightX = 4.0;
     lightY = 4.0;
     lightZ = 10.0;
-    basisBundle: GPURenderBundle;
-    modelTransform: glmatrix.mat4;
-    meshes: GPUMeshInfo[] = [];
     debugCoords = false;
 
-    _model = "duck/gltf"
-    get model(): string { return this._model; }
-    set model(s: string) {
-        this._model = s;
-        allModels[s](this.params).then(meshes => this.setMeshes(meshes));
-    }
+    private params: demotypes.InitParams;
+    private demoBuffer: shaderlib.DemoBuffer;
+    private uniformsBuffer: GPUBuffer;
+    private renderPipeline: GPURenderPipeline;
+    private modelTransform: glmatrix.mat4;
+    private bundles: GPURenderBundle[] = [];
 
-    constructor(params: demotypes.InitParams) {
+    constructor(params: demotypes.InitParams, demoBuffer: shaderlib.DemoBuffer) {
         this.params = params;
+        this.demoBuffer = demoBuffer;
         this.modelTransform = glmatrix.mat4.create();
-        params.gui.add(this, 'model', Object.keys(allModels));
-        const lightFolder = params.gui.addFolder("light");
-        lightFolder.add(this, 'useLight').name("use");
-        lightFolder.add(this, 'lightX', -20, 20).name("x");
-        lightFolder.add(this, 'lightY', -20, 20).name("y");
-        lightFolder.add(this, 'lightZ', -20, 20).name("z");
-        params.gui.add(this, 'showBasis');
-        params.gui.add(this, 'debugCoords');
-
-        this.demoBuffer = new shaderlib.DemoBuffer(params);
 
         this.uniformsBuffer = params.device.createBuffer({
             label: "Compute uniforms buffer",
@@ -208,29 +287,6 @@ class Demo {
                 }],
             },
         });
-
-        this.depthTextureView = params.device.createTexture({
-            label: "depth view",
-            size: [params.renderWidth, params.renderHeight],
-            format: depthFormat,
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-        }).createView();
-
-        // Orthonormals.
-        this.basisBundle = shaderlib.buildLineBundle({
-            device: params.device,
-            colorFormat: params.renderFormat,
-            depthFormat: depthFormat,
-            lines: shaderlib.ortholines,
-            demoBuffer: this.demoBuffer,
-        });
-
-        // Configuring camera.
-        this.camera = new cameras.ArcBall(glmatrix.vec3.fromValues(0, 0, 4));
-        params.setCamera(this.camera);
-
-        // Force loading the initial model.
-        this.model = this.model;
     }
 
     async setMeshes(gpuMeshes: models.GPUMesh[]) {
@@ -276,10 +332,13 @@ class Demo {
             glmatrix.mat4.identity(this.modelTransform);
         }
 
-        this.meshes = await Promise.all(waitOn);
+        this.bundles = [];
+        for (const mesh of await Promise.all(waitOn)) {
+            this.bundles.push(mesh.bundle);
+        }
     }
 
-    async buildMesh(gpuMesh: models.GPUMesh): Promise<GPUMeshInfo> {
+    private async buildMesh(gpuMesh: models.GPUMesh): Promise<GPUMeshInfo> {
         const sampler = this.params.device.createSampler({
             label: "sampler",
             magFilter: "linear",
@@ -311,57 +370,15 @@ class Demo {
         }
     }
 
-    // -- Single frame rendering.
-    async draw(info: demotypes.FrameInfo) {
-        const viewproj = glmatrix.mat4.perspective(
-            glmatrix.mat4.create(),
-            2.0 * 3.14159 / 5.0, // Vertical field of view (rads),
-            this.params.renderWidth / this.params.renderHeight, // aspect
-            1.0, // near
-            100.0, // far
-        );
-        this.camera.transform(viewproj, info.cameraMvt);
-
-        this.demoBuffer.refresh(info, viewproj);
-
+    async draw(info: demotypes.FrameInfo, renderEncoder: GPURenderPassEncoder) {
+        renderEncoder.pushDebugGroup("render model");
         this.params.device.queue.writeBuffer(this.uniformsBuffer, 0, uniformsDesc.createArray({
             modelTransform: Array.from(this.modelTransform),
             useLight: this.useLight ? 1 : 0,
             light: [this.lightX, this.lightY, this.lightZ, 1.0],
             debugCoords: this.debugCoords ? 1 : 0,
         }));
-
-        const commandEncoder = this.params.device.createCommandEncoder();
-        commandEncoder.pushDebugGroup('Time ${info.elapsedMs}');
-
-        // -- Frame rendering.
-        commandEncoder.pushDebugGroup('Render cubes');
-        const renderEncoder = commandEncoder.beginRenderPass({
-            colorAttachments: [{
-                view: this.params.context.getCurrentTexture().createView(),
-                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-                loadOp: 'clear',
-                storeOp: 'store',
-            }],
-            depthStencilAttachment: {
-                view: this.depthTextureView,
-                depthClearValue: 1.0,
-                depthLoadOp: 'clear',
-                depthStoreOp: 'store',
-            },
-        });
-
-        const bundles = [];
-        for (const mesh of this.meshes) {
-            bundles.push(mesh.bundle);
-        }
-        if (this.showBasis) { bundles.push(this.basisBundle); }
-        renderEncoder.executeBundles(bundles);
-        renderEncoder.end();
-        commandEncoder.popDebugGroup();
-
-        // Submit all the work.
-        commandEncoder.popDebugGroup();
-        this.params.device.queue.submit([commandEncoder.finish()]);
+        renderEncoder.executeBundles(this.bundles);
+        renderEncoder.popDebugGroup();
     }
 }
