@@ -109,7 +109,7 @@ export class WGSLModule {
         return textMods.join("\n");
     }
 
-    toDesc(): GPUShaderModuleDescriptorWGSL {
+    toDesc(): GPUShaderModuleDescriptor {
         return {
             label: this.label,
             code: this.generate(),

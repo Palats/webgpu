@@ -354,7 +354,7 @@ export class AppMain extends LitElement {
 
                 this.webGPUpresent = true;
 
-                const renderFormat = context.getPreferredFormat(adapter);
+                const renderFormat = navigator.gpu.getPreferredCanvasFormat();
                 context.configure({
                     device: device,
                     format: renderFormat,

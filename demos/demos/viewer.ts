@@ -362,7 +362,10 @@ class ModelRenderer {
                 tex: gpuMesh.textureView!,
             }),
         });
-        models.drawGPUMesh(gpuMesh, renderBundleEncoder);
+        renderBundleEncoder.setIndexBuffer(gpuMesh.indexBuffer, 'uint16');
+        renderBundleEncoder.setVertexBuffer(0, gpuMesh.vertexBuffer);
+        renderBundleEncoder.drawIndexed(gpuMesh.indicesCount);
+
         const bundle = renderBundleEncoder.finish();
 
         return {

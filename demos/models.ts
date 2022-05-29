@@ -120,13 +120,6 @@ export async function buildGPUMesh(params: demotypes.InitParams, mesh: Mesh): Pr
 }
 
 
-export function drawGPUMesh(mesh: GPUMesh, encoder: GPURenderEncoderBase) {
-    encoder.setIndexBuffer(mesh.indexBuffer, 'uint16');
-    encoder.setVertexBuffer(0, mesh.vertexBuffer);
-    encoder.drawIndexed(mesh.indicesCount);
-}
-
-
 export function cubeMesh(): Mesh {
     const r = 0.5;
     const material: Material = {
