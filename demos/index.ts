@@ -302,6 +302,10 @@ export class AppMain extends LitElement {
         }
         this.renderWidth = renderWidth;
         this.renderHeight = renderHeight;
+
+        // Rendering size in WebGPU is parametrized by canvas width+height attributes.
+        this.canvas.width = renderWidth;
+        this.canvas.height = renderHeight;
         this.rebuild(`resize to ${renderWidth}x${renderHeight}`);
     }
 
@@ -359,10 +363,6 @@ export class AppMain extends LitElement {
                     device: device,
                     format: renderFormat,
                     compositingAlphaMode: 'opaque',
-                    size: {
-                        width: this.renderWidth,
-                        height: this.renderHeight,
-                    },
                 });
 
                 // Clear up the content of custom controllers.
