@@ -52,7 +52,16 @@ export class BindGroup {
             if (entry.buffer) {
                 if (!entry.buffer.wgtype) { throw new Error(`missing wgtype for entry ${name}`); }
                 type = entry.buffer.wgtype.typename();
-                addressSpace = lang.wgsl`<uniform>`;
+                let varType: string | undefined;
+                if (!entry.buffer.type || entry.buffer.type == 'uniform') {
+                    varType = 'uniform';
+                } else if (entry.buffer.type == 'storage') {
+                    varType = 'storage,read_write'
+                } else if (entry.buffer.type == 'read-only-storage') {
+                    varType = 'storage,read'
+                }
+                if (!varType) { throw new Error("oops"); }
+                addressSpace = lang.wgsl`<${varType}>`;
                 resource = (data: any) => {
                     return { buffer: data as GPUBuffer };
 

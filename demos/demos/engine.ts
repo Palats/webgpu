@@ -160,8 +160,9 @@ const computeBG = new wg.layout.BindGroup({
     entries: {
         demo: { buffer: { type: 'uniform', wgtype: shaderlib.demoDesc } },
         uniforms: { buffer: { type: 'uniform', wgtype: computeUniformsDesc } },
-        instancesState: { buffer: { type: 'read-only-storage', wgtype: instanceStateDesc } },
-        instancesRender: { buffer: { type: 'storage', wgtype: instanceRenderDesc } },
+        // Hack for array.
+        instancesState: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(instanceStateDesc, 10) } },
+        instancesRender: { buffer: { type: 'storage', wgtype: new wg.ArrayType(instanceRenderDesc, 10) } },
     },
 });
 
@@ -178,7 +179,7 @@ const renderBG = new wg.layout.BindGroup({
     entries: {
         demo: { buffer: { type: 'uniform', wgtype: shaderlib.demoDesc } },
         uniforms: { buffer: { type: 'uniform', wgtype: renderUniformsDesc } },
-        instancesRender: { buffer: { type: 'read-only-storage', wgtype: instanceRenderDesc } },
+        instancesRender: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(instanceRenderDesc, 10) } },
         material: { buffer: { wgtype: models.materialDesc } },
         smplr: {
             visibility: GPUShaderStage.FRAGMENT,
@@ -252,16 +253,35 @@ class GroupRenderer {
         });
 
         // -- Compute pipeline.
-        const computerRefs = computeLayout.wgsl();
+        const computeRefs = computeLayout.wgsl();
         const computeShader = params.device.createShaderModule(new wg.WGSLModule({
             label: "compute shader",
             code: wg.wgsl`
-                @stage(compute) @workgroup_size(8, 8)
+                @stage(compute) @workgroup_size(8, 1)
                 fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
                     // Guard against out-of-bounds work group sizes
                     if (global_id.x >= ${this.instances.toFixed(0)}u || global_id.y >= 1u) {
                         return;
                     }
+
+                    let idx = global_id.x;
+                    let inp = ${computeRefs.all.instancesState}[idx];
+
+                    let TAU = 6.283185;
+                    let c = (${computeRefs.all.demo}.elapsedMs / 1000.0) % TAU;
+                    let r = vec3<f32>(c, c, c);
+
+                    var shift = -${(this.instances / 2).toFixed(0)}. + f32(idx);
+
+                    let tr = ${shaderlib.tr.refs.translate}(vec3<f32>(shift, 0., 0.))
+                        * ${shaderlib.tr.refs.translate}(inp.position)
+                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                        * ${shaderlib.tr.ref("rotateY")}(r.y)
+                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * ${computeRefs.all.uniforms}.modelTransform;
+
+                    let mvp = ${computeRefs.all.demo}.camera * tr;
+                    ${computeRefs.all.instancesRender}[idx].mvp = mvp;
                 }
             `,
         }).toDesc());
@@ -289,18 +309,16 @@ class GroupRenderer {
                 };
 
                 @stage(vertex)
-                fn vertex(inp: ${models.vertexDesc.vertexType()}) -> Vertex {
-                    let TAU = 6.283185;
-                    let c = (${renderRefs.all.demo}.elapsedMs / 1000.0) % TAU;
-                    let r = vec3<f32>(c, c, c);
-
-                    let tr = ${shaderlib.tr.ref("rotateZ")}(r.z)
-                        * ${shaderlib.tr.ref("rotateY")}(r.y)
-                        * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * ${renderRefs.all.uniforms}.modelTransform;
-
+                fn vertex(inp: ${models.vertexDesc.vertexType()}, @builtin(instance_index) instance: u32) -> Vertex {
                     var out : Vertex;
-                    out.pos = ${renderRefs.all.demo}.camera * tr * vec4<f32>(inp.pos, 1.0);
+                    let idx = instance;
+
+                    let nfo = ${renderRefs.all.instancesRender}[idx];
+                    out.pos = nfo.mvp * vec4<f32>(inp.pos, 1.0);
+
+                    // XXX WRONG
+                    let tr = ${renderRefs.all.uniforms}.modelTransform;
+
                     out.world = tr * vec4<f32>(inp.pos, 1.0);
                     out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
@@ -458,7 +476,8 @@ class GroupRenderer {
         });
 
         computeEncoder.setPipeline(this.computePipeline);
-        computeEncoder.dispatchWorkgroups(this.instances);
+        const c = Math.ceil(this.instances / 8);
+        computeEncoder.dispatchWorkgroups(c);
         computeEncoder.popDebugGroup();
     }
 
