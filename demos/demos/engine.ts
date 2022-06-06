@@ -25,10 +25,6 @@ export const demo = {
 
 const depthFormat = "depth24plus";
 
-interface GPUMeshInfo {
-    bundle: GPURenderBundle;
-}
-
 class Demo {
     params: demotypes.InitParams;
     demoBuffer: shaderlib.DemoBuffer;
@@ -143,6 +139,10 @@ const instanceStateDesc = new wg.StructType({
 const instanceRenderDesc = new wg.StructType({
     // Model-View-Project.
     mvp: { idx: 0, type: wg.Mat4x4F32 },
+    // To World coordinate (i.e., "Model" from MVP)
+    world: { idx: 1, type: wg.Mat4x4F32 },
+    // Transformation for normals.
+    normalsTr: { idx: 2, type: wg.Mat4x4F32 },
 });
 
 // Uniforms for rendering.
@@ -272,15 +272,26 @@ class GroupRenderer {
 
                     var shift = -${(this.instances / 2).toFixed(0)}. + f32(idx);
 
-                    let tr = ${shaderlib.tr.refs.translate}(vec3<f32>(shift, 0., 0.))
+                    let world = ${shaderlib.tr.refs.translate}(vec3<f32>(shift, 0., 0.))
                         * ${shaderlib.tr.refs.translate}(inp.position)
                         * ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
                         * ${computeRefs.all.uniforms}.modelTransform;
+                    ${computeRefs.all.instancesRender}[idx].world = world;
 
-                    let mvp = ${computeRefs.all.demo}.camera * tr;
+                    let mvp = ${computeRefs.all.demo}.camera * world;
                     ${computeRefs.all.instancesRender}[idx].mvp = mvp;
+
+                    // Normal transform. No clue what I'm doing.
+                    // https://gamedev.net/forums/topic/476196-inverse-transpose-of-a-matrix-inside-vertex-shader/476196/
+                    let normalsTr = mat4x4<f32>(
+                        world[0] / dot(world[0], world[0]),
+                        world[1] / dot(world[1], world[1]),
+                        world[2] / dot(world[2], world[2]),
+                        world[3] / dot(world[3], world[3]),
+                    );
+                    ${computeRefs.all.instancesRender}[idx].normalsTr = normalsTr;
                 }
             `,
         }).toDesc());
@@ -314,12 +325,8 @@ class GroupRenderer {
 
                     let nfo = ${renderRefs.all.instancesRender}[idx];
                     out.pos = nfo.mvp * vec4<f32>(inp.pos, 1.0);
-
-                    // XXX WRONG
-                    let tr = ${renderRefs.all.uniforms}.modelTransform;
-
-                    out.world = tr * vec4<f32>(inp.pos, 1.0);
-                    out.normal = normalize(tr * vec4<f32>(inp.normal, 0.0));
+                    out.world = nfo.world * vec4<f32>(inp.pos, 1.0);
+                    out.normal = normalize(nfo.normalsTr * vec4<f32>(inp.normal, 0.0));
                     out.texcoord = inp.texcoord;
 
                     let modelPos = ${renderRefs.all.uniforms}.modelTransform * vec4<f32>(inp.pos, 1.0);
