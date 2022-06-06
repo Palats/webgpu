@@ -160,9 +160,8 @@ const computeBG = new wg.layout.BindGroup({
     entries: {
         demo: { buffer: { type: 'uniform', wgtype: shaderlib.demoDesc } },
         uniforms: { buffer: { type: 'uniform', wgtype: computeUniformsDesc } },
-        // Hack for array.
-        instancesState: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(instanceStateDesc, 10) } },
-        instancesRender: { buffer: { type: 'storage', wgtype: new wg.ArrayType(instanceRenderDesc, 10) } },
+        instancesState: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(instanceStateDesc) } },
+        instancesRender: { buffer: { type: 'storage', wgtype: new wg.ArrayType(instanceRenderDesc) } },
     },
 });
 
@@ -179,7 +178,7 @@ const renderBG = new wg.layout.BindGroup({
     entries: {
         demo: { buffer: { type: 'uniform', wgtype: shaderlib.demoDesc } },
         uniforms: { buffer: { type: 'uniform', wgtype: renderUniformsDesc } },
-        instancesRender: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(instanceRenderDesc, 10) } },
+        instancesRender: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(instanceRenderDesc) } },
         material: { buffer: { wgtype: models.materialDesc } },
         smplr: {
             visibility: GPUShaderStage.FRAGMENT,

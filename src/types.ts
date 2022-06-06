@@ -217,26 +217,32 @@ export const Mat4x4F32 = new Mat4x4F32Type();
 
 // A WGSL array containing type T.
 export class ArrayType<T extends WGSLType<any>> extends WGSLType<WGSLJSType<T>[]> {
-    readonly count: number;
+    readonly count?: number;
     readonly etype: T;
 
-    constructor(etype: T, count: number) {
+    constructor(etype: T, count?: number) {
         super();
         this.etype = etype;
         this.count = count;
     }
 
-    byteSize() { return this.count * this.etype.stride(); }
+    byteSize() {
+        if (this.count === undefined) { throw new Error("runtime sized array does not have a static byteSize") }
+        return this.count * this.etype.stride();
+    }
     alignOf() { return this.etype.alignOf(); }
 
     dataViewSet(dv: DataView, offset: number, v: WGSLJSType<T>[]) {
-        for (let i = 0; i < this.count; i++) {
+        for (let i = 0; i < v.length; i++) {
             this.etype.dataViewSet(dv, offset, v[i]);
             offset += this.etype.stride();
         }
     }
 
     typename(): lang.WGSLCode {
+        if (this.count === undefined) {
+            return wgsl`array<${this.etype.typename()}>`;
+        }
         return wgsl`array<${this.etype.typename()}, ${this.count.toString()}>`;
     }
 
