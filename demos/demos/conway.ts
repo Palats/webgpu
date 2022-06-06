@@ -308,7 +308,7 @@ export const demo = {
             const computeEncoder = commandEncoder.beginComputePass();
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, isForward ? computeBindGroup1 : computeBindGroup2);
-            computeEncoder.dispatch(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
+            computeEncoder.dispatchWorkgroups(Math.ceil(computeWidth / 8), Math.ceil(computeHeight / 8));
             computeEncoder.end();
             commandEncoder.popDebugGroup();
 

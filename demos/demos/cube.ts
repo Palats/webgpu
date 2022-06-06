@@ -297,7 +297,7 @@ export const demo = {
             computeEncoder.setBindGroup(0, computeBindGroup);
             // The compute has only a single matrix to compute. More typical compute shaders
             // would dispatch on NxM elements.
-            computeEncoder.dispatch(1);
+            computeEncoder.dispatchWorkgroups(1);
             computeEncoder.end();
             commandEncoder.popDebugGroup();
 

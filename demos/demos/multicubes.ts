@@ -342,7 +342,7 @@ export const demo = {
             computeEncoder.setPipeline(computePipeline);
             computeEncoder.setBindGroup(0, computeBindGroup);
             // Calculate projection matrices for each instance.
-            computeEncoder.dispatch(workgroupWidth, workgroupHeight);
+            computeEncoder.dispatchWorkgroups(workgroupWidth, workgroupHeight);
             computeEncoder.end();
             commandEncoder.popDebugGroup();
 
