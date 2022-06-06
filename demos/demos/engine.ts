@@ -38,7 +38,7 @@ class Demo {
     constructor(params: demotypes.InitParams) {
         this.params = params;
         this.demoBuffer = new shaderlib.DemoBuffer(params);
-        this.groupRenderer = new GroupRenderer(params, this.demoBuffer, 10);
+        this.groupRenderer = new GroupRenderer(params, this.demoBuffer, 100);
 
         const lightFolder = params.gui.addFolder("light");
         lightFolder.add(this.groupRenderer, 'useLight').name("use");
@@ -68,6 +68,8 @@ class Demo {
         // Configuring camera.
         this.camera = new cameras.ArcBall(vec3.fromValues(0, 0, 4));
         params.setCamera(this.camera);
+
+        this.groupRenderer.setPosition();
 
         this.load();
     }
@@ -242,7 +244,7 @@ class GroupRenderer {
         this.instancesStateBuffer = params.device.createBuffer({
             label: "instances state",
             size: (new wg.ArrayType(instanceStateDesc, this.instances)).byteSize(),
-            usage: GPUBufferUsage.STORAGE,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
 
         this.instancesRenderBuffer = params.device.createBuffer({
@@ -270,13 +272,18 @@ class GroupRenderer {
                     let c = (${computeRefs.all.demo}.elapsedMs / 1000.0) % TAU;
                     let r = vec3<f32>(c, c, c);
 
-                    var shift = -${(this.instances / 2).toFixed(0)}. + f32(idx);
+                    let scale = mat4x4<f32>(
+                        inp.scale.x, 0.0, 0.0, 0.0,
+                        0.0, inp.scale.y, 0.0, 0.0,
+                        0.0, 0.0, inp.scale.z, 0.0,
+                        0.0, 0.0, 0.0, 1.0,
+                    );
 
-                    let world = ${shaderlib.tr.refs.translate}(vec3<f32>(shift, 0., 0.))
-                        * ${shaderlib.tr.refs.translate}(inp.position)
+                    let world = ${shaderlib.tr.refs.translate}(inp.position)
                         * ${shaderlib.tr.ref("rotateZ")}(r.z)
                         * ${shaderlib.tr.ref("rotateY")}(r.y)
                         * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * scale
                         * ${computeRefs.all.uniforms}.modelTransform;
                     ${computeRefs.all.instancesRender}[idx].world = world;
 
@@ -465,6 +472,23 @@ class GroupRenderer {
         renderBundleEncoder.drawIndexed(gpuMesh.indicesCount, this.instances);
 
         return renderBundleEncoder.finish();
+    }
+
+    setPosition() {
+        let desc = new wg.types.ArrayType(instanceStateDesc, this.instances);
+        let data: wg.types.WGSLJSType<typeof desc> = [];
+        for (let i = 0; i < this.instances; i++) {
+            const scale = Math.random() * 0.2 + 0.1;
+            data.push({
+                position: [
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5,
+                    -(Math.random()) * 5,
+                ],
+                scale: [scale, scale, scale],
+            });
+        }
+        this.params.device.queue.writeBuffer(this.instancesStateBuffer, 0, desc.createArray(data));
     }
 
     compute(info: demotypes.FrameInfo, computeEncoder: GPUComputePassEncoder) {
