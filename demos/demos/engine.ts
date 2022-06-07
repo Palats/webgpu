@@ -254,120 +254,18 @@ class GroupRenderer {
         });
 
         // -- Compute pipeline.
-        const computeRefs = computeLayout.wgsl();
-        const computeShader = params.device.createShaderModule(new wg.WGSLModule({
-            label: "compute shader",
-            code: wg.wgsl`
-                @stage(compute) @workgroup_size(8, 1)
-                fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-                    // Guard against out-of-bounds work group sizes
-                    if (global_id.x >= ${this.instances.toFixed(0)}u || global_id.y >= 1u) {
-                        return;
-                    }
-
-                    let idx = global_id.x;
-                    let inp = ${computeRefs.all.instancesState}[idx];
-
-                    let TAU = 6.283185;
-                    let c = (${computeRefs.all.demo}.elapsedMs / 1000.0) % TAU;
-                    let r = vec3<f32>(c, c, c);
-
-                    let scale = mat4x4<f32>(
-                        inp.scale.x, 0.0, 0.0, 0.0,
-                        0.0, inp.scale.y, 0.0, 0.0,
-                        0.0, 0.0, inp.scale.z, 0.0,
-                        0.0, 0.0, 0.0, 1.0,
-                    );
-
-                    let world = ${shaderlib.tr.refs.translate}(inp.position)
-                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
-                        * ${shaderlib.tr.ref("rotateY")}(r.y)
-                        * ${shaderlib.tr.ref("rotateX")}(r.z)
-                        * scale
-                        * ${computeRefs.all.uniforms}.modelTransform;
-                    ${computeRefs.all.instancesRender}[idx].world = world;
-
-                    let mvp = ${computeRefs.all.demo}.camera * world;
-                    ${computeRefs.all.instancesRender}[idx].mvp = mvp;
-
-                    // Normal transform. No clue what I'm doing.
-                    // https://gamedev.net/forums/topic/476196-inverse-transpose-of-a-matrix-inside-vertex-shader/476196/
-                    let normalsTr = mat4x4<f32>(
-                        world[0] / dot(world[0], world[0]),
-                        world[1] / dot(world[1], world[1]),
-                        world[2] / dot(world[2], world[2]),
-                        world[3] / dot(world[3], world[3]),
-                    );
-                    ${computeRefs.all.instancesRender}[idx].normalsTr = normalsTr;
-                }
-            `,
-        }).toDesc());
 
         this.computePipeline = params.device.createComputePipeline({
             label: "compute pipeline",
             layout: computeLayout.layout(this.params.device),
             compute: {
                 entryPoint: "main",
-                module: computeShader,
+                module: this.buildComputeShader(),
             }
         });
 
         // -- Render pipeline.
-        const renderRefs = renderLayout.wgsl();
-        const renderShader = params.device.createShaderModule(new wg.WGSLModule({
-            label: "vertex shader",
-            code: wg.wgsl`
-                struct Vertex {
-                    @builtin(position) pos: vec4<f32>,
-                    @location(0) color: vec4<f32>,
-                    @location(1) world: vec4<f32>,
-                    @location(2) normal: vec4<f32>,
-                    @location(3) texcoord: vec2<f32>,
-                };
-
-                @stage(vertex)
-                fn vertex(inp: ${models.vertexDesc.vertexType()}, @builtin(instance_index) instance: u32) -> Vertex {
-                    var out : Vertex;
-                    let idx = instance;
-
-                    let nfo = ${renderRefs.all.instancesRender}[idx];
-                    out.pos = nfo.mvp * vec4<f32>(inp.pos, 1.0);
-                    out.world = nfo.world * vec4<f32>(inp.pos, 1.0);
-                    out.normal = normalize(nfo.normalsTr * vec4<f32>(inp.normal, 0.0));
-                    out.texcoord = inp.texcoord;
-
-                    let modelPos = ${renderRefs.all.uniforms}.modelTransform * vec4<f32>(inp.pos, 1.0);
-                    if (${renderRefs.all.uniforms}.debugCoords == 0) {
-                        if (${renderRefs.all.material}.hasColor == 0) {
-                            // No provided color? Use a flashy green.
-                            out.color = vec4<f32>(0., 1., 0., 1.);
-                        } else {
-                            out.color = inp.color;
-                        }
-                    } else {
-                        out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
-                    }
-                    return out;
-                }
-
-
-                @stage(fragment)
-                fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
-                    var frag = vert.color;
-                    if (${renderRefs.all.material}.hasTexture != 0 && ${renderRefs.all.uniforms}.debugCoords == 0) {
-                        frag = textureSample(${renderRefs.all.tex}, ${renderRefs.all.smplr}, vert.texcoord);
-                    }
-
-                    if (${renderRefs.all.uniforms}.useLight == 0 || ${renderRefs.all.material}.hasNormals == 0) {
-                        return frag;
-                    }
-                    let ray = normalize(${renderRefs.all.uniforms}.light - vert.world);
-                    let lum = clamp(dot(ray, vert.normal), .0, 1.0);
-                    return lum * frag;
-                }
-            `,
-        }).toDesc());
-
+        const renderShader = this.buildRenderShader();
         this.renderPipeline = params.device.createRenderPipeline({
             label: "Rendering pipeline",
             layout: renderLayout.layout(params.device),
@@ -391,6 +289,114 @@ class GroupRenderer {
                 targets: [{ format: params.renderFormat, }],
             },
         });
+    }
+
+    buildComputeShader() {
+        const refs = computeLayout.wgsl();
+        return this.params.device.createShaderModule(new wg.WGSLModule({
+            label: "compute shader",
+            code: wg.wgsl`
+                @stage(compute) @workgroup_size(8, 1)
+                fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                    // Guard against out-of-bounds work group sizes
+                    if (global_id.x >= ${this.instances.toFixed(0)}u || global_id.y >= 1u) {
+                        return;
+                    }
+
+                    let idx = global_id.x;
+                    let inp = ${refs.all.instancesState}[idx];
+
+                    let TAU = 6.283185;
+                    let c = (${refs.all.demo}.elapsedMs / 1000.0) % TAU;
+                    let r = vec3<f32>(c, c, c);
+
+                    let scale = mat4x4<f32>(
+                        inp.scale.x, 0.0, 0.0, 0.0,
+                        0.0, inp.scale.y, 0.0, 0.0,
+                        0.0, 0.0, inp.scale.z, 0.0,
+                        0.0, 0.0, 0.0, 1.0,
+                    );
+
+                    let world = ${shaderlib.tr.refs.translate}(inp.position)
+                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
+                        * ${shaderlib.tr.ref("rotateY")}(r.y)
+                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * scale
+                        * ${refs.all.uniforms}.modelTransform;
+                    ${refs.all.instancesRender}[idx].world = world;
+
+                    let mvp = ${refs.all.demo}.camera * world;
+                    ${refs.all.instancesRender}[idx].mvp = mvp;
+
+                    // Normal transform. No clue what I'm doing.
+                    // https://gamedev.net/forums/topic/476196-inverse-transpose-of-a-matrix-inside-vertex-shader/476196/
+                    let normalsTr = mat4x4<f32>(
+                        world[0] / dot(world[0], world[0]),
+                        world[1] / dot(world[1], world[1]),
+                        world[2] / dot(world[2], world[2]),
+                        world[3] / dot(world[3], world[3]),
+                    );
+                    ${refs.all.instancesRender}[idx].normalsTr = normalsTr;
+                }
+            `,
+        }).toDesc());
+    }
+
+    buildRenderShader() {
+        const refs = renderLayout.wgsl();
+        return this.params.device.createShaderModule(new wg.WGSLModule({
+            label: "vertex shader",
+            code: wg.wgsl`
+                struct Vertex {
+                    @builtin(position) pos: vec4<f32>,
+                    @location(0) color: vec4<f32>,
+                    @location(1) world: vec4<f32>,
+                    @location(2) normal: vec4<f32>,
+                    @location(3) texcoord: vec2<f32>,
+                };
+
+                @stage(vertex)
+                fn vertex(inp: ${models.vertexDesc.vertexType()}, @builtin(instance_index) instance: u32) -> Vertex {
+                    var out : Vertex;
+                    let idx = instance;
+
+                    let nfo = ${refs.all.instancesRender}[idx];
+                    out.pos = nfo.mvp * vec4<f32>(inp.pos, 1.0);
+                    out.world = nfo.world * vec4<f32>(inp.pos, 1.0);
+                    out.normal = normalize(nfo.normalsTr * vec4<f32>(inp.normal, 0.0));
+                    out.texcoord = inp.texcoord;
+
+                    let modelPos = ${refs.all.uniforms}.modelTransform * vec4<f32>(inp.pos, 1.0);
+                    if (${refs.all.uniforms}.debugCoords == 0) {
+                        if (${refs.all.material}.hasColor == 0) {
+                            // No provided color? Use a flashy green.
+                            out.color = vec4<f32>(0., 1., 0., 1.);
+                        } else {
+                            out.color = inp.color;
+                        }
+                    } else {
+                        out.color = vec4<f32>(0.5 * (modelPos.xyz + vec3<f32>(1., 1., 1.)), 1.0);
+                    }
+                    return out;
+                }
+
+
+                @stage(fragment)
+                fn fragment(vert: Vertex) -> @location(0) vec4<f32> {
+                    var frag = vert.color;
+                    if (${refs.all.material}.hasTexture != 0 && ${refs.all.uniforms}.debugCoords == 0) {
+                        frag = textureSample(${refs.all.tex}, ${refs.all.smplr}, vert.texcoord);
+                    }
+
+                    if (${refs.all.uniforms}.useLight == 0 || ${refs.all.material}.hasNormals == 0) {
+                        return frag;
+                    }
+                    let ray = normalize(${refs.all.uniforms}.light - vert.world);
+                    let lum = clamp(dot(ray, vert.normal), .0, 1.0);
+                    return lum * frag;
+                }
+            `,
+        }).toDesc());
     }
 
     async setMeshes(gpuMeshes: models.GPUMesh[]) {
