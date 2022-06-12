@@ -13,7 +13,7 @@ const computeUniformsDesc = new wg.StructType({
 });
 
 // Parameters of an instance.
-const instanceStateDesc = new wg.StructType({
+export const instanceStateDesc = new wg.StructType({
     position: { idx: 0, type: wg.Vec3f32 },
     scale: { idx: 1, type: wg.Vec3f32 },
 });
@@ -143,6 +143,17 @@ export class GroupRenderer {
             size: (new wg.ArrayType(instanceRenderDesc, this.instances)).byteSize(),
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
         });
+
+        // -- Setup initial positions
+        let dataDesc = new wg.types.ArrayType(instanceStateDesc, this.instances);
+        let data: wg.types.WGSLJSType<typeof dataDesc> = [];
+        for (let i = 0; i < this.instances; i++) {
+            data.push({
+                position: [0, 0, 0],
+                scale: [1, 1, 1],
+            });
+        }
+        this.params.device.queue.writeBuffer(this.instancesStateBuffer, 0, dataDesc.createArray(data));
 
         // -- Compute pipeline.
 
@@ -371,21 +382,11 @@ export class GroupRenderer {
         return renderBundleEncoder.finish();
     }
 
-    setPosition() {
-        let desc = new wg.types.ArrayType(instanceStateDesc, this.instances);
-        let data: wg.types.WGSLJSType<typeof desc> = [];
-        for (let i = 0; i < this.instances; i++) {
-            const scale = Math.random() * 0.2 + 0.1;
-            data.push({
-                position: [
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 5,
-                    -(Math.random()) * 5,
-                ],
-                scale: [scale, scale, scale],
-            });
-        }
-        this.params.device.queue.writeBuffer(this.instancesStateBuffer, 0, desc.createArray(data));
+    // Set the positions & scale of a certain number of objects.
+    // This is highly inefficient.
+    setObjects(data: wg.types.WGSLJSType<typeof instanceStateDesc>[]) {
+        const aDesc = new wg.types.ArrayType(instanceStateDesc, this.instances);
+        this.params.device.queue.writeBuffer(this.instancesStateBuffer, 0, aDesc.createArray(data));
     }
 
     compute(info: demotypes.FrameInfo, computeEncoder: GPUComputePassEncoder) {

@@ -5,6 +5,7 @@ import * as shaderlib from '../shaderlib';
 import * as cameras from '../cameras';
 import * as models from '../models';
 import * as grouprender from '../grouprender';
+import * as wg from '../../src';
 
 // ---- Demo parameter
 
@@ -34,12 +35,14 @@ class Demo {
     depthTextureView: GPUTextureView;
 
     constructor(params: demotypes.InitParams) {
+        const instances = 100;
+
         this.params = params;
         this.demoBuffer = new shaderlib.DemoBuffer(params);
         this.groupRenderer = new grouprender.GroupRenderer({
             demoParams: params,
             demoBuffer: this.demoBuffer,
-            instances: 100,
+            instances: instances,
             depthFormat: depthFormat,
         });
 
@@ -72,7 +75,21 @@ class Demo {
         this.camera = new cameras.ArcBall(vec3.fromValues(0, 0, 4));
         params.setCamera(this.camera);
 
-        this.groupRenderer.setPosition();
+        // Set some random starting positions.
+        const aDesc = new wg.types.ArrayType(grouprender.instanceStateDesc, instances);
+        const objData: wg.types.WGSLJSType<typeof aDesc> = [];
+        for (let i = 0; i < instances; i++) {
+            const scale = Math.random() * 0.2 + 0.1;
+            objData.push({
+                position: [
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5,
+                    -(Math.random()) * 5,
+                ],
+                scale: [scale, scale, scale],
+            });
+        }
+        this.groupRenderer.setObjects(objData);
 
         this.load();
     }
