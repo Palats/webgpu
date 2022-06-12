@@ -104,7 +104,7 @@ export class GroupRenderer {
 
     private computeUniformsBuffer: GPUBuffer;
     private renderUniformsBuffer: GPUBuffer;
-    private instancesStateBuffer: GPUBuffer;
+    instancesStateBuffer: GPUBuffer;
     private instancesRenderBuffer: GPUBuffer;
 
     private computePipeline: GPUComputePipeline;
@@ -389,7 +389,8 @@ export class GroupRenderer {
         this.params.device.queue.writeBuffer(this.instancesStateBuffer, 0, aDesc.createArray(data));
     }
 
-    compute(info: demotypes.FrameInfo, computeEncoder: GPUComputePassEncoder) {
+    compute(info: demotypes.FrameInfo, commandEncoder: GPUCommandEncoder) {
+        const computeEncoder = commandEncoder.beginComputePass();
         computeEncoder.pushDebugGroup("compute group");
         this.params.device.queue.writeBuffer(this.computeUniformsBuffer, 0, computeUniformsDesc.createArray({
             modelTransform: Array.from(this.modelTransform),
@@ -407,6 +408,7 @@ export class GroupRenderer {
         const c = Math.ceil(this.instances / 8);
         computeEncoder.dispatchWorkgroups(c);
         computeEncoder.popDebugGroup();
+        computeEncoder.end();
     }
 
     draw(info: demotypes.FrameInfo, renderEncoder: GPURenderPassEncoder) {

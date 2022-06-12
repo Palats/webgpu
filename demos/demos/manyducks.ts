@@ -19,10 +19,31 @@ export const demo = {
     }
 }
 
-
-// ---- Rendering setup & UI
-
 const depthFormat = "depth24plus";
+
+export const boidStateDesc = new wg.StructType({
+    position: { idx: 0, type: wg.Vec3f32 },
+    velocity: { idx: 1, type: wg.Vec3f32 },
+});
+
+const computeBG = new wg.layout.BindGroup({
+    label: "data for compute",
+    visibility: GPUShaderStage.COMPUTE,
+    entries: {
+        demo: { buffer: { type: 'uniform', wgtype: shaderlib.demoDesc } },
+        boidsSrc: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(boidStateDesc) } },
+        boidsDst: { buffer: { type: 'storage', wgtype: new wg.ArrayType(boidStateDesc) } },
+        instances: { buffer: { type: 'storage', wgtype: new wg.ArrayType(grouprender.instanceStateDesc) } },
+    },
+});
+
+const computeLayout = new wg.layout.Pipeline({
+    label: "compute",
+    entries: {
+        all: { bindGroup: computeBG },
+    }
+});
+
 
 class Demo {
     params: demotypes.InitParams;
@@ -34,15 +55,23 @@ class Demo {
     basisBundle: GPURenderBundle;
     depthTextureView: GPUTextureView;
 
+    private instances: number;
+    private boidsStateBuffer1: GPUBuffer;
+    private boidsStateBuffer2: GPUBuffer;
+    private computePipeline: GPUComputePipeline;
+
+    // Swap buffer state. true == 1->2.
+    private isForward = true;
+
     constructor(params: demotypes.InitParams) {
-        const instances = 100;
+        this.instances = 100;
 
         this.params = params;
         this.demoBuffer = new shaderlib.DemoBuffer(params);
         this.groupRenderer = new grouprender.GroupRenderer({
             demoParams: params,
             demoBuffer: this.demoBuffer,
-            instances: instances,
+            instances: this.instances,
             depthFormat: depthFormat,
         });
 
@@ -75,22 +104,48 @@ class Demo {
         this.camera = new cameras.ArcBall(vec3.fromValues(0, 0, 4));
         params.setCamera(this.camera);
 
+        // Configuring boid buffers and the like.
+        this.boidsStateBuffer1 = this.params.device.createBuffer({
+            label: "boid state 1",
+            size: (new wg.ArrayType(boidStateDesc, this.instances)).byteSize(),
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+        this.boidsStateBuffer2 = this.params.device.createBuffer({
+            label: "boid state 2",
+            size: (new wg.ArrayType(boidStateDesc, this.instances)).byteSize(),
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+
         // Set some random starting positions.
-        const aDesc = new wg.types.ArrayType(grouprender.instanceStateDesc, instances);
+        const aDesc = new wg.types.ArrayType(boidStateDesc, this.instances);
         const objData: wg.types.WGSLJSType<typeof aDesc> = [];
-        for (let i = 0; i < instances; i++) {
-            const scale = Math.random() * 0.2 + 0.1;
+        for (let i = 0; i < this.instances; i++) {
             objData.push({
                 position: [
                     (Math.random() - 0.5) * 5,
                     (Math.random() - 0.5) * 5,
                     -(Math.random()) * 5,
                 ],
-                scale: [scale, scale, scale],
+                velocity: [
+                    (Math.random() - 0.5) * 0.1,
+                    (Math.random() - 0.5) * 0.1,
+                    (Math.random() - 0.5) * 0.1,
+                ],
             });
         }
-        this.groupRenderer.setObjects(objData);
+        this.params.device.queue.writeBuffer(this.boidsStateBuffer1, 0, aDesc.createArray(objData));
 
+        // Create a pipeline to update boids state.
+        this.computePipeline = this.params.device.createComputePipeline({
+            label: "boids compute pipeline",
+            layout: computeLayout.layout(this.params.device),
+            compute: {
+                entryPoint: "main",
+                module: this.buildComputeShader(),
+            }
+        });
+
+        // And trigger model loading.
         this.load();
     }
 
@@ -99,6 +154,35 @@ class Demo {
         const cpuMeshes = await models.loadGLTF(u);
         const gpuMeshes = await Promise.all(cpuMeshes.map(m => models.buildGPUMesh(this.params, m)));
         this.groupRenderer.setMeshes(gpuMeshes);
+    }
+
+    buildComputeShader() {
+        const refs = computeLayout.wgsl().all;
+        return this.params.device.createShaderModule(new wg.WGSLModule({
+            label: "boids compute shader",
+            code: wg.wgsl`
+                @stage(compute) @workgroup_size(8, 1)
+                fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                    // Guard against out-of-bounds work group sizes
+                    if (global_id.x >= ${this.instances.toFixed(0)}u || global_id.y >= 1u) {
+                        return;
+                    }
+
+                    let idx = global_id.x;
+                    let src = ${refs.boidsSrc}[idx];
+
+                    // That accumulates error but for now that's just testing the basics.
+                    let s = fract(${refs.demo}.elapsedMs / 1000.0) - 0.5;
+                    let pos = src.position + s * src.velocity;
+
+                    ${refs.boidsDst}[idx].position = pos;
+                    ${refs.boidsDst}[idx].velocity = src.velocity;
+
+                    ${refs.instances}[idx].position = pos;
+                    ${refs.instances}[idx].scale = vec3<f32>(0.2, 0.2, 0.2);
+                }
+            `,
+        }).toDesc());
     }
 
     // -- Single frame rendering.
@@ -117,9 +201,25 @@ class Demo {
         const commandEncoder = this.params.device.createCommandEncoder();
         commandEncoder.pushDebugGroup('Frame time ${info.elapsedMs}');
 
+        // Update boids state.
         const computeEncoder = commandEncoder.beginComputePass({});
-        this.groupRenderer.compute(info, computeEncoder);
+        computeLayout.setBindGroups(computeEncoder, {
+            all: computeBG.Create(this.params.device, {
+                demo: this.demoBuffer.buffer,
+                boidsSrc: this.isForward ? this.boidsStateBuffer1 : this.boidsStateBuffer2,
+                boidsDst: this.isForward ? this.boidsStateBuffer2 : this.boidsStateBuffer1,
+                instances: this.groupRenderer.instancesStateBuffer,
+            }),
+        });
+        computeEncoder.setPipeline(this.computePipeline);
+        const c = Math.ceil(this.instances / 8);
+        computeEncoder.dispatchWorkgroups(c);
         computeEncoder.end();
+
+        this.isForward = !this.isForward;
+
+        // Generate the state for the group renderer.
+        this.groupRenderer.compute(info, commandEncoder);
 
         const renderEncoder = commandEncoder.beginRenderPass({
             colorAttachments: [{
