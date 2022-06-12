@@ -11,8 +11,8 @@ import * as models from '../models';
 // ---- Demo parameter
 
 export const demo = {
-    id: "engine",
-    caption: "A simple 3d engine",
+    id: "manyducks",
+    caption: "Multiple rotating ducks",
 
     async init(params: demotypes.InitParams) {
         const d = new Demo(params);
