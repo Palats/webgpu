@@ -55,7 +55,8 @@ class Demo {
     basisBundle: GPURenderBundle;
     depthTextureView: GPUTextureView;
 
-    private instances: number;
+    private instances: number = 100;
+    private box = 1.0;
     private boidsStateBuffer1: GPUBuffer;
     private boidsStateBuffer2: GPUBuffer;
     private computePipeline: GPUComputePipeline;
@@ -64,8 +65,6 @@ class Demo {
     private isForward = true;
 
     constructor(params: demotypes.InitParams) {
-        this.instances = 100;
-
         this.params = params;
         this.demoBuffer = new shaderlib.DemoBuffer(params);
         this.groupRenderer = new grouprender.GroupRenderer({
@@ -122,14 +121,16 @@ class Demo {
         for (let i = 0; i < this.instances; i++) {
             objData.push({
                 position: [
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 5,
-                    -(Math.random()) * 5,
+                    (Math.random() - 0.5) * this.box * 2,
+                    (Math.random() - 0.5) * this.box * 2,
+                    // (Math.random() - 0.5) * this.box * 2,
+                    0,
                 ],
                 velocity: [
                     (Math.random() - 0.5) * 0.1,
                     (Math.random() - 0.5) * 0.1,
-                    (Math.random() - 0.5) * 0.1,
+                    // (Math.random() - 0.5) * 0.1,
+                    0,
                 ],
             });
         }
@@ -160,6 +161,9 @@ class Demo {
         const refs = computeLayout.wgsl().all;
         return this.params.device.createShaderModule(new wg.WGSLModule({
             label: "boids compute shader",
+            // Inspiration from
+            //  https://en.wikipedia.org/wiki/Boids
+            //  https://github.com/austinEng/webgpu-samples/blob/main/src/sample/computeBoids/updateSprites.wgsl
             code: wg.wgsl`
                 @stage(compute) @workgroup_size(8, 1)
                 fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
@@ -170,16 +174,73 @@ class Demo {
 
                     let idx = global_id.x;
                     let src = ${refs.boidsSrc}[idx];
+                    let cPos = src.position;
+                    let cVel = src.velocity;
 
-                    // That accumulates error but for now that's just testing the basics.
-                    let s = fract(${refs.demo}.elapsedMs / 1000.0) - 0.5;
-                    let pos = src.position + s * src.velocity;
+                    var mSep = vec3<f32>(0.);
+
+                    var mVel = vec3<f32>(0.);
+                    var mVelCount = 0.;
+
+                    var mMass = vec3<f32>(0.);
+                    var mMassCount = 0.;
+
+
+                    for(var i: u32 = 0; i < ${this.instances.toFixed(0)}u; i++) {
+                        if (i == idx) { continue; }
+                        let other = ${refs.boidsSrc}[i];
+                        let dist = distance(other.position, cPos);
+
+                        // separation [R2]: steer to avoid crowding local flockmates
+                        if (dist < 0.025) {
+                            mSep += cPos - other.position;
+                        }
+
+                        // alignment [R3]: steer towards the average heading of local flockmates
+                        if (dist < 0.025) {
+                            mVel += other.velocity;
+                            mVelCount += 1.0;
+                        }
+
+                        // cohesion [R1]: steer to move towards the average position (center of mass) of local flockmates
+                        if (dist < 0.1) {
+                            mMass += other.position;
+                            mMassCount += 1.0;
+                        }
+                    }
+
+                    var velSeparation = mSep;
+
+                    var velAlignment = vec3<f32>(0.);
+                    if (mVelCount > 0.) {
+                        velAlignment = mVel / mVelCount;
+                    }
+
+                    var velCohesion = vec3<f32>(0.);
+                    if (mMassCount > 0.) {
+                        velCohesion = (mMass / mMassCount) - cPos;
+                    }
+
+                    var vel = cVel + 0.05 * velSeparation + 0.005 * velAlignment + 0.02 * velCohesion;
+                    let len = length(vel);
+                    vel = clamp(len, 0., 0.1) * vel / len;
+
+                    var pos = cPos + (${refs.demo}.deltaMs / 100.) * vel;
+
+                    // Should be using this.box
+                    if (pos.x < -1.) { pos.x = 1.;}
+                    if (pos.x > 1.) { pos.x = -1.;}
+                    if (pos.y < -1.) { pos.y = 1.;}
+                    if (pos.y > 1.) { pos.y = -1.;}
+                    if (pos.z < -1.) { pos.z = 1.;}
+                    if (pos.z > 1.) { pos.z = -1.;}
 
                     ${refs.boidsDst}[idx].position = pos;
-                    ${refs.boidsDst}[idx].velocity = src.velocity;
+                    ${refs.boidsDst}[idx].velocity = vel;
 
                     ${refs.instances}[idx].position = pos;
-                    ${refs.instances}[idx].scale = vec3<f32>(0.2, 0.2, 0.2);
+                    let scale = 0.05;
+                    ${refs.instances}[idx].scale = vec3<f32>(scale, scale, scale);
                 }
             `,
         }).toDesc());
