@@ -80,6 +80,40 @@ export const tr = new wg.WGSLModule({
                 0.0, 0.0, 0.0, 1.0,
             );
         }
+
+        fn @@fromQuat(q: vec4<f32>) -> mat4x4<f32> {
+            let x2 = q.x + q.x;
+            let y2 = q.y + q.y;
+            let z2 = q.z + q.z;
+            let xx = q.x * x2;
+            let yx = q.y * x2;
+            let yy = q.y * y2;
+            let zx = q.z * x2;
+            let zy = q.z * y2;
+            let zz = q.z * z2;
+            let wx = q.w * x2;
+            let wy = q.w * y2;
+            let wz = q.w * z2;
+
+            return mat4x4<f32>(
+                1.-yy-zz, yx+wz, zx-wy, 0.,
+                yx-wz, 1.-xx-zz, zy+wx, 0.,
+                zx+wy, zy-wx, 1.-xx-yy, 0.,
+                0., 0., 0., 1.,
+            );
+        }
+
+        fn @@quatFromEuler(ang: vec3<f32>) -> vec4<f32> {
+            // Divide by 2. to make sure that a full rotation 2*Pi
+            let s = sin(ang / 2.);
+            let c = cos(ang / 2.);
+            return vec4<f32>(
+                s.x * c.y * c.z - c.x * s.y * s.z,
+                c.x * s.y * c.z + s.x * c.y * s.z,
+                c.x * c.y * s.z - s.x * s.y * c.z,
+                c.x * c.y * c.z + s.x * s.y * s.z,
+            );
+        }
         `,
 });
 

@@ -238,9 +238,15 @@ class Demo {
                     ${refs.boidsDst}[idx].position = pos;
                     ${refs.boidsDst}[idx].velocity = vel;
 
+                    let TAU = 6.283185;
+                    let c = (${refs.demo}.elapsedMs / 1000.0) % TAU;
+                    let r = vec3<f32>(c, c, c);
+                    ${refs.instances}[idx].rotation = ${shaderlib.tr.refs.quatFromEuler}(r);
                     ${refs.instances}[idx].position = pos;
                     let scale = 0.05;
                     ${refs.instances}[idx].scale = vec3<f32>(scale, scale, scale);
+
+
                 }
             `,
         }).toDesc());

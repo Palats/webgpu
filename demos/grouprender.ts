@@ -14,8 +14,10 @@ const computeUniformsDesc = new wg.StructType({
 
 // Parameters of an instance.
 export const instanceStateDesc = new wg.StructType({
-    position: { idx: 0, type: wg.Vec3f32 },
-    scale: { idx: 1, type: wg.Vec3f32 },
+    // Quaternion
+    rotation: { idx: 0, type: wg.Vec4f32 },
+    position: { idx: 1, type: wg.Vec3f32 },
+    scale: { idx: 2, type: wg.Vec3f32 },
 });
 
 // Render information of an instance.
@@ -149,6 +151,7 @@ export class GroupRenderer {
         let data: wg.types.WGSLJSType<typeof dataDesc> = [];
         for (let i = 0; i < this.instances; i++) {
             data.push({
+                rotation: [0, 0, 0, 0],
                 position: [0, 0, 0],
                 scale: [1, 1, 1],
             });
@@ -208,9 +211,7 @@ export class GroupRenderer {
                     let idx = global_id.x;
                     let inp = ${refs.all.instancesState}[idx];
 
-                    let TAU = 6.283185;
-                    let c = (${refs.all.demo}.elapsedMs / 1000.0) % TAU;
-                    let r = vec3<f32>(c, c, c);
+                    let r = ${shaderlib.tr.refs.fromQuat}(inp.rotation);
 
                     let scale = mat4x4<f32>(
                         inp.scale.x, 0.0, 0.0, 0.0,
@@ -220,9 +221,7 @@ export class GroupRenderer {
                     );
 
                     let world = ${shaderlib.tr.refs.translate}(inp.position)
-                        * ${shaderlib.tr.ref("rotateZ")}(r.z)
-                        * ${shaderlib.tr.ref("rotateY")}(r.y)
-                        * ${shaderlib.tr.ref("rotateX")}(r.z)
+                        * r
                         * scale
                         * ${refs.all.uniforms}.modelTransform;
                     ${refs.all.instancesRender}[idx].world = world;
