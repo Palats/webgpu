@@ -114,6 +114,49 @@ export const tr = new wg.WGSLModule({
                 c.x * c.y * c.z + s.x * s.y * s.z,
             );
         }
+
+        // Quaternion for rotation from one vec to another.
+        // a & b must be units.
+        // https://glmatrix.net/docs/quat.js.html#line652
+        fn @@quatRotation(a: vec3<f32>, b: vec3<f32>) -> vec4<f32> {
+            let d = dot(a, b);
+            if (d < -0.999999) {
+                var t = cross(vec3<f32>(1., 0., 0.), a);
+                if (length(t) < 0.000001)  {
+                    t = cross(vec3<f32>(0., 1., 0.), a);
+                }
+                t = normalize(t);
+                // return quatSetAxisAngle(t, PI == 3.1415926);
+                // sin(PI/2) = 1, cos(PI/2) = 0
+                return vec4<f32>(t, 0.);
+            }
+            if (d > 0.999999) {
+                return vec4<f32>(0., 0., 0., 1.);
+            }
+            let t = cross(a, b);
+            return normalize(vec4<f32>(t, 1 + d));
+        }
+
+        // https://glmatrix.net/docs/quat.js.html#line50
+        fn @@quatSetAxisAngle(axis: vec3<f32>, rad: f32) -> vec4<f32> {
+            let r = rad * 0.5;
+            let s = sin(rad);
+            return vec4<f32>(
+                s * axis.x,
+                s * axis.y,
+                s * axis.z,
+                cos(r),
+            );
+        }
+
+        fn @@quatMul(a: vec4<f32>, b: vec4<f32>) -> vec4<f32> {
+            return vec4<f32>(
+                a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y,
+                a.y * b.w + a.w * b.y + a.z * b.x - a.x * b.z,
+                a.z * b.w + a.w * b.z + a.x * b.y - a.y * b.x,
+                a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+            );
+        }
         `,
 });
 

@@ -24,6 +24,7 @@ const depthFormat = "depth24plus";
 export const boidStateDesc = new wg.StructType({
     position: { idx: 0, type: wg.Vec3f32 },
     velocity: { idx: 1, type: wg.Vec3f32 },
+    rotation: { idx: 2, type: wg.Vec4f32 },
 });
 
 const computeBG = new wg.layout.BindGroup({
@@ -132,6 +133,9 @@ class Demo {
                     // (Math.random() - 0.5) * 0.1,
                     0,
                 ],
+                rotation: [
+                    0, 0, 0, 0,
+                ],
             });
         }
         this.params.device.queue.writeBuffer(this.boidsStateBuffer1, 0, aDesc.createArray(objData));
@@ -227,7 +231,7 @@ class Demo {
 
                     var pos = cPos + (${refs.demo}.deltaMs / 100.) * vel;
 
-                    // Should be using this.box
+                    // Should be using "this.box"
                     if (pos.x < -1.) { pos.x = 1.;}
                     if (pos.x > 1.) { pos.x = -1.;}
                     if (pos.y < -1.) { pos.y = 1.;}
@@ -235,18 +239,25 @@ class Demo {
                     if (pos.z < -1.) { pos.z = 1.;}
                     if (pos.z > 1.) { pos.z = -1.;}
 
+                    // Calculate rotation to align toward velocity.
+                    var cRot = src.rotation;
+                    if (cRot.x == 0. && cRot.y == 0. && cRot.z == 0. && cRot.w == 0.) {
+                        // Initial rotation for the velocity vector on initialization.
+                        cRot = ${shaderlib.tr.refs.quatRotation}(normalize(vec3<f32>(1., 0., 0.)), normalize(cVel));
+                    }
+
+                    let q = ${shaderlib.tr.refs.quatRotation}(normalize(cVel), normalize(vel));
+                    //let q = ${shaderlib.tr.refs.quatFromEuler}(vec3<f32>(0., 0., 3.1415926 / 50));
+                    let rot = ${shaderlib.tr.refs.quatMul}(cRot, q);
+
                     ${refs.boidsDst}[idx].position = pos;
                     ${refs.boidsDst}[idx].velocity = vel;
+                    ${refs.boidsDst}[idx].rotation = rot;
 
-                    let TAU = 6.283185;
-                    let c = (${refs.demo}.elapsedMs / 1000.0) % TAU;
-                    let r = vec3<f32>(c, c, c);
-                    ${refs.instances}[idx].rotation = ${shaderlib.tr.refs.quatFromEuler}(r);
+                    ${refs.instances}[idx].rotation = rot;
                     ${refs.instances}[idx].position = pos;
                     let scale = 0.05;
                     ${refs.instances}[idx].scale = vec3<f32>(scale, scale, scale);
-
-
                 }
             `,
         }).toDesc());
