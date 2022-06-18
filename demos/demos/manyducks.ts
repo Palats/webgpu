@@ -23,7 +23,9 @@ const depthFormat = "depth24plus";
 
 export const boidStateDesc = new wg.StructType({
     position: { idx: 0, type: wg.Vec3f32 },
+    // units per milliseconds.
     velocity: { idx: 1, type: wg.Vec3f32 },
+    // current rotation as quaternion.
     rotation: { idx: 2, type: wg.Vec4f32 },
 });
 
@@ -57,7 +59,8 @@ class Demo {
     depthTextureView: GPUTextureView;
 
     private instances: number = 100;
-    private box = 1.0;
+    private box = 2.0;
+    private duckScale = 0.1;
     private boidsStateBuffer1: GPUBuffer;
     private boidsStateBuffer2: GPUBuffer;
     private computePipeline: GPUComputePipeline;
@@ -231,13 +234,13 @@ class Demo {
 
                     var pos = cPos + (${refs.demo}.deltaMs / 100.) * vel;
 
-                    // Should be using "this.box"
-                    if (pos.x < -1.) { pos.x = 1.;}
-                    if (pos.x > 1.) { pos.x = -1.;}
-                    if (pos.y < -1.) { pos.y = 1.;}
-                    if (pos.y > 1.) { pos.y = -1.;}
-                    if (pos.z < -1.) { pos.z = 1.;}
-                    if (pos.z > 1.) { pos.z = -1.;}
+                    let m = ${this.box.toFixed(1)};
+                    if (pos.x < -m) { pos.x = m;}
+                    if (pos.x > m) { pos.x = -m;}
+                    if (pos.y < -m) { pos.y = m;}
+                    if (pos.y > m) { pos.y = -m;}
+                    if (pos.z < -m) { pos.z = m;}
+                    if (pos.z > m) { pos.z = -m;}
 
                     // Calculate rotation to align toward velocity.
                     var cRot = src.rotation;
@@ -247,7 +250,6 @@ class Demo {
                     }
 
                     let q = ${shaderlib.tr.refs.quatRotation}(normalize(cVel), normalize(vel));
-                    //let q = ${shaderlib.tr.refs.quatFromEuler}(vec3<f32>(0., 0., 3.1415926 / 50));
                     let rot = ${shaderlib.tr.refs.quatMul}(cRot, q);
 
                     ${refs.boidsDst}[idx].position = pos;
@@ -256,7 +258,7 @@ class Demo {
 
                     ${refs.instances}[idx].rotation = rot;
                     ${refs.instances}[idx].position = pos;
-                    let scale = 0.05;
+                    let scale = ${this.duckScale.toFixed(3)};
                     ${refs.instances}[idx].scale = vec3<f32>(scale, scale, scale);
                 }
             `,
@@ -279,22 +281,24 @@ class Demo {
         const commandEncoder = this.params.device.createCommandEncoder();
         commandEncoder.pushDebugGroup('Frame time ${info.elapsedMs}');
 
-        // Update boids state.
-        const computeEncoder = commandEncoder.beginComputePass({});
-        computeLayout.setBindGroups(computeEncoder, {
-            all: computeBG.Create(this.params.device, {
-                demo: this.demoBuffer.buffer,
-                boidsSrc: this.isForward ? this.boidsStateBuffer1 : this.boidsStateBuffer2,
-                boidsDst: this.isForward ? this.boidsStateBuffer2 : this.boidsStateBuffer1,
-                instances: this.groupRenderer.instancesStateBuffer,
-            }),
-        });
-        computeEncoder.setPipeline(this.computePipeline);
-        const c = Math.ceil(this.instances / 8);
-        computeEncoder.dispatchWorkgroups(c);
-        computeEncoder.end();
+        // Update boids state, only if a real frame advanced.
+        if (info.deltaMs > 0 && info.deltaMs < 1000) {
+            const computeEncoder = commandEncoder.beginComputePass({});
+            computeLayout.setBindGroups(computeEncoder, {
+                all: computeBG.Create(this.params.device, {
+                    demo: this.demoBuffer.buffer,
+                    boidsSrc: this.isForward ? this.boidsStateBuffer1 : this.boidsStateBuffer2,
+                    boidsDst: this.isForward ? this.boidsStateBuffer2 : this.boidsStateBuffer1,
+                    instances: this.groupRenderer.instancesStateBuffer,
+                }),
+            });
+            computeEncoder.setPipeline(this.computePipeline);
+            const c = Math.ceil(this.instances / 8);
+            computeEncoder.dispatchWorkgroups(c);
+            computeEncoder.end();
 
-        this.isForward = !this.isForward;
+            this.isForward = !this.isForward;
+        }
 
         // Generate the state for the group renderer.
         this.groupRenderer.compute(info, commandEncoder);
