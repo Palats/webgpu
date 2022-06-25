@@ -21,12 +21,23 @@ export const demo = {
 
 const depthFormat = "depth24plus";
 
-export const boidStateDesc = new wg.StructType({
+const boidStateDesc = new wg.StructType({
     position: { idx: 0, type: wg.Vec3f32 },
-    // units per milliseconds.
+    // units per seconds.
     velocity: { idx: 1, type: wg.Vec3f32 },
     // current rotation as quaternion.
     rotation: { idx: 2, type: wg.Vec4f32 },
+});
+
+const computeUniformsDesc = new wg.StructType({
+    duckScale: { idx: 0, type: wg.F32 },
+    separationScale: { idx: 1, type: wg.F32 },
+    alignmentScale: { idx: 2, type: wg.F32 },
+    cohesionScale: { idx: 3, type: wg.F32 },
+    separationRadius: { idx: 4, type: wg.F32 },
+    alignmentRadius: { idx: 5, type: wg.F32 },
+    cohesionRadius: { idx: 6, type: wg.F32 },
+
 });
 
 const computeBG = new wg.layout.BindGroup({
@@ -37,6 +48,7 @@ const computeBG = new wg.layout.BindGroup({
         boidsSrc: { buffer: { type: 'read-only-storage', wgtype: new wg.ArrayType(boidStateDesc) } },
         boidsDst: { buffer: { type: 'storage', wgtype: new wg.ArrayType(boidStateDesc) } },
         instances: { buffer: { type: 'storage', wgtype: new wg.ArrayType(grouprender.instanceStateDesc) } },
+        uniforms: { buffer: { type: 'uniform', wgtype: computeUniformsDesc } },
     },
 });
 
@@ -61,9 +73,19 @@ class Demo {
     private instances: number = 100;
     private box = 2.0;
     private duckScale = 0.1;
+    private uniforms: GPUBuffer;
     private boidsStateBuffer1: GPUBuffer;
     private boidsStateBuffer2: GPUBuffer;
     private computePipeline: GPUComputePipeline;
+
+    private maxSpeed = 2;
+
+    private separationScale = 0.5;
+    private alignmentScale = 0.005;
+    private cohesionScale = 0.02;
+    private separationRadius = 0.025;
+    private alignmentRadius = 0.2;
+    private cohesionRadius = 0.2;
 
     // Swap buffer state. true == 1->2.
     private isForward = true;
@@ -85,6 +107,14 @@ class Demo {
         lightFolder.add(this.groupRenderer, 'lightZ', -20, 20).name("z");
         params.gui.add(this, 'showBasis');
         params.gui.add(this.groupRenderer, 'debugCoords');
+        params.gui.add(this, 'duckScale', 0.01, 0.3);
+        const boidsFolder = params.gui.addFolder("Boids");
+        boidsFolder.add(this, 'separationScale');
+        boidsFolder.add(this, 'separationRadius');
+        boidsFolder.add(this, 'alignmentScale');
+        boidsFolder.add(this, 'alignmentRadius');
+        boidsFolder.add(this, 'cohesionScale');
+        boidsFolder.add(this, 'cohesionRadius');
 
         // Setup basic render.
         this.depthTextureView = params.device.createTexture({
@@ -119,6 +149,12 @@ class Demo {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
 
+        this.uniforms = this.params.device.createBuffer({
+            label: "compute uniforms",
+            size: computeUniformsDesc.byteSize(),
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+        });
+
         // Set some random starting positions.
         const aDesc = new wg.types.ArrayType(boidStateDesc, this.instances);
         const objData: wg.types.WGSLJSType<typeof aDesc> = [];
@@ -131,12 +167,14 @@ class Demo {
                     0,
                 ],
                 velocity: [
-                    (Math.random() - 0.5) * 0.1,
-                    (Math.random() - 0.5) * 0.1,
+                    // Leads to a norm > maxSpeed, but whatever, will be fix in first frame.
+                    (Math.random() - 0.5) * this.maxSpeed * 2,
+                    (Math.random() - 0.5) * this.maxSpeed * 2,
                     // (Math.random() - 0.5) * 0.1,
                     0,
                 ],
                 rotation: [
+                    // Fixed on first frame.
                     0, 0, 0, 0,
                 ],
             });
@@ -179,68 +217,85 @@ class Demo {
                         return;
                     }
 
+                    let worldLimit = ${this.box.toFixed(1)};
+
                     let idx = global_id.x;
                     let src = ${refs.boidsSrc}[idx];
                     let cPos = src.position;
                     let cVel = src.velocity;
 
-                    var mSep = vec3<f32>(0.);
-
-                    var mVel = vec3<f32>(0.);
-                    var mVelCount = 0.;
-
                     var mMass = vec3<f32>(0.);
                     var mMassCount = 0.;
 
+                    var mSep = vec3<f32>(0.);
+                    var mSepCount = 0.;
+
+                    var mVel = vec3<f32>(0.);
+                    var mVelCount = 0.;
 
                     for(var i: u32 = 0; i < ${this.instances.toFixed(0)}u; i++) {
                         if (i == idx) { continue; }
                         let other = ${refs.boidsSrc}[i];
                         let dist = distance(other.position, cPos);
 
-                        // separation [R2]: steer to avoid crowding local flockmates
-                        if (dist < 0.025) {
-                            mSep += cPos - other.position;
-                        }
-
-                        // alignment [R3]: steer towards the average heading of local flockmates
-                        if (dist < 0.025) {
-                            mVel += other.velocity;
-                            mVelCount += 1.0;
-                        }
-
                         // cohesion [R1]: steer to move towards the average position (center of mass) of local flockmates
-                        if (dist < 0.1) {
+                        if (dist < ${refs.uniforms}.cohesionRadius) {
                             mMass += other.position;
                             mMassCount += 1.0;
                         }
+
+                        // separation [R2]: steer to avoid crowding local flockmates
+                        if (dist < ${refs.uniforms}.separationRadius) {
+                            mSep += cPos - other.position;
+                            mSepCount += 1.0;
+                        }
+
+                        // alignment [R3]: steer towards the average heading of local flockmates
+                        if (dist < ${refs.uniforms}.alignmentRadius) {
+                            mVel += other.velocity;
+                            mVelCount += 1.0;
+                        }
                     }
 
-                    var velSeparation = mSep;
-
-                    var velAlignment = vec3<f32>(0.);
-                    if (mVelCount > 0.) {
-                        velAlignment = mVel / mVelCount;
-                    }
-
+                    // R1: cohesion
+                    // unit: world
                     var velCohesion = vec3<f32>(0.);
                     if (mMassCount > 0.) {
                         velCohesion = (mMass / mMassCount) - cPos;
                     }
 
-                    var vel = cVel + 0.05 * velSeparation + 0.005 * velAlignment + 0.02 * velCohesion;
+                    // R2: separation
+                    // unit: world
+                    var velSeparation = vec3<f32>(0.);
+                    if (mSepCount > 0.) {
+                        velSeparation = mSep / mSepCount;
+                    }
+
+                    // R3: alignment
+                    // unit: world per second
+                    var velAlignment = vec3<f32>(0.);
+                    if (mVelCount > 0.) {
+                        velAlignment = mVel / mVelCount;
+                    }
+                    velAlignment = velAlignment - cVel;
+
+                    var vel = cVel
+                        + ${refs.uniforms}.cohesionScale * velCohesion
+                        + ${refs.uniforms}.separationScale * velSeparation
+                        + ${refs.uniforms}.alignmentScale * velAlignment;
+
                     let len = length(vel);
-                    vel = clamp(len, 0., 0.1) * vel / len;
+                    vel = clamp(len, 1., ${this.maxSpeed.toFixed(1)}) * vel / len;
 
-                    var pos = cPos + (${refs.demo}.deltaMs / 100.) * vel;
+                    let deltaT = ${refs.demo}.deltaMs / 1000.0;
+                    var pos = cPos + deltaT * vel;
 
-                    let m = ${this.box.toFixed(1)};
-                    if (pos.x < -m) { pos.x = m;}
-                    if (pos.x > m) { pos.x = -m;}
-                    if (pos.y < -m) { pos.y = m;}
-                    if (pos.y > m) { pos.y = -m;}
-                    if (pos.z < -m) { pos.z = m;}
-                    if (pos.z > m) { pos.z = -m;}
+                    if (pos.x < -worldLimit) { pos.x = worldLimit;}
+                    if (pos.x > worldLimit) { pos.x = -worldLimit;}
+                    if (pos.y < -worldLimit) { pos.y = worldLimit;}
+                    if (pos.y > worldLimit) { pos.y = -worldLimit;}
+                    if (pos.z < -worldLimit) { pos.z = worldLimit;}
+                    if (pos.z > worldLimit) { pos.z = -worldLimit;}
 
                     // Calculate rotation to align toward velocity.
                     var cRot = src.rotation;
@@ -258,7 +313,7 @@ class Demo {
 
                     ${refs.instances}[idx].rotation = rot;
                     ${refs.instances}[idx].position = pos;
-                    let scale = ${this.duckScale.toFixed(3)};
+                    let scale = ${refs.uniforms}.duckScale;
                     ${refs.instances}[idx].scale = vec3<f32>(scale, scale, scale);
                 }
             `,
@@ -283,6 +338,16 @@ class Demo {
 
         // Update boids state, only if a real frame advanced.
         if (info.deltaMs > 0 && info.deltaMs < 1000) {
+            this.params.device.queue.writeBuffer(this.uniforms, 0, computeUniformsDesc.createArray({
+                duckScale: this.duckScale,
+                separationScale: this.separationScale,
+                alignmentScale: this.alignmentScale,
+                cohesionScale: this.cohesionScale,
+                separationRadius: this.separationRadius,
+                alignmentRadius: this.alignmentRadius,
+                cohesionRadius: this.cohesionRadius,
+            }));
+
             const computeEncoder = commandEncoder.beginComputePass({});
             computeLayout.setBindGroups(computeEncoder, {
                 all: computeBG.Create(this.params.device, {
@@ -290,6 +355,7 @@ class Demo {
                     boidsSrc: this.isForward ? this.boidsStateBuffer1 : this.boidsStateBuffer2,
                     boidsDst: this.isForward ? this.boidsStateBuffer2 : this.boidsStateBuffer1,
                     instances: this.groupRenderer.instancesStateBuffer,
+                    uniforms: this.uniforms,
                 }),
             });
             computeEncoder.setPipeline(this.computePipeline);
