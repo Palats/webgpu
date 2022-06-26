@@ -158,7 +158,13 @@ class Demo {
         // Set some random starting positions.
         const aDesc = new wg.types.ArrayType(boidStateDesc, this.instances);
         const objData: wg.types.WGSLJSType<typeof aDesc> = [];
+
+        const baseDirection = Math.random() * 2 * Math.PI;
+
         for (let i = 0; i < this.instances; i++) {
+            const r = baseDirection + (Math.random() - 0.5) * Math.PI / 4;
+            const l = this.maxSpeed * Math.random();
+
             objData.push({
                 position: [
                     (Math.random() - 0.5) * this.box * 2,
@@ -167,10 +173,8 @@ class Demo {
                     0,
                 ],
                 velocity: [
-                    // Leads to a norm > maxSpeed, but whatever, will be fix in first frame.
-                    (Math.random() - 0.5) * this.maxSpeed * 2,
-                    (Math.random() - 0.5) * this.maxSpeed * 2,
-                    // (Math.random() - 0.5) * 0.1,
+                    Math.cos(r) * l,
+                    Math.sin(r) * l,
                     0,
                 ],
                 rotation: [
@@ -305,11 +309,15 @@ class Demo {
                     }
 
                     let q = ${shaderlib.tr.refs.quatRotation}(normalize(cVel), normalize(vel));
-                    let rot = ${shaderlib.tr.refs.quatMul}(cRot, q);
+                    let dRot = ${shaderlib.tr.refs.quatMul}(cRot, q);
+                    let rot = ${shaderlib.tr.refs.quatMul}(
+                        dRot,
+                        ${shaderlib.tr.refs.quatRotation}(normalize(vec3<f32>(0., 1., 0.)), normalize(vec3<f32>(0., 0., 1.))),
+                    );
 
                     ${refs.boidsDst}[idx].position = pos;
                     ${refs.boidsDst}[idx].velocity = vel;
-                    ${refs.boidsDst}[idx].rotation = rot;
+                    ${refs.boidsDst}[idx].rotation = dRot;
 
                     ${refs.instances}[idx].rotation = rot;
                     ${refs.instances}[idx].position = pos;
