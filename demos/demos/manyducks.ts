@@ -80,11 +80,11 @@ class Demo {
 
     private maxSpeed = 2;
 
-    private separationScale = 0.5;
-    private alignmentScale = 0.005;
-    private cohesionScale = 0.02;
-    private separationRadius = 0.025;
+    private separationStr = 0.5;
+    private separationRadius = 0.05;  // Related to duck Scale
+    private alignmentStr = 0.005;
     private alignmentRadius = 0.2;
+    private cohesionStr = 0.02;
     private cohesionRadius = 0.2;
 
     // Swap buffer state. true == 1->2.
@@ -109,11 +109,11 @@ class Demo {
         params.gui.add(this.groupRenderer, 'debugCoords');
         params.gui.add(this, 'duckScale', 0.01, 0.3);
         const boidsFolder = params.gui.addFolder("Boids");
-        boidsFolder.add(this, 'separationScale');
+        boidsFolder.add(this, 'separationStr');
         boidsFolder.add(this, 'separationRadius');
-        boidsFolder.add(this, 'alignmentScale');
+        boidsFolder.add(this, 'alignmentStr');
         boidsFolder.add(this, 'alignmentRadius');
-        boidsFolder.add(this, 'cohesionScale');
+        boidsFolder.add(this, 'cohesionStr');
         boidsFolder.add(this, 'cohesionRadius');
 
         // Setup basic render.
@@ -348,9 +348,9 @@ class Demo {
         if (info.deltaMs > 0 && info.deltaMs < 1000) {
             this.params.device.queue.writeBuffer(this.uniforms, 0, computeUniformsDesc.createArray({
                 duckScale: this.duckScale,
-                separationScale: this.separationScale,
-                alignmentScale: this.alignmentScale,
-                cohesionScale: this.cohesionScale,
+                separationScale: this.separationStr,
+                alignmentScale: this.alignmentStr,
+                cohesionScale: this.cohesionStr,
                 separationRadius: this.separationRadius,
                 alignmentRadius: this.alignmentRadius,
                 cohesionRadius: this.cohesionRadius,
